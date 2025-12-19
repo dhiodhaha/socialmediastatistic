@@ -1,0 +1,78 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String // hashed with bcrypt
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Account {
+  id          String     @id @default(cuid())
+  platform    Platform
+  handle      String // @username without the @ symbol
+  displayName String // Government unit name
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  snapshots   Snapshot[]
+
+  @@unique([platform, handle])
+  @@index([platform])
+  @@index([isActive])
+}
+
+model Snapshot {
+  id         String       @id @default(cuid())
+  accountId  String
+  account    Account      @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  followers  Int
+  following  Int?
+  posts      Int?
+  engagement Float? // engagement rate percentage
+  scrapedAt  DateTime     @default(now())
+  jobId      String?
+  job        ScrapingJob? @relation(fields: [jobId], references: [id])
+
+  @@index([accountId])
+  @@index([scrapedAt])
+  @@index([jobId])
+}
+
+model ScrapingJob {
+  id             String     @id @default(cuid())
+  status         JobStatus  @default(PENDING)
+  totalAccounts  Int
+  completedCount Int        @default(0)
+  failedCount    Int        @default(0)
+  errors         Json? // Array of { accountId, error, platform }
+  startedAt      DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime   @default(now())
+  snapshots      Snapshot[]
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum Platform {
+  INSTAGRAM
+  TIKTOK
+  TWITTER
+}
+
+enum JobStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
