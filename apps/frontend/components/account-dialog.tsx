@@ -4,7 +4,8 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { createAccount, updateAccount, AccountInput } from "@/app/actions";
+import { createAccount, updateAccount } from "@/app/actions/account";
+import { accountSchema, type AccountInput } from "@/lib/schemas";
 
 
 import {
@@ -20,14 +21,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-
-const formSchema = z.object({
-    username: z.string().min(1, "Name is required"),
-    instagram: z.string().optional().nullable(),
-    tiktok: z.string().optional().nullable(),
-    twitter: z.string().optional().nullable(),
-    isActive: z.boolean(),
-});
 
 interface AccountDialogProps {
     open?: boolean;
@@ -54,7 +47,7 @@ export function AccountDialog({
     const [error, setError] = useState("");
 
     const { register, handleSubmit, formState: { errors }, reset } = useForm<AccountInput>({
-        resolver: zodResolver(formSchema),
+        resolver: zodResolver(accountSchema) as any,
         defaultValues: {
             username: defaultValues?.username || "",
             instagram: defaultValues?.instagram || "",

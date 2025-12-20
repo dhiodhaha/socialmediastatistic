@@ -1,4 +1,4 @@
-import { getScrapingHistory } from "@/app/actions";
+import { getScrapingHistory } from "@/app/actions/history";
 import { columns } from "./columns";
 import { HistoryToolbar } from "@/components/history-toolbar";
 import { DataTable } from "@/components/ui/data-table";

@@ -5,7 +5,8 @@ import Papa from "papaparse";
 import { Upload, AlertCircle, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { bulkCreateAccounts, AccountInput } from "@/app/actions";
+import { bulkCreateAccounts } from "@/app/actions/account";
+import { type AccountInput } from "@/lib/schemas";
 
 // Used simple div for alerts instead of components
 

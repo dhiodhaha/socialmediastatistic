@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { triggerScrape } from "@/app/actions";
+import { triggerScrape } from "@/app/actions/scrape";
 import { Loader2, Play } from "lucide-react";
 
 export function ScrapeButton() {

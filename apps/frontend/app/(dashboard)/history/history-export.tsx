@@ -10,7 +10,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Download, FileJson, FileText, Loader2 } from "lucide-react";
-import { getAllScrapingHistory, exportHistoryPdf, HistoryFilters } from "@/app/actions";
+import { getAllScrapingHistory, exportHistoryPdf, type HistoryFilters } from "@/app/actions/history";
 import Papa from "papaparse";
 
 export function HistoryExport() {

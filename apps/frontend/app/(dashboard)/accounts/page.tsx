@@ -1,5 +1,6 @@
+import { getAccounts } from "@/app/actions/account";
 
-import { getAccounts } from "@/app/actions";
+export const dynamic = "force-dynamic";
 import { DataTable } from "@/components/ui/data-table";
 import { columns } from "./columns";
 import { AccountDialog } from "@/components/account-dialog";
@@ -18,9 +19,20 @@ export default async function AccountsPage({
     const search = params.search || "";
 
     // Fetch data via server action
-    const result = await getAccounts(page, 10, search);
-    const data = result.success && result.data ? result.data : [];
-    const totalPages = result.pagination?.totalPages || 1;
+    let data: any[] = [];
+    let totalPages = 1;
+
+    try {
+        const result = await getAccounts(page, 10, search);
+        if (result.success && result.data) {
+            data = result.data;
+            totalPages = result.pagination?.totalPages || 1;
+        } else {
+            console.error("getAccounts returned failure:", result.error);
+        }
+    } catch (err) {
+        console.error("getAccounts threw error:", err);
+    }
 
     return (
         <div className="flex-1 space-y-4 p-8 pt-6">

@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@repo/database';
 import { DeepMockProxy } from 'vitest-mock-extended';
 import { vi } from 'vitest';
 // This import will now resolve to test/mocks/repo-database.ts thanks to alias

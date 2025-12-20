@@ -7,7 +7,7 @@ import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Download, Loader2, FileSpreadsheet } from "lucide-react";
-import { exportHistoryPdf, exportHistoryCsv } from "@/app/actions";
+import { exportHistoryPdf, exportHistoryCsv } from "@/app/actions/history";
 import { Platform } from "@repo/database";
 
 export function HistoryToolbar() {
