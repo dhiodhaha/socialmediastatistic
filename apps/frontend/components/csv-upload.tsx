@@ -47,7 +47,7 @@ export function CsvUpload() {
                         };
 
                         accounts.push({
-                            username: row.name || row.Name,
+                            username: row.name || row.Name || "",
                             instagram: clean(row.instagram || row.Instagram),
                             tiktok: clean(row.tiktok || row.TikTok),
                             twitter: clean(row.x || row.X || row.twitter || row.Twitter),
