@@ -4,6 +4,7 @@ import { logger } from "./lib/logger";
 import { authMiddleware } from "./middleware/auth";
 import healthRouter from "./routes/health";
 import scrapeRouter from "./routes/scrape";
+import exportRouter from "./routes/export";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -17,6 +18,7 @@ app.use("/health", healthRouter);
 
 // Protected routes (require bearer token)
 app.use("/scrape", authMiddleware, scrapeRouter);
+app.use("/export", authMiddleware, exportRouter);
 
 // Error handling middleware
 app.use(
