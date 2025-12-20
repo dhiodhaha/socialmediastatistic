@@ -29,45 +29,28 @@ async function main() {
     // Create sample accounts
     const sampleAccounts = [
         {
-            platform: "INSTAGRAM" as const,
-            handle: "kemikidn",
-            displayName: "Kementerian Keuangan RI",
+            username: "Dhio Dhafin",
+            instagram: "dhiodhaha",
+            tiktok: "dhiodhaha",
+            twitter: "dhiodhaha",
         },
         {
-            platform: "INSTAGRAM" as const,
-            handle: "presidenri",
-            displayName: "Presiden RI",
+            username: "Kementerian Keuangan",
+            instagram: "kemenkeuri",
+            tiktok: "kemenkeuri",
+            twitter: "KemenkeuRI",
         },
         {
-            platform: "INSTAGRAM" as const,
-            handle: "kikidn",
-            displayName: "Kementerian Keuangan",
-        },
-        {
-            platform: "TIKTOK" as const,
-            handle: "kemikidn",
-            displayName: "Kementerian Keuangan RI",
-        },
-        {
-            platform: "TWITTER" as const,
-            handle: "KemenkeuRI",
-            displayName: "Kementerian Keuangan RI",
-        },
-        {
-            platform: "TWITTER" as const,
-            handle: "jaborekpns",
-            displayName: "BKN Official",
+            username: "Sekretariat Kabinet",
+            instagram: "setkabgoid",
+            tiktok: null, // Example of missing handle
+            twitter: "setkabgoid",
         },
     ];
 
     for (const account of sampleAccounts) {
         await prisma.account.upsert({
-            where: {
-                platform_handle: {
-                    platform: account.platform,
-                    handle: account.handle,
-                },
-            },
+            where: { username: account.username },
             update: {},
             create: account,
         });

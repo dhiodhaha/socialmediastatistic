@@ -8,6 +8,8 @@
     "typecheck": "turbo typecheck",
     "dev:frontend": "turbo dev --filter=frontend",
     "dev:worker": "turbo dev --filter=worker",
+    "build:frontend": "turbo build --filter=frontend",
+    "build:worker": "turbo build --filter=worker",
     "db:generate": "turbo db:generate",
     "db:push": "turbo db:push"
   },

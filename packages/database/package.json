@@ -9,8 +9,7 @@
         "db:push": "prisma db push",
         "db:migrate": "prisma migrate dev",
         "db:studio": "prisma studio",
-        "db:seed": "tsx prisma/seed.ts",
-        "build": "echo 'No build step for database package'"
+        "db:seed": "tsx prisma/seed.ts"
     },
     "dependencies": {
         "@neondatabase/serverless": "^1.0.2",

@@ -41,18 +41,12 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4">
-            {/* Background decoration */}
-            <div className="absolute inset-0 overflow-hidden">
-                <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500/20 rounded-full blur-3xl" />
-                <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/20 rounded-full blur-3xl" />
-            </div>
-
-            <Card className="relative w-full max-w-md p-8 bg-white/10 backdrop-blur-xl border-white/20 shadow-2xl">
+        <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4">
+            <Card className="w-full max-w-md p-8">
                 <div className="text-center mb-8">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-blue-600 mb-4">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-xl bg-primary/10 mb-4">
                         <svg
-                            className="w-8 h-8 text-white"
+                            className="w-8 h-8 text-primary"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -65,21 +59,21 @@ export default function LoginPage() {
                             />
                         </svg>
                     </div>
-                    <h1 className="text-2xl font-bold text-white">Social Media Stats</h1>
-                    <p className="text-gray-400 mt-2">
+                    <h1 className="text-2xl font-bold">Social Media Stats</h1>
+                    <p className="text-muted-foreground mt-2">
                         Track follower growth across platforms
                     </p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     {error && (
-                        <div className="p-3 rounded-lg bg-red-500/20 border border-red-500/30 text-red-300 text-sm text-center">
+                        <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20 text-destructive text-sm text-center">
                             {error}
                         </div>
                     )}
 
                     <div className="space-y-2">
-                        <Label htmlFor="email" className="text-gray-300">
+                        <Label htmlFor="email">
                             Email
                         </Label>
                         <Input
@@ -89,12 +83,11 @@ export default function LoginPage() {
                             onChange={(e) => setEmail(e.target.value)}
                             placeholder="admin@example.com"
                             required
-                            className="bg-white/10 border-white/20 text-white placeholder:text-gray-500 focus:border-purple-500 focus:ring-purple-500/20"
                         />
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="password" className="text-gray-300">
+                        <Label htmlFor="password">
                             Password
                         </Label>
                         <Input
@@ -104,14 +97,13 @@ export default function LoginPage() {
                             onChange={(e) => setPassword(e.target.value)}
                             placeholder="••••••••"
                             required
-                            className="bg-white/10 border-white/20 text-white placeholder:text-gray-500 focus:border-purple-500 focus:ring-purple-500/20"
                         />
                     </div>
 
                     <Button
                         type="submit"
                         disabled={isLoading}
-                        className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold py-3 rounded-lg transition-all duration-200 shadow-lg hover:shadow-purple-500/25"
+                        className="w-full"
                     >
                         {isLoading ? (
                             <span className="flex items-center justify-center gap-2">
@@ -139,7 +131,7 @@ export default function LoginPage() {
                     </Button>
                 </form>
 
-                <p className="mt-6 text-center text-gray-500 text-sm">
+                <p className="mt-6 text-center text-muted-foreground text-sm">
                     Government Social Media Analytics Dashboard
                 </p>
             </Card>

@@ -1,77 +1,75 @@
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
 interface RecentActivityProps {
     snapshots: Array<{
         id: string;
         followers: number;
         scrapedAt: Date;
+        platform: string; // From Snapshot model
         account: {
-            handle: string;
-            displayName: string;
-            platform: string;
+            username: string;
+            instagram: string | null;
+            tiktok: string | null;
+            twitter: string | null;
         };
     }>;
 }
 
 export function RecentActivity({ snapshots }: RecentActivityProps) {
-    const platformColors = {
-        INSTAGRAM: "bg-gradient-to-r from-purple-500 to-pink-500",
-        TIKTOK: "bg-gradient-to-r from-cyan-500 to-blue-500",
-        TWITTER: "bg-gradient-to-r from-blue-400 to-blue-600",
-    } as const;
+    const getHandle = (s: RecentActivityProps['snapshots'][0]) => {
+        if (s.platform === "INSTAGRAM") return s.account.instagram;
+        if (s.platform === "TIKTOK") return s.account.tiktok;
+        if (s.platform === "TWITTER") return s.account.twitter;
+        return null;
+    };
 
     return (
-        <div className="bg-slate-900 rounded-xl border border-slate-800 p-6">
-            <h3 className="text-lg font-semibold text-white mb-4">Recent Activity</h3>
-            <div className="space-y-4">
-                {snapshots.length > 0 ? (
-                    snapshots.map((snapshot) => (
-                        <div
-                            key={snapshot.id}
-                            className="flex items-center gap-4 p-3 rounded-lg bg-slate-800/50 hover:bg-slate-800 transition-colors"
-                        >
-                            <div
-                                className={`w-10 h-10 rounded-lg ${platformColors[snapshot.account.platform as keyof typeof platformColors]
-                                    } flex items-center justify-center text-white text-xs font-bold`}
-                            >
-                                {snapshot.account.platform.slice(0, 2)}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-white truncate">
-                                    @{snapshot.account.handle}
-                                </p>
-                                <p className="text-xs text-slate-500 truncate">
-                                    {snapshot.account.displayName}
-                                </p>
-                            </div>
-                            <div className="text-right">
-                                <p className="text-sm font-semibold text-white">
-                                    {snapshot.followers.toLocaleString()}
-                                </p>
-                                <p className="text-xs text-slate-500">followers</p>
-                            </div>
+        <Card>
+            <CardHeader>
+                <CardTitle>Recent Activity</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className="space-y-4">
+                    {snapshots.length > 0 ? (
+                        snapshots.map((snapshot) => {
+                            const handle = getHandle(snapshot) || "N/A";
+                            return (
+                                <div
+                                    key={snapshot.id}
+                                    className="flex items-center gap-4 p-3 rounded-md border bg-muted/50"
+                                >
+                                    <div
+                                        className="w-10 h-10 rounded-md bg-background border flex items-center justify-center text-xs font-bold text-muted-foreground"
+                                    >
+                                        {snapshot.platform.slice(0, 2)}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium truncate">
+                                            @{handle}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground truncate">
+                                            {snapshot.account.username}
+                                        </p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-sm font-semibold">
+                                            {snapshot.followers.toLocaleString()}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">followers</p>
+                                    </div>
+                                </div>
+                            )
+                        })
+                    ) : (
+                        <div className="text-center py-8">
+                            <p className="text-muted-foreground mb-1">No recent activity</p>
+                            <p className="text-xs text-muted-foreground">
+                                Start a scraping job to see results here
+                            </p>
                         </div>
-                    ))
-                ) : (
-                    <div className="text-center py-8">
-                        <svg
-                            className="w-12 h-12 text-slate-600 mx-auto mb-3"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                            />
-                        </svg>
-                        <p className="text-slate-500">No recent activity</p>
-                        <p className="text-sm text-slate-600 mt-1">
-                            Start a scraping job to see results here
-                        </p>
-                    </div>
-                )}
-            </div>
-        </div>
+                    )}
+                </div>
+            </CardContent>
+        </Card>
     );
 }

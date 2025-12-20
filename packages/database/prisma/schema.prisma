@@ -17,28 +17,26 @@ model User {
 }
 
 model Account {
-  id          String     @id @default(cuid())
-  platform    Platform
-  handle      String // @username without the @ symbol
-  displayName String // Government unit name
-  isActive    Boolean    @default(true)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  snapshots   Snapshot[]
-
-  @@unique([platform, handle])
-  @@index([platform])
-  @@index([isActive])
+  id        String     @id @default(cuid())
+  username  String     @unique // Common display name / reference
+  instagram String? // Handle
+  tiktok    String? // Handle
+  twitter   String? // Handle
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  snapshots Snapshot[]
 }
 
 model Snapshot {
   id         String       @id @default(cuid())
   accountId  String
   account    Account      @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  platform   Platform // Which platform this snapshot is for
   followers  Int
   following  Int?
   posts      Int?
-  engagement Float? // engagement rate percentage
+  engagement Float?
   scrapedAt  DateTime     @default(now())
   jobId      String?
   job        ScrapingJob? @relation(fields: [jobId], references: [id])
@@ -46,6 +44,7 @@ model Snapshot {
   @@index([accountId])
   @@index([scrapedAt])
   @@index([jobId])
+  @@index([platform])
 }
 
 model ScrapingJob {
