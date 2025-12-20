@@ -9,6 +9,38 @@ const CONCURRENCY = 5;
 const DELAY_BETWEEN_BATCHES_MS = 2000;
 const MAX_RETRIES = 3;
 
+interface ScrapeTask {
+    accountId: string;
+    platform: Platform;
+    handle: string;
+}
+
+interface ScrapeCreatorsResponse {
+    // Instagram
+    follower_count?: number;
+    following_count?: number;
+    media_count?: number;
+
+    // TikTok
+    stats?: {
+        followerCount?: number;
+        followingCount?: number;
+        videoCount?: number;
+        heartCount?: number;
+    };
+
+    // Twitter
+    data?: {
+        user?: {
+            legacy?: {
+                followers_count?: number;
+                friends_count?: number;
+                statuses_count?: number;
+            }
+        }
+    }
+}
+
 /**
  * Main scraping job runner.
  * Fetches all active accounts and scrapes them in batches.
@@ -16,20 +48,37 @@ const MAX_RETRIES = 3;
 export async function runScrapingJob(): Promise<void> {
     logger.info("Starting scraping job");
 
-    // Create a new job record
+    // Fetch active accounts
     const accounts = await prisma.account.findMany({
         where: { isActive: true },
     });
 
+    // Generate tasks (flatten accounts into platform-specific tasks)
+    const tasks: ScrapeTask[] = [];
+    for (const account of accounts) {
+        if (account.instagram) {
+            tasks.push({ accountId: account.id, platform: "INSTAGRAM", handle: account.instagram });
+        }
+        if (account.tiktok) {
+            tasks.push({ accountId: account.id, platform: "TIKTOK", handle: account.tiktok });
+        }
+        if (account.twitter) {
+            tasks.push({ accountId: account.id, platform: "TWITTER", handle: account.twitter });
+        }
+    }
+
     const job = await prisma.scrapingJob.create({
         data: {
             status: "RUNNING",
-            totalAccounts: accounts.length,
+            totalAccounts: accounts.length, // Keeping this as accounts count for now, or should be tasks.length? 
+            // The schema likely expects "totalAccounts" but maybe "totalTasks" is more accurate. 
+            // Let's stick to totalAccounts for consistency with the field name, 
+            // but we process tasks.
             startedAt: new Date(),
         },
     });
 
-    logger.info({ jobId: job.id, totalAccounts: accounts.length }, "Job created");
+    logger.info({ jobId: job.id, totalAccounts: accounts.length, totalTasks: tasks.length }, "Job created");
 
     const errors: Array<{
         accountId: string;
@@ -41,9 +90,9 @@ export async function runScrapingJob(): Promise<void> {
     let completedCount = 0;
     let failedCount = 0;
 
-    // Process accounts in batches
-    for (let i = 0; i < accounts.length; i += BATCH_SIZE) {
-        const batch = accounts.slice(i, i + BATCH_SIZE);
+    // Process tasks in batches
+    for (let i = 0; i < tasks.length; i += BATCH_SIZE) {
+        const batch = tasks.slice(i, i + BATCH_SIZE);
         logger.info(
             { batchStart: i, batchSize: batch.length },
             "Processing batch"
@@ -55,9 +104,12 @@ export async function runScrapingJob(): Promise<void> {
         // Save results to database
         for (const result of results) {
             if (result.success && result.data) {
+                // Ensure platform is saved if included in schema.
+                // Assuming Snapshot model has 'platform' field based on errors.
                 await prisma.snapshot.create({
                     data: {
                         accountId: result.accountId!,
+                        platform: result.platform, // Added this field
                         followers: result.data.followers,
                         following: result.data.following,
                         posts: result.data.posts,
@@ -85,13 +137,17 @@ export async function runScrapingJob(): Promise<void> {
         });
 
         // Delay between batches to avoid rate limiting
-        if (i + BATCH_SIZE < accounts.length) {
+        if (i + BATCH_SIZE < tasks.length) {
             await sleep(DELAY_BETWEEN_BATCHES_MS);
         }
     }
 
     // Mark job as completed
-    const finalStatus = failedCount === accounts.length ? "FAILED" : "COMPLETED";
+    // Note: completedCount is now based on TASKS, not ACCOUNTS.
+    // If we want to strictly track accounts, we should deduplicate.
+    // But for now, we report task completion.
+    const finalStatus = failedCount === tasks.length ? "FAILED" : "COMPLETED";
+
     await prisma.scrapingJob.update({
         where: { id: job.id },
         data: {
@@ -108,10 +164,11 @@ export async function runScrapingJob(): Promise<void> {
     // Send Discord notification
     await sendDiscordNotification({
         title: `Scraping Job ${finalStatus}`,
-        description: `Completed: ${completedCount}/${accounts.length} accounts`,
+        description: `Processed: ${completedCount}/${tasks.length} handles`,
         color: finalStatus === "COMPLETED" ? 0x00ff00 : 0xff0000,
         fields: [
             { name: "Total Accounts", value: String(accounts.length), inline: true },
+            { name: "Total Tasks", value: String(tasks.length), inline: true },
             { name: "Successful", value: String(completedCount), inline: true },
             { name: "Failed", value: String(failedCount), inline: true },
         ],
@@ -119,26 +176,26 @@ export async function runScrapingJob(): Promise<void> {
 }
 
 /**
- * Process a batch of accounts with concurrency control.
+ * Process a batch of tasks with concurrency control.
  */
 async function processBatchWithConcurrency(
-    accounts: Array<{ id: string; platform: Platform; handle: string }>,
+    tasks: ScrapeTask[],
     concurrency: number
-): Promise<Array<ScrapeResult & { accountId?: string }>> {
-    const results: Array<ScrapeResult & { accountId?: string }> = [];
+): Promise<Array<ScrapeResult & { accountId: string }>> {
+    const results: Array<ScrapeResult & { accountId: string }> = [];
     const executing: Promise<void>[] = [];
 
-    for (const account of accounts) {
-        const promise = scrapeWithRetry(account.platform, account.handle)
+    for (const task of tasks) {
+        const promise = scrapeWithRetry(task.platform, task.handle)
             .then((result) => {
-                results.push({ ...result, accountId: account.id });
+                results.push({ ...result, accountId: task.accountId });
             })
             .catch((error) => {
                 results.push({
                     success: false,
-                    platform: account.platform,
-                    handle: account.handle,
-                    accountId: account.id,
+                    platform: task.platform,
+                    handle: task.handle,
+                    accountId: task.accountId,
                     error: error.message,
                 });
             });
@@ -200,9 +257,6 @@ async function scrapeWithRetry(
     };
 }
 
-/**
- * Scrape a single account using ScrapeCreatorsAPI.
- */
 async function scrapeAccount(
     platform: Platform,
     handle: string
@@ -215,14 +269,14 @@ async function scrapeAccount(
 
     // ScrapeCreatorsAPI endpoints by platform
     const endpoints: Record<Platform, string> = {
-        INSTAGRAM: `https://api.scrapecreators.com/v1/instagram/user/${handle}`,
-        TIKTOK: `https://api.scrapecreators.com/v1/tiktok/user/${handle}`,
-        TWITTER: `https://api.scrapecreators.com/v1/twitter/user/${handle}`,
+        INSTAGRAM: `https://api.scrapecreators.com/v1/instagram/basic-profile?username=${handle}`,
+        TIKTOK: `https://api.scrapecreators.com/v1/tiktok/profile?username=${handle}`,
+        TWITTER: `https://api.scrapecreators.com/v1/twitter/profile?username=${handle}`,
     };
 
     const response = await fetch(endpoints[platform], {
         headers: {
-            Authorization: `Bearer ${apiKey}`,
+            "x-api-key": apiKey,
             "Content-Type": "application/json",
         },
     });
@@ -231,28 +285,37 @@ async function scrapeAccount(
         throw new Error(`API error: ${response.status} ${response.statusText}`);
     }
 
-    const data = await response.json() as {
-        followers_count?: number;
-        follower_count?: number;
-        following_count?: number;
-        friends_count?: number;
-        posts_count?: number;
-        media_count?: number;
-        statuses_count?: number;
-        engagement_rate?: number;
+    // Use specific type to avoid 'unknown' error
+    const data = await response.json() as ScrapeCreatorsResponse;
+    const stats = {
+        followers: 0,
+        following: 0,
+        posts: 0,
+        engagement: 0,
     };
 
-    // Map API response to our format (adjust based on actual API response structure)
+    // Specific parsing per platform based on docs
+    if (platform === "INSTAGRAM") {
+        stats.followers = data.follower_count || 0;
+        stats.following = data.following_count || 0;
+        stats.posts = data.media_count || 0;
+    } else if (platform === "TIKTOK") {
+        const s = data.stats || {};
+        stats.followers = s.followerCount || 0;
+        stats.following = s.followingCount || 0;
+        stats.posts = s.videoCount || 0;
+    } else if (platform === "TWITTER") {
+        const legacy = data.data?.user?.legacy || {};
+        stats.followers = legacy.followers_count || 0;
+        stats.following = legacy.friends_count || 0;
+        stats.posts = legacy.statuses_count || 0;
+    }
+
     return {
         success: true,
         platform,
         handle,
-        data: {
-            followers: data.followers_count || data.follower_count || 0,
-            following: data.following_count || data.friends_count,
-            posts: data.posts_count || data.media_count || data.statuses_count,
-            engagement: data.engagement_rate,
-        },
+        data: stats,
     };
 }
 

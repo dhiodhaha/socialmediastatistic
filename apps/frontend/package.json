@@ -38,13 +38,18 @@
     },
     "devDependencies": {
         "@tailwindcss/postcss": "^4",
+        "@testing-library/react": "^16.3.1",
         "@types/bcryptjs": "^3.0.0",
         "@types/node": "^20",
         "@types/react": "^19",
         "@types/react-dom": "^19",
+        "@vitejs/plugin-react": "^5.1.2",
         "eslint": "^9",
         "eslint-config-next": "16.1.0",
+        "jsdom": "^27.3.0",
         "tailwindcss": "^4",
-        "typescript": "^5"
+        "typescript": "^5",
+        "vitest": "^4.0.16",
+        "vitest-mock-extended": "^3.1.0"
     }
 }
