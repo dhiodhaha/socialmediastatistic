@@ -2,23 +2,25 @@
 
 import { prisma } from "@repo/database";
 import { revalidatePath } from "next/cache";
-import { z } from "zod";
+import { ZodError } from "zod";
 
 import { accountSchema, type AccountInput } from "@/lib/schemas";
 import { logger } from "@/lib/logger";
-
-// ... existing imports ...
-
-// Example replacement pattern for errors:
-// logger.error({ error }, "Failed to fetch accounts");
-
-// Example replacement pattern for info:
-// logger.info({ count: result.count }, "Bulk create completed");
 
 export { accountSchema };
 export type { AccountInput };
 
 export async function getAccounts(page = 1, limit = 10, search = "") {
+    // Build time safety check
+    if (!process.env.DATABASE_URL) {
+        console.warn("DATABASE_URL not found, returning empty accounts (Build mode)");
+        return {
+            success: true,
+            data: [],
+            pagination: { total: 0, page, limit, totalPages: 1 }
+        };
+    }
+
     try {
         const skip = (page - 1) * limit;
 
@@ -51,7 +53,7 @@ export async function getAccounts(page = 1, limit = 10, search = "") {
         ]);
 
         // Calculate growth for each account
-        const accountsWithGrowth = accounts.map(acc => {
+        const accountsWithGrowth = accounts.map((acc: typeof accounts[number]) => {
             let growth: number | null = null;
             if (acc.snapshots.length >= 2) {
                 const latest = acc.snapshots[0].followers;
@@ -73,8 +75,22 @@ export async function getAccounts(page = 1, limit = 10, search = "") {
                 totalPages: Math.ceil(total / limit),
             },
         };
-    } catch (error) {
+    } catch (error: any) {
         logger.error({ error }, "Failed to fetch accounts");
+        // If it's a connection error (common during build), return empty compatible response
+        if (error?.code === 'P1001' || error?.message?.includes('Can\'t reach database')) {
+            logger.warn("Database unreachable, returning empty list (Build safe mode)");
+            return {
+                success: true,
+                data: [],
+                pagination: {
+                    total: 0,
+                    page,
+                    limit,
+                    totalPages: 1
+                }
+            };
+        }
         return { success: false, error: "Failed to fetch accounts" };
     }
 }
@@ -106,7 +122,7 @@ export async function createAccount(data: AccountInput) {
         return { success: true, data: account };
     } catch (error) {
         logger.error({ error }, "Failed to create account");
-        if (error instanceof z.ZodError) {
+        if (error instanceof ZodError) {
             return { success: false, error: error.issues[0].message };
         }
         return { success: false, error: "Failed to create account" };

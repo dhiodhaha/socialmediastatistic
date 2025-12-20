@@ -10,7 +10,9 @@ import { Download, Loader2, FileSpreadsheet } from "lucide-react";
 import { exportHistoryPdf, exportHistoryCsv } from "@/app/actions/history";
 import { Platform } from "@repo/database";
 
-export function HistoryToolbar() {
+import { ScrapeProgress } from "@/components/scrape-progress";
+
+export function HistoryToolbar({ activeJobId }: { activeJobId?: string }) {
     const router = useRouter();
     const searchParams = useSearchParams();
 
@@ -141,44 +143,47 @@ export function HistoryToolbar() {
     };
 
     return (
-        <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center bg-card p-4 rounded-lg border">
-            <div className="flex flex-1 flex-col sm:flex-row gap-4 w-full">
-                <DatePickerWithRange date={date} setDate={handleDateChange} />
+        <div className="flex flex-col gap-4">
+            {activeJobId && <ScrapeProgress jobId={activeJobId} />}
+            <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center bg-card p-4 rounded-lg border">
+                <div className="flex flex-1 flex-col sm:flex-row gap-4 w-full">
+                    <DatePickerWithRange date={date} setDate={handleDateChange} />
 
-                <Select value={status} onValueChange={handleStatusChange}>
-                    <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="ALL">All Statuses</SelectItem>
-                        <SelectItem value="COMPLETED">Completed</SelectItem>
-                        <SelectItem value="FAILED">Failed</SelectItem>
-                        <SelectItem value="RUNNING">Running</SelectItem>
-                    </SelectContent>
-                </Select>
+                    <Select value={status} onValueChange={handleStatusChange}>
+                        <SelectTrigger className="w-[180px]">
+                            <SelectValue placeholder="Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="ALL">All Statuses</SelectItem>
+                            <SelectItem value="COMPLETED">Completed</SelectItem>
+                            <SelectItem value="FAILED">Failed</SelectItem>
+                            <SelectItem value="RUNNING">Running</SelectItem>
+                        </SelectContent>
+                    </Select>
 
-                <Select value={platform} onValueChange={handlePlatformChange}>
-                    <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Platform" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="ALL">All Platforms</SelectItem>
-                        <SelectItem value="INSTAGRAM">Instagram</SelectItem>
-                        <SelectItem value="TIKTOK">TikTok</SelectItem>
-                        <SelectItem value="TWITTER">Twitter</SelectItem>
-                    </SelectContent>
-                </Select>
-            </div>
+                    <Select value={platform} onValueChange={handlePlatformChange}>
+                        <SelectTrigger className="w-[180px]">
+                            <SelectValue placeholder="Platform" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="ALL">All Platforms</SelectItem>
+                            <SelectItem value="INSTAGRAM">Instagram</SelectItem>
+                            <SelectItem value="TIKTOK">TikTok</SelectItem>
+                            <SelectItem value="TWITTER">Twitter</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
 
-            <div className="flex gap-2">
-                <Button variant="outline" onClick={handleExportCsv} disabled={isExporting}>
-                    {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileSpreadsheet className="mr-2 h-4 w-4" />}
-                    CSV
-                </Button>
-                <Button variant="outline" onClick={handleExport} disabled={isExporting}>
-                    {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-                    PDF
-                </Button>
+                <div className="flex gap-2">
+                    <Button variant="outline" onClick={handleExportCsv} disabled={isExporting}>
+                        {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileSpreadsheet className="mr-2 h-4 w-4" />}
+                        CSV
+                    </Button>
+                    <Button variant="outline" onClick={handleExport} disabled={isExporting}>
+                        {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                        PDF
+                    </Button>
+                </div>
             </div>
         </div>
     );

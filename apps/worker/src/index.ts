@@ -5,6 +5,7 @@ import { authMiddleware } from "./middleware/auth";
 import healthRouter from "./routes/health";
 import scrapeRouter from "./routes/scrape";
 import exportRouter from "./routes/export";
+import { initCronJobs } from "./lib/cron";
 
 const app: express.Application = express();
 const PORT = process.env.PORT || 4000;
@@ -39,6 +40,7 @@ app.use(
 // Start server
 app.listen(PORT, () => {
     logger.info(`Worker server running on port ${PORT}`);
+    initCronJobs();
 });
 
 export default app;

@@ -1,5 +1,4 @@
 import puppeteer from "puppeteer";
-import { logger } from "../lib/logger";
 import { prisma, Prisma, JobStatus } from "@repo/database";
 import { generateReportHtml } from "./template";
 

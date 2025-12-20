@@ -3,7 +3,7 @@ import { columns } from "./columns";
 import { HistoryToolbar } from "@/components/history-toolbar";
 import { DataTable } from "@/components/ui/data-table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Platform } from "@repo/database";
+import { Platform, prisma } from "@repo/database";
 
 export default async function HistoryPage({
     searchParams,
@@ -24,6 +24,23 @@ export default async function HistoryPage({
 
     const { data: jobs, pagination } = await getScrapingHistory(page, 10, filters);
 
+    // Check for any currently running job to show progress immediately
+    // Check for any currently running job to show progress immediately
+    let activeJob: { id: string } | null = null;
+
+    if (process.env.DATABASE_URL) {
+        try {
+            activeJob = await prisma.scrapingJob.findFirst({
+                where: { status: { in: ["PENDING", "RUNNING"] } },
+                orderBy: { createdAt: "desc" },
+                select: { id: true }
+            });
+        } catch (error) {
+            console.warn("Failed to fetch active job (likely build time or DB unreachable)");
+        }
+    }
+
+
     return (
         <div className="space-y-6">
             <div>
@@ -33,7 +50,7 @@ export default async function HistoryPage({
                 </p>
             </div>
 
-            <HistoryToolbar />
+            <HistoryToolbar activeJobId={activeJob?.id} />
 
             <Card>
                 <CardHeader>

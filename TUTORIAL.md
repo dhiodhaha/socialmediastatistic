@@ -6,7 +6,7 @@ This guide covers how to deploy the Social Media Statistics application to produ
 You need a PostgreSQL database accessible by both the frontend and worker.
 -   **Providers**: Neon, Supabase, Railway, AWS RDS.
 -   **Action**: Create a database and get the connection string (`DATABASE_URL`).
--   **Migration**: Run migrations from your local machine or CI/CD pipeline:
+-   **Migration**: Run migrations from your local machine:
     ```bash
     pnpm db:push
     ```
@@ -16,64 +16,82 @@ Ensure these variables are set in both Frontend and Worker environments:
 -   `DATABASE_URL`: `postgres://user:pass@host:5432/db`
 -   `WORKER_SECRET`: A long random string (e.g., generated with `openssl rand -hex 32`).
 
-## 3. Worker Service Deployment
-The worker is an Express.js app that handles scraping tasks. It needs to run continuously or wake up for requests.
+---
 
--   **Deployment Options**: Render, Railway, DigitalOcean App Platform, raw VPS with pm2.
--   **Build Command**:
-    ```bash
-    pnpm build --filter=worker
-    ```
--   **Start Command**:
-    ```bash
-    node apps/worker/dist/index.js
-    ```
--   **Environment Variables**:
-    -   `PORT`: `4000` (or dynamic)
-    -   `DATABASE_URL`: (Same as above)
-    -   `SCRAPECREATORS_API_KEY`: Your API key.
-    -   `WORKER_SECRET`: (Same as above)
-
-## 4. Frontend Deployment (Next.js)
+## 3. Frontend Deployment (Vercel)
 The frontend serves the dashboard and triggers scraping jobs on the worker.
 
--   **Deployment Options**: Vercel (Recommended), Netlify, Docker.
--   **Vercel Setup**:
-    1.  Import project from Git.
-    2.  Set Root Directory to `apps/frontend` (if monorepo support isn't auto-detected, otherwise usage of `turbo` handles root). *Actually, for this Turborepo, Vercel basically handles it at root.*
-    3.  **Environment Variables**:
-        -   `DATABASE_URL`
-        -   `NEXTAUTH_SECRET`
-        -   `NEXTAUTH_URL`: Your domain (e.g., `https://myapp.com`)
-        -   `WORKER_URL`: The URL where your worker is deployed (e.g., `https://worker-xyz.railway.app`)
-        -   `WORKER_SECRET`
+**Steps:**
+1.  Push your code to GitHub.
+2.  Go to [Vercel](https://vercel.com) -> **Add New Project**.
+3.  Import your repository.
+4.  **Framework Preset**: Select `Next.js`.
+5.  **Root Directory**: `apps/frontend`.
+6.  **Environment Variables**:
+    -   `DATABASE_URL`
+    -   `NEXTAUTH_SECRET` (Generate generic secret)
+    -   `NEXTAUTH_URL`: Your Vercel domain (e.g., `https://myapp.vercel.app`)
+    -   `WORKER_URL`: Your VPS IP/Domain (e.g., `http://123.45.67.89:4000` or `https://api.mydomain.com`)
+    -   `WORKER_SECRET`: (Same as above)
+7.  Click **Deploy**.
 
-## 5. Setting Up Scheduled Scraping
-The worker has endpoints but needs a trigger.
--   **Job Scheduler**: Use a cron service (like GitHub Actions, Vercel Cron, or a simple external cron) to hit the worker endpoint.
--   **Worker Endpoint**: `POST /scrape`
--   **Headers**: `Authorization: Bearer <WORKER_SECRET>` (Note: The internal communication uses this secret, while the worker uses x-api-key for external calls TO ScrapeCreators).
+---
 
-### Example Vercel Cron (`vercel.json` in `apps/frontend` or root)
-```json
-{
-  "crons": [
-    {
-      "path": "/api/cron/trigger-scrape",
-      "schedule": "0 0 * * *"
-    }
-  ]
-}
-```
-*Note: You would need to create a Next.js API route that proxies the request to the worker if using Vercel Cron, or just call the worker URL directly from an external scheduler.*
+## 4. Backend Worker Deployment (VPS - Recommended)
+The worker handles scraping and PDF exports. We use **Docker** to make this easy. The worker includes an **internal scheduler** so it runs scrapes automatically every midnight.
 
-## 6. Docker Deployment (Optional)
-If you prefer Docker, you can use the provided `Dockerfile` (if applicable) or build one using standard Node.js multi-stage builds.
+**Prerequisites:**
+-   A VPS (DigitalOcean, Hetzner, AWS EC2) with Docker installed.
+-   [Install Docker on Ubuntu](https://docs.docker.com/engine/install/ubuntu/)
 
-**Sample Dockerfile structure:**
-```dockerfile
-FROM node:18-alpine AS base
-# ... install dependencies ...
-# ... build apps ...
-CMD ["node", "apps/worker/dist/index.js"] # for worker container
-```
+**Steps:**
+
+1.  **Copy Files** to your VPS:
+    You need to copy the entire project (or clone it) to your VPS.
+    ```bash
+    git clone https://github.com/your/repo.git social-stats
+    cd social-stats
+    ```
+
+2.  **Create `.env` file**:
+    Create a `.env` file in the root directory (or pass vars directly to docker-compose).
+    ```bash
+    nano .env
+    ```
+    Content:
+    ```env
+    DATABASE_URL=postgres://...
+    SCRAPECREATORS_API_KEY=your_api_key
+    WORKER_SECRET=your_secret_key
+    ```
+    *(Note: The `docker-compose.prod.yml` expects these to be available in the shell or an env_file)*
+
+3.  **Deploy with Docker Compose**:
+    Run this command in the project root:
+    ```bash
+    # Pointing to the production compose file
+    docker compose -f docker-compose.prod.yml up -d --build
+    ```
+
+**That's it!**
+-   Worker is running on port `4000`.
+-   Scrapes run automatically every night at 00:00 UTC.
+-   You can manually scrape from the Frontend dashboard.
+
+**Updating the Worker:**
+When you push code changes:
+1.  `git pull`
+2.  `docker compose -f docker-compose.prod.yml up -d --build`
+
+---
+
+## 5. (Alternative) Worker Deployment (Railway/Render)
+If you don't want a VPS, you can use Railway or Render.
+
+**Railway:**
+1.  Connect GitHub repo.
+2.  Set Root Directory to `apps/worker`.
+3.  Set Build Command: `pnpm build --filter=worker`
+4.  Set Start Command: `node apps/worker/dist/index.js`
+5.  Add Variables (`DATABASE_URL`, `SCRAPECREATORS_API_KEY`, `WORKER_SECRET`, `PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true`).
+6.  **Important**: You might need a custom Dockerfile for Puppeteer support on these platforms because they don't always have Chrome installed by default. Using the VPS method above is safer for Puppeteer.
