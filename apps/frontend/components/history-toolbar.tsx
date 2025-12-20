@@ -11,6 +11,9 @@ import { exportHistoryPdf, exportHistoryCsv } from "@/app/actions/history";
 import { Platform } from "@repo/database";
 
 import { ScrapeProgress } from "@/components/scrape-progress";
+import { triggerScrape } from "@/app/actions/scrape";
+import { toast } from "sonner";
+import { Play } from "lucide-react";
 
 export function HistoryToolbar({ activeJobId }: { activeJobId?: string }) {
     const router = useRouter();
@@ -33,6 +36,7 @@ export function HistoryToolbar({ activeJobId }: { activeJobId?: string }) {
     const [status, setStatus] = useState(initialStatus);
     const [platform, setPlatform] = useState(initialPlatform);
     const [isExporting, setIsExporting] = useState(false);
+    const [isScraping, setIsScraping] = useState(false);
 
     const updateFilters = (newDate: DateRange | undefined, newStatus: string, newPlatform: string) => {
         const params = new URLSearchParams(searchParams.toString());
@@ -80,6 +84,28 @@ export function HistoryToolbar({ activeJobId }: { activeJobId?: string }) {
     const handlePlatformChange = (newPlatform: string) => {
         setPlatform(newPlatform);
         updateFilters(date, status, newPlatform);
+    };
+
+    const handleScrape = async () => {
+        if (activeJobId) {
+            toast.error("A scraping job is already in progress");
+            return;
+        }
+
+        setIsScraping(true);
+        try {
+            const result = await triggerScrape();
+            if (result.success) {
+                toast.success("Scraping job started");
+                router.refresh();
+            } else {
+                toast.error(result.error || "Failed to start scraping");
+            }
+        } catch (error) {
+            toast.error("An unexpected error occurred");
+        } finally {
+            setIsScraping(false);
+        }
     };
 
     const handleExportCsv = async () => {
@@ -175,6 +201,10 @@ export function HistoryToolbar({ activeJobId }: { activeJobId?: string }) {
                 </div>
 
                 <div className="flex gap-2">
+                    <Button onClick={handleScrape} disabled={isScraping || !!activeJobId}>
+                        {isScraping ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
+                        Scrape Now
+                    </Button>
                     <Button variant="outline" onClick={handleExportCsv} disabled={isExporting}>
                         {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileSpreadsheet className="mr-2 h-4 w-4" />}
                         CSV

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
@@ -18,11 +18,10 @@ export function ScrapeProgress({ jobId, onComplete }: ScrapeProgressProps) {
     const [progress, setProgress] = useState(0);
     const [status, setStatus] = useState<JobStatus>("PENDING");
     const [stats, setStats] = useState({ completed: 0, total: 0 });
+    const intervalRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
     useEffect(() => {
         if (!jobId) return;
-
-        let intervalId: NodeJS.Timeout;
 
         const checkStatus = async () => {
             const result = await getJobStatus(jobId);
@@ -43,7 +42,7 @@ export function ScrapeProgress({ jobId, onComplete }: ScrapeProgressProps) {
             setProgress(percentage);
 
             if (job.status === "COMPLETED" || job.status === "FAILED") {
-                clearInterval(intervalId);
+                clearInterval(intervalRef.current);
 
                 if (job.status === "COMPLETED") {
                     toast.success("Scraping completed successfully!");
@@ -60,9 +59,9 @@ export function ScrapeProgress({ jobId, onComplete }: ScrapeProgressProps) {
         checkStatus();
 
         // Then poll every 3 seconds
-        intervalId = setInterval(checkStatus, 3000);
+        intervalRef.current = setInterval(checkStatus, 3000);
 
-        return () => clearInterval(intervalId);
+        return () => clearInterval(intervalRef.current);
     }, [jobId, router, onComplete]);
 
     if (!jobId || status === "COMPLETED" || status === "FAILED") {

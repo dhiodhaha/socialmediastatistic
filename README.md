@@ -1,69 +1,66 @@
 # Social Media Statistics Dashboard
 
-A comprehensive dashboard for tracking and analyzing social media performance across Instagram, TikTok, and Twitter (X). Built with **Next.js**, **Prisma**, and **ScrapeCreators API**.
+A specialized analytics dashboard for tracking and visualizing social media performance across **Instagram**, **TikTok**, and **Twitter (X)**. Built with high-performance modern web technologies including **Next.js 14**, **Prisma**, and **Docker**.
 
-## Features
+![Dashboard Preview](https://placehold.co/1200x600?text=Dashboard+Preview)
 
--   **Multi-Platform Tracking**: Monitor followers, posts, and engagement for Instagram, TikTok, and Twitter Accounts.
--   **Automated Scraping**: Background worker service that periodically fetches fresh data using ScrapeCreators API.
--   **Interactive Dashboard**: Visualize account performance and recent activity.
--   **History & Export**: View detailed scraping history with date filtering and export data to CSV or PDF.
--   **Account Management**: Bulk import accounts via CSV or add them individually.
+## 🚀 Key Features
 
-## Tech Stack
+-   **Multi-Platform Analytics**: Unified view for followers, posts, and engagement metrics.
+-   **Automated Scraping Engine**: Integrated background worker that auto-refreshes data on the last day of every month.
+-   **Manual Trigger**: instant scrape triggering via the dashboard for real-time updates.
+-   **Historical Data**: comprehensive history log with "Time Travel" growth calculation.
+-   **Export Capabilities**: One-click export to **CSV** and **PDF** reports.
+-   **Bulk Management**: Easy mass-import of accounts via CSV upload.
 
--   **Frontend**: Next.js 14 (App Router), React, Tailwind CSS, Shadcn UI.
--   **Backend**: Server Actions, Prisma ORM (PostgreSQL), Express (Worker Service).
--   **Testing**: Vitest, React Testing Library.
--   **External APIs**: ScrapeCreators API.
+## 🛠 Tech Stack
 
-## Getting Started
+-   **Frontend**: Next.js 14 (App Router), TypeScript, Tailwind CSS, Shadcn UI, Recharts.
+-   **Backend**: Server Actions, Prisma ORM, PostgreSQL.
+-   **Worker Service**: Node.js, Puppeteer (for reliable scraping/PDFs), Express.
+-   **Infrastructure**: Docker, Docker Compose, GitHub Actions (CI).
+
+## 📖 Documentation
+
+-   **[Deployment Guide (TUTORIAL.md)](./TUTORIAL.md)**: Step-by-step instructions for deploying to Vercel and VPS.
+-   **[Database Schema](./packages/database/prisma/schema.prisma)**: Overview of the data model.
+
+## ⚡️ Quick Start (Local Development)
 
 ### Prerequisites
+-   Node.js 18+ & pnpm
+-   PostgreSQL Database
+-   Chromium (for local worker testing)
 
--   Node.js 18+
--   pnpm (recommended) or npm
--   PostgreSQL database
+### 1. Clone & Install
+```bash
+git clone <repository-url>
+cd socialmediastatistic
+pnpm install
+```
 
-### Installation
+### 2. Environment Setup
+Copy `.env.example` in both `apps/frontend` and `apps/worker` to `.env` and fill in:
+-   `DATABASE_URL`
+-   `SCRAPECREATORS_API_KEY` (Get one at [ScrapeCreators](https://scrapecreators.com))
+-   `WORKER_SECRET` (Generate a random string)
 
-1.  **Clone the repository:**
-    ```bash
-    git clone <repository-url>
-    cd socialmediastatistic
-    ```
+### 3. Database
+```bash
+pnpm db:generate
+pnpm db:push
+```
 
-2.  **Install dependencies:**
-    ```bash
-    pnpm install
-    ```
+### 4. Run Locally
+```bash
+pnpm dev
+```
+-   **Dashboard**: [http://localhost:3000](http://localhost:3000)
+-   **Worker API**: [http://localhost:4000](http://localhost:4000)
 
-3.  **Environment Setup:**
-    Create a `.env` file in `apps/frontend` and `apps/worker` (see `.env.example`).
+## 🧪 Testing
 
-    **Required Variables:**
-    -   `DATABASE_URL`: user configs
-    -   `NEXTAUTH_SECRET`: user configs
-    -   `SCRAPECREATORS_API_KEY`: API key from [ScrapeCreators](https://scrapecreators.com).
-    -   `WORKER_URL`: URL of the worker service (e.g., `http://localhost:4000`).
-    -   `WORKER_SECRET`: Shared secret for securing worker endpoints.
-
-4.  **Database Setup:**
-    ```bash
-    pnpm db:generate
-    pnpm db:push
-    ```
-
-5.  **Run Development Server:**
-    ```bash
-    pnpm dev
-    ```
-    -   Frontend: `http://localhost:3000`
-    -   Worker: `http://localhost:4000`
-
-## Testing
-
-Run the automated test suite:
+Run the automated test suite to verify frontend logic:
 ```bash
 pnpm test --filter=frontend
 ```

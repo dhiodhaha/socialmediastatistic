@@ -75,10 +75,11 @@ export async function getAccounts(page = 1, limit = 10, search = "") {
                 totalPages: Math.ceil(total / limit),
             },
         };
-    } catch (error: any) {
+    } catch (error) {
         logger.error({ error }, "Failed to fetch accounts");
         // If it's a connection error (common during build), return empty compatible response
-        if (error?.code === 'P1001' || error?.message?.includes('Can\'t reach database')) {
+        const err = error as { code?: string, message?: string };
+        if (err?.code === 'P1001' || err?.message?.includes('Can\'t reach database')) {
             logger.warn("Database unreachable, returning empty list (Build safe mode)");
             return {
                 success: true,

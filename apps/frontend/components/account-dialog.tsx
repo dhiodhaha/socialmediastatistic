@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import { createAccount, updateAccount } from "@/app/actions/account";
 import { accountSchema, type AccountInput } from "@/lib/schemas";
 
@@ -47,7 +46,7 @@ export function AccountDialog({
     const [error, setError] = useState("");
 
     const { register, handleSubmit, formState: { errors }, reset } = useForm<AccountInput>({
-        resolver: zodResolver(accountSchema) as any,
+        resolver: zodResolver(accountSchema),
         defaultValues: {
             username: defaultValues?.username || "",
             instagram: defaultValues?.instagram || "",
