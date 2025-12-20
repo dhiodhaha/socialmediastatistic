@@ -6,8 +6,8 @@ import healthRouter from "./routes/health";
 import scrapeRouter from "./routes/scrape";
 import exportRouter from "./routes/export";
 
-const app = express();
-const PORT = process.env.PORT || 3001;
+const app: express.Application = express();
+const PORT = process.env.PORT || 4000;
 
 // Middleware
 app.use(cors());

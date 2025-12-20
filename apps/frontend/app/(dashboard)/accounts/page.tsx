@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+
 import { getAccounts } from "@/app/actions";
 import { DataTable } from "@/components/ui/data-table";
 import { columns } from "./columns";
@@ -19,7 +19,7 @@ export default async function AccountsPage({
 
     // Fetch data via server action
     const result = await getAccounts(page, 10, search);
-    const data = result.success ? result.data : [];
+    const data = result.success && result.data ? result.data : [];
     const totalPages = result.pagination?.totalPages || 1;
 
     return (
@@ -41,7 +41,7 @@ export default async function AccountsPage({
 
             <Card className="hidden h-full flex-1 flex-col md:flex border-none shadow-none">
                 <CardContent className="p-0">
-                    <DataTable columns={columns} data={data as any} pageCount={totalPages} />
+                    <DataTable columns={columns} data={data} pageCount={totalPages} />
                 </CardContent>
             </Card>
         </div>

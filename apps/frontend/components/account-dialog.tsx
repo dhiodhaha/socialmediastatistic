@@ -90,7 +90,7 @@ export function AccountDialog({
             } else {
                 setError(result?.error || "An unknown error occurred");
             }
-        } catch (e) {
+        } catch {
             setError("Something went wrong");
         } finally {
             setLoading(false);

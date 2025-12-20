@@ -1,8 +1,8 @@
 
-import { logger } from "../lib/logger";
+import { ScrapingJob } from "@repo/database";
 
 interface ReportData {
-    filteredJobs: any[]; // ScrapingJob[] from database
+    filteredJobs: ScrapingJob[]; // ScrapingJob[] from database
     filters: {
         startDate?: string;
         endDate?: string;

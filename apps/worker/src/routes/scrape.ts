@@ -2,7 +2,7 @@ import { Router } from "express";
 import { logger } from "../lib/logger";
 import { runScrapingJob } from "../services/scraper";
 
-const router = Router();
+const router: Router = Router();
 
 /**
  * Trigger a scraping job.

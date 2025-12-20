@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma, Account } from "@repo/database";
+import { prisma, Prisma, JobStatus, Platform } from "@repo/database";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
@@ -37,13 +37,32 @@ export async function getAccounts(page = 1, limit = 10, search = "") {
                 skip,
                 take: limit,
                 orderBy: { createdAt: "desc" },
+                include: {
+                    snapshots: {
+                        orderBy: { scrapedAt: "desc" },
+                        take: 2 // We need latest 2 to calculate growth
+                    }
+                }
             }),
             prisma.account.count({ where }),
         ]);
 
+        // Calculate growth for each account
+        const accountsWithGrowth = accounts.map(acc => {
+            let growth: number | null = null;
+            if (acc.snapshots.length >= 2) {
+                const latest = acc.snapshots[0].followers;
+                const prev = acc.snapshots[1].followers;
+                if (prev > 0) {
+                    growth = ((latest - prev) / prev) * 100;
+                }
+            }
+            return { ...acc, growth };
+        });
+
         return {
             success: true,
-            data: accounts,
+            data: accountsWithGrowth,
             pagination: {
                 total,
                 page,
@@ -126,7 +145,7 @@ export async function deleteAccount(id: string) {
 export async function bulkCreateAccounts(accounts: AccountInput[]) {
     try {
         let successCount = 0;
-        let errors: string[] = [];
+        const errors: string[] = [];
 
         for (const acc of accounts) {
             const result = await createAccount(acc);
@@ -153,15 +172,16 @@ export interface HistoryFilters {
     startDate?: Date | null;
     endDate?: Date | null;
     status?: string | null;
+    platform?: Platform | null;
 }
 
 export async function getScrapingHistory(page = 1, limit = 10, filters?: HistoryFilters) {
     try {
         const skip = (page - 1) * limit;
 
-        const where: any = {};
+        const where: Prisma.ScrapingJobWhereInput = {};
         if (filters?.status && filters.status !== "ALL") {
-            where.status = filters.status;
+            where.status = filters.status as JobStatus;
         }
         if (filters?.startDate || filters?.endDate) {
             where.createdAt = {};
@@ -197,9 +217,9 @@ export async function getScrapingHistory(page = 1, limit = 10, filters?: History
 
 export async function getAllScrapingHistory(filters?: HistoryFilters) {
     try {
-        const where: any = {};
+        const where: Prisma.ScrapingJobWhereInput = {};
         if (filters?.status && filters.status !== "ALL") {
-            where.status = filters.status;
+            where.status = filters.status as JobStatus;
         }
         if (filters?.startDate || filters?.endDate) {
             where.createdAt = {};
@@ -255,6 +275,54 @@ export async function exportHistoryPdf(filters: HistoryFilters) {
     } catch (error) {
         console.error("Export PDF failed:", error);
         return { success: false, error: "Failed to export PDF" };
+    }
+}
+
+export async function exportHistoryCsv(filters: HistoryFilters) {
+    try {
+        const where: Prisma.ScrapingJobWhereInput = {};
+        if (filters?.status && filters.status !== "ALL") {
+            where.status = filters.status as JobStatus;
+        }
+        if (filters?.startDate || filters?.endDate) {
+            where.createdAt = {};
+            if (filters.startDate) where.createdAt.gte = filters.startDate;
+            if (filters.endDate) where.createdAt.lte = filters.endDate;
+        }
+        if (filters?.platform) {
+            where.snapshots = { some: { platform: filters.platform } };
+        }
+
+        const jobs = await prisma.scrapingJob.findMany({
+            where,
+            orderBy: { createdAt: "desc" },
+        });
+
+        if (!jobs.length) {
+            return { success: false, error: "No data to export" };
+        }
+
+        // Generate CSV content
+        const headers = ["Job ID", "Date", "Status", "Total Accounts", "Completed", "Failed"];
+        const rows = jobs.map(job => [
+            job.id,
+            job.createdAt.toISOString(),
+            job.status,
+            job.totalAccounts,
+            job.completedCount,
+            job.failedCount
+        ]);
+
+        const csvContent = [
+            headers.join(","),
+            ...rows.map(row => row.join(","))
+        ].join("\n");
+
+        const base64 = Buffer.from(csvContent).toString('base64');
+        return { success: true, data: base64 };
+    } catch (error) {
+        console.error("Export CSV failed:", error);
+        return { success: false, error: "Failed to export CSV" };
     }
 }
 

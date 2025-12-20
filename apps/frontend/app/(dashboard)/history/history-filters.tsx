@@ -1,8 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
-import { Input } from "@/components/ui/input";
+import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { DateRange } from "react-day-picker";
@@ -34,22 +33,7 @@ export function HistoryFilters() {
 
     const [date, setDate] = useState<DateRange | undefined>(initialDateRange);
 
-    // Create a query string generator
-    const createQueryString = useCallback(
-        (name: string, value: string) => {
-            const params = new URLSearchParams(searchParams.toString());
-            params.set("page", "1");
 
-            if (value && value !== "ALL") {
-                params.set(name, value);
-            } else {
-                params.delete(name);
-            }
-
-            return params.toString();
-        },
-        [searchParams]
-    );
 
     const updateFilterParams = (newParams: Record<string, string | null>) => {
         const params = new URLSearchParams(searchParams.toString());

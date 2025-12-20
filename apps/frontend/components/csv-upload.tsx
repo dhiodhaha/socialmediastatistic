@@ -30,10 +30,16 @@ export function CsvUpload() {
 
                     // Map CSV rows to AccountInput
                     // Expected headers: name, tiktok, instagram, x
-                    for (const row of results.data as any[]) {
+                    interface CsvRow {
+                        name?: string; Name?: string;
+                        instagram?: string; Instagram?: string;
+                        tiktok?: string; TikTok?: string;
+                        x?: string; X?: string; twitter?: string; Twitter?: string;
+                    }
+                    for (const row of results.data as CsvRow[]) {
                         if (!row.name && !row.Name) continue; // Name is required
 
-                        const clean = (val: string) => {
+                        const clean = (val?: string) => {
                             if (!val) return null;
                             const lower = val.toLowerCase().trim();
                             if (lower === 'n/a' || lower === 'na' || lower === '-') return null;
@@ -69,6 +75,7 @@ export function CsvUpload() {
                     }
 
                 } catch (error) {
+                    console.error(error);
                     setStatus({ type: 'error', message: "Failed to parse or upload CSV." });
                 } finally {
                     setLoading(false);

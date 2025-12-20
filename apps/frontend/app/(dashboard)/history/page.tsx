@@ -3,11 +3,12 @@ import { columns } from "./columns";
 import { HistoryToolbar } from "@/components/history-toolbar";
 import { DataTable } from "@/components/ui/data-table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Platform } from "@repo/database";
 
 export default async function HistoryPage({
     searchParams,
 }: {
-    searchParams: Promise<{ page?: string; startDate?: string; endDate?: string; status?: string }>;
+    searchParams: Promise<{ page?: string; startDate?: string; endDate?: string; status?: string; platform?: string }>;
 }) {
     // Await searchParams as required in Next.js 15+ (and likely 16)
     const params = await searchParams;
@@ -18,6 +19,7 @@ export default async function HistoryPage({
         startDate: params?.startDate ? new Date(params.startDate) : null,
         endDate: params?.endDate ? new Date(params.endDate) : null,
         status: params?.status || null,
+        platform: (params?.platform as Platform) || null,
     };
 
     const { data: jobs, pagination } = await getScrapingHistory(page, 10, filters);

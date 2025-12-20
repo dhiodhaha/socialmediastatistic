@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { bulkCreateAccounts, getAllScrapingHistory, triggerScrape } from './actions';
+import { bulkCreateAccounts, getAllScrapingHistory } from './actions';
+import { Account, ScrapingJob } from '@repo/database';
 import { prismaMock, resetMocks } from '../test/utils';
 
 // We need to mock "revalidatePath" since it's a Next.js server utility
@@ -23,14 +24,14 @@ describe('Server Actions', () => {
             // Mock findUnique to simulate 'duplicateUser' exists
             prismaMock.account.findUnique
                 .mockResolvedValueOnce(null) // for validUser (not found)
-                .mockResolvedValueOnce({ id: 'existing-id', username: 'duplicateUser' } as any); // for duplicateUser
+                .mockResolvedValueOnce({ id: 'existing-id', username: 'duplicateUser' } as unknown as Account); // for duplicateUser
 
             // Mock create for the valid user
             prismaMock.account.create.mockResolvedValue({
                 id: 'new-id',
                 username: 'validUser',
                 instagram: 'foo'
-            } as any);
+            } as unknown as Account);
 
             const result = await bulkCreateAccounts(inputAccounts);
 
@@ -53,7 +54,7 @@ describe('Server Actions', () => {
                 { id: '1', status: 'COMPLETED' },
                 { id: '2', status: 'FAILED' },
             ];
-            prismaMock.scrapingJob.findMany.mockResolvedValue(mockJobs as any);
+            prismaMock.scrapingJob.findMany.mockResolvedValue(mockJobs as unknown as ScrapingJob[]);
 
             const result = await getAllScrapingHistory();
 

@@ -1,10 +1,10 @@
 import { Router } from "express";
 import puppeteer from "puppeteer";
 import { logger } from "../lib/logger";
-import { prisma } from "@repo/database";
+import { prisma, Prisma } from "@repo/database";
 import { generateReportHtml } from "../services/template";
 
-const router = Router();
+const router: Router = Router();
 
 /**
  * Generate PDF Export
@@ -17,7 +17,7 @@ router.post("/pdf", async (req, res) => {
         logger.info({ filters: req.body }, "PDF export requested");
 
         // Build prisma query
-        const where: any = {};
+        const where: Prisma.ScrapingJobWhereInput = {};
         if (status && status !== "ALL") where.status = status;
         if (startDate || endDate) {
             where.createdAt = {};

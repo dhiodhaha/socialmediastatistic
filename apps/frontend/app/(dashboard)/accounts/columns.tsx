@@ -26,6 +26,7 @@ export type Account = {
     isActive: boolean;
     createdAt: Date;
     updatedAt: Date;
+    growth?: number | null;
 };
 
 const HandleLink = ({ handle, urlPrefix }: { handle: string | null, urlPrefix: string }) => {
@@ -43,6 +44,23 @@ export const columns: ColumnDef<Account>[] = [
         accessorKey: "username",
         header: "Name",
         cell: ({ row }) => <span className="font-medium">{row.getValue("username")}</span>,
+    },
+    {
+        accessorKey: "growth",
+        header: "Growth",
+        cell: ({ row }) => {
+            const growth = row.original.growth;
+            if (growth === null || growth === undefined) return <span className="text-muted-foreground text-xs">-</span>;
+
+            const isPositive = growth > 0;
+            const isNegative = growth < 0;
+
+            return (
+                <span className={`text-xs font-semibold ${isPositive ? "text-green-600" : isNegative ? "text-red-500" : "text-gray-500"}`}>
+                    {isPositive ? "+" : ""}{growth.toFixed(1)}%
+                </span>
+            );
+        }
     },
     {
         accessorKey: "instagram",
@@ -73,50 +91,51 @@ export const columns: ColumnDef<Account>[] = [
     },
     {
         id: "actions",
-        cell: ({ row }) => {
-            const account = row.original;
-            const [isEditOpen, setIsEditOpen] = useState(false);
-
-            const handleDelete = async () => {
-                if (confirm(`Are you sure you want to delete ${account.username}?`)) {
-                    await deleteAccount(account.id);
-                }
-            };
-
-            return (
-                <>
-                    <AccountDialog
-                        open={isEditOpen}
-                        onOpenChange={setIsEditOpen}
-                        mode="edit"
-                        defaultValues={{
-                            username: account.username,
-                            instagram: account.instagram || "",
-                            tiktok: account.tiktok || "",
-                            twitter: account.twitter || "",
-                            isActive: account.isActive
-                        }}
-                        accountId={account.id}
-                    />
-
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                                <span className="sr-only">Open menu</span>
-                                <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => setIsEditOpen(true)}>Edit Details</DropdownMenuItem>
-                            <DropdownMenuItem onClick={handleDelete} className="text-red-600 focus:text-red-600">
-                                Delete Account
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                </>
-            );
-        },
+        cell: ({ row }) => <AccountActionsCell account={row.original} />,
     },
 ];
+
+function AccountActionsCell({ account }: { account: Account }) {
+    const [isEditOpen, setIsEditOpen] = useState(false);
+
+    const handleDelete = async () => {
+        if (confirm(`Are you sure you want to delete ${account.username}?`)) {
+            await deleteAccount(account.id);
+        }
+    };
+
+    return (
+        <>
+            <AccountDialog
+                open={isEditOpen}
+                onOpenChange={setIsEditOpen}
+                mode="edit"
+                defaultValues={{
+                    username: account.username,
+                    instagram: account.instagram || "",
+                    tiktok: account.tiktok || "",
+                    twitter: account.twitter || "",
+                    isActive: account.isActive
+                }}
+                accountId={account.id}
+            />
+
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="h-8 w-8 p-0">
+                        <span className="sr-only">Open menu</span>
+                        <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => setIsEditOpen(true)}>Edit Details</DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleDelete} className="text-red-600 focus:text-red-600">
+                        Delete Account
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+        </>
+    );
+}
