@@ -1,6 +1,7 @@
 import { prisma } from "@repo/database";
 import { StatsCards } from "@/components/stats-cards";
 import { RecentActivity } from "@/components/recent-activity";
+import { ScrapeButton } from "@/components/scrape-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 async function getStats() {
@@ -65,11 +66,14 @@ export default async function DashboardPage() {
 
     return (
         <div className="space-y-6">
-            <div>
-                <h1 className="text-2xl font-bold">Dashboard Overview</h1>
-                <p className="text-muted-foreground mt-1">
-                    Monitor your social media accounts performance
-                </p>
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold">Dashboard Overview</h1>
+                    <p className="text-muted-foreground mt-1">
+                        Monitor your social media accounts performance
+                    </p>
+                </div>
+                <ScrapeButton />
             </div>
 
             <StatsCards stats={stats} />
@@ -100,10 +104,10 @@ export default async function DashboardPage() {
                                             <div className="h-2 bg-muted rounded-full overflow-hidden">
                                                 <div
                                                     className={`h-full rounded-full ${{
-                                                            INSTAGRAM: "bg-pink-500",
-                                                            TIKTOK: "bg-slate-900 dark:bg-slate-50",
-                                                            TWITTER: "bg-blue-500"
-                                                        }[item.platform] || "bg-primary"
+                                                        INSTAGRAM: "bg-pink-500",
+                                                        TIKTOK: "bg-slate-900 dark:bg-slate-50",
+                                                        TWITTER: "bg-blue-500"
+                                                    }[item.platform] || "bg-primary"
                                                         }`}
                                                     style={{
                                                         width: `${(item.count / stats.totalAccounts) * 100}%`,

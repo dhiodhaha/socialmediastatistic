@@ -15,7 +15,7 @@ const navItems = [
         ),
     },
     {
-        href: "/dashboard/accounts",
+        href: "/accounts",
         label: "Accounts",
         icon: (
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -24,7 +24,7 @@ const navItems = [
         ),
     },
     {
-        href: "/dashboard/history",
+        href: "/history",
         label: "History",
         icon: (
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -33,7 +33,7 @@ const navItems = [
         ),
     },
     {
-        href: "/dashboard/settings",
+        href: "/settings",
         label: "Settings",
         icon: (
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
