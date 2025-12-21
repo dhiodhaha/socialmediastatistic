@@ -1,37 +1,66 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Social Media Statistics Dashboard
 
-## Getting Started
+A specialized analytics dashboard for tracking and visualizing social media performance across **Instagram**, **TikTok**, and **Twitter (X)**. Built with high-performance modern web technologies including **Next.js 14**, **Prisma**, and **Docker**.
 
-First, run the development server:
+![Dashboard Preview](https://placehold.co/1200x600?text=Dashboard+Preview)
 
+## 🚀 Key Features
+
+-   **Multi-Platform Analytics**: Unified view for followers, posts, and engagement metrics.
+-   **Automated Scraping Engine**: Integrated background worker that auto-refreshes data on the last day of every month.
+-   **Manual Trigger**: instant scrape triggering via the dashboard for real-time updates.
+-   **Historical Data**: comprehensive history log with "Time Travel" growth calculation.
+-   **Export Capabilities**: One-click export to **CSV** and **PDF** reports.
+-   **Bulk Management**: Easy mass-import of accounts via CSV upload.
+
+## 🛠 Tech Stack
+
+-   **Frontend**: Next.js 14 (App Router), TypeScript, Tailwind CSS, Shadcn UI, Recharts.
+-   **Backend**: Server Actions, Prisma ORM, PostgreSQL.
+-   **Worker Service**: Node.js, Puppeteer (for reliable scraping/PDFs), Express.
+-   **Infrastructure**: Docker, Docker Compose, GitHub Actions (CI).
+
+## 📖 Documentation
+
+-   **[Deployment Guide (TUTORIAL.md)](./TUTORIAL.md)**: Step-by-step instructions for deploying to Vercel and VPS.
+-   **[Database Schema](./packages/database/prisma/schema.prisma)**: Overview of the data model.
+
+## ⚡️ Quick Start (Local Development)
+
+### Prerequisites
+-   Node.js 18+ & pnpm
+-   PostgreSQL Database
+-   Chromium (for local worker testing)
+
+### 1. Clone & Install
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone <repository-url>
+cd socialmediastatistic
+pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Environment Setup
+Copy `.env.example` in both `apps/frontend` and `apps/worker` to `.env` and fill in:
+-   `DATABASE_URL`
+-   `SCRAPECREATORS_API_KEY` (Get one at [ScrapeCreators](https://scrapecreators.com))
+-   `WORKER_SECRET` (Generate a random string)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 3. Database
+```bash
+pnpm db:generate
+pnpm db:push
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 4. Run Locally
+```bash
+pnpm dev
+```
+-   **Dashboard**: [http://localhost:3000](http://localhost:3000)
+-   **Worker API**: [http://localhost:4000](http://localhost:4000)
 
-## Learn More
+## 🧪 Testing
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-# socialmediastatistic
+Run the automated test suite to verify frontend logic:
+```bash
+pnpm test --filter=frontend
+```

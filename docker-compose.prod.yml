@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  worker:
+    build:
+      context: .
+      dockerfile: apps/worker/Dockerfile
+    restart: always
+    environment:
+      - PORT=4000
+      - DATABASE_URL=${DATABASE_URL}
+      - SCRAPECREATORS_API_KEY=${SCRAPECREATORS_API_KEY}
+      - WORKER_SECRET=${WORKER_SECRET}
+      # Puppeteer envs
+      - PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+      - PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+    ports:
+      - "4000:4000"
