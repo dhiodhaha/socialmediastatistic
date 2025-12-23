@@ -17,9 +17,13 @@ interface ScrapeTask {
 
 interface ScrapeCreatorsResponse {
     // Instagram
-    follower_count?: number;
-    following_count?: number;
-    media_count?: number;
+    data?: {
+        user?: {
+            edge_followed_by?: { count: number };
+            edge_owner_to_timeline_media?: { count: number };
+            edge_follow?: { count: number };
+        };
+    };
 
     // TikTok
     stats?: {
@@ -30,15 +34,12 @@ interface ScrapeCreatorsResponse {
     };
 
     // Twitter
-    data?: {
-        user?: {
-            legacy?: {
-                followers_count?: number;
-                friends_count?: number;
-                statuses_count?: number;
-            }
-        }
-    }
+    legacy?: {
+        followers_count?: number;
+        friends_count?: number;
+        statuses_count?: number;
+    };
+    id?: string; // For Twitter ID check or generic
 }
 
 /**
@@ -70,10 +71,7 @@ export async function runScrapingJob(): Promise<void> {
     const job = await prisma.scrapingJob.create({
         data: {
             status: "RUNNING",
-            totalAccounts: accounts.length, // Keeping this as accounts count for now, or should be tasks.length? 
-            // The schema likely expects "totalAccounts" but maybe "totalTasks" is more accurate. 
-            // Let's stick to totalAccounts for consistency with the field name, 
-            // but we process tasks.
+            totalAccounts: accounts.length,
             startedAt: new Date(),
         },
     });
@@ -104,12 +102,10 @@ export async function runScrapingJob(): Promise<void> {
         // Save results to database
         for (const result of results) {
             if (result.success && result.data) {
-                // Ensure platform is saved if included in schema.
-                // Assuming Snapshot model has 'platform' field based on errors.
                 await prisma.snapshot.create({
                     data: {
                         accountId: result.accountId!,
-                        platform: result.platform, // Added this field
+                        platform: result.platform,
                         followers: result.data.followers,
                         following: result.data.following,
                         posts: result.data.posts,
@@ -143,9 +139,6 @@ export async function runScrapingJob(): Promise<void> {
     }
 
     // Mark job as completed
-    // Note: completedCount is now based on TASKS, not ACCOUNTS.
-    // If we want to strictly track accounts, we should deduplicate.
-    // But for now, we report task completion.
     const finalStatus = failedCount === tasks.length ? "FAILED" : "COMPLETED";
 
     await prisma.scrapingJob.update({
@@ -217,9 +210,7 @@ async function processBatchWithConcurrency(
         }
     }
 
-    // Wait for remaining promises
     await Promise.all(executing);
-
     return results;
 }
 
@@ -267,56 +258,90 @@ async function scrapeAccount(
         throw new Error("SCRAPECREATORS_API_KEY not configured");
     }
 
+    // Sanitize handle: remove leading @ and whitespace
+    const cleanHandle = handle.trim().replace(/^@/, "");
+    const encodedHandle = encodeURIComponent(cleanHandle);
+
     // ScrapeCreatorsAPI endpoints by platform
     const endpoints: Record<Platform, string> = {
-        INSTAGRAM: `https://api.scrapecreators.com/v1/instagram/basic-profile?username=${handle}`,
-        TIKTOK: `https://api.scrapecreators.com/v1/tiktok/profile?username=${handle}`,
-        TWITTER: `https://api.scrapecreators.com/v1/twitter/profile?username=${handle}`,
+        INSTAGRAM: `https://api.scrapecreators.com/v1/instagram/profile?handle=${encodedHandle}`,
+        TIKTOK: `https://api.scrapecreators.com/v1/tiktok/profile?handle=${encodedHandle}`,
+        TWITTER: `https://api.scrapecreators.com/v1/twitter/profile?handle=${encodedHandle}`,
     };
 
-    const response = await fetch(endpoints[platform], {
-        headers: {
-            "x-api-key": apiKey,
-            "Content-Type": "application/json",
-        },
-    });
+    const url = endpoints[platform];
+    logger.info({ platform, handle, cleanHandle, url }, "Scraping account...");
 
-    if (!response.ok) {
-        throw new Error(`API error: ${response.status} ${response.statusText}`);
+    try {
+        const response = await fetch(url, {
+            headers: {
+                "x-api-key": apiKey,
+                "Content-Type": "application/json",
+            },
+        });
+
+        if (!response.ok) {
+            const text = await response.text();
+            logger.error({ platform, handle, status: response.status, body: text }, "Scrape API Error");
+            throw new Error(`API error: ${response.status} ${response.statusText} - ${text.substring(0, 100)}`);
+        }
+
+        // Use specific type to avoid 'unknown' error
+        const data = await response.json() as ScrapeCreatorsResponse;
+
+        // Log successful raw data for debugging if needed (using debug level)
+        // logger.debug({ platform, handle, data }, "Scrape raw data received");
+
+        const stats = {
+            followers: 0,
+            following: 0,
+            posts: 0,
+            engagement: 0,
+        };
+
+        // Specific parsing per platform based on docs
+        if (platform === "INSTAGRAM") {
+            const user = data.data?.user;
+            if (!user) {
+                logger.error({ platform, handle, data }, "Instagram user structure missing");
+                throw new Error("Instagram user data not found");
+            }
+            stats.followers = user.edge_followed_by?.count || 0;
+            stats.following = user.edge_follow?.count || 0;
+            stats.posts = user.edge_owner_to_timeline_media?.count || 0;
+        } else if (platform === "TIKTOK") {
+            const s = data.stats;
+            if (!s) {
+                logger.error({ platform, handle, data }, "TikTok stats structure missing");
+                throw new Error("TikTok stats not found");
+            }
+            stats.followers = s.followerCount || 0;
+            stats.following = s.followingCount || 0;
+            stats.posts = s.videoCount || 0;
+        } else if (platform === "TWITTER") {
+            const legacy = data.legacy;
+            if (!legacy) {
+                logger.error({ platform, handle, data }, "Twitter legacy structure missing");
+                throw new Error("Twitter legacy data not found");
+            }
+            stats.followers = legacy.followers_count || 0;
+            stats.following = legacy.friends_count || 0;
+            stats.posts = legacy.statuses_count || 0;
+        }
+
+        return {
+            success: true,
+            platform,
+            handle,
+            data: stats,
+        };
+    } catch (e) {
+        // Enhance error catching to log if it wasn't caught above
+        if (e instanceof Error) {
+            // logger.error({ platform, handle, error: e.message }, "ScrapeAccount caught error");
+        }
+        throw e;
     }
-
-    // Use specific type to avoid 'unknown' error
-    const data = await response.json() as ScrapeCreatorsResponse;
-    const stats = {
-        followers: 0,
-        following: 0,
-        posts: 0,
-        engagement: 0,
-    };
-
-    // Specific parsing per platform based on docs
-    if (platform === "INSTAGRAM") {
-        stats.followers = data.follower_count || 0;
-        stats.following = data.following_count || 0;
-        stats.posts = data.media_count || 0;
-    } else if (platform === "TIKTOK") {
-        const s = data.stats || {};
-        stats.followers = s.followerCount || 0;
-        stats.following = s.followingCount || 0;
-        stats.posts = s.videoCount || 0;
-    } else if (platform === "TWITTER") {
-        const legacy = data.data?.user?.legacy || {};
-        stats.followers = legacy.followers_count || 0;
-        stats.following = legacy.friends_count || 0;
-        stats.posts = legacy.statuses_count || 0;
-    }
-
-    return {
-        success: true,
-        platform,
-        handle,
-        data: stats,
-    };
 }
 
 /**

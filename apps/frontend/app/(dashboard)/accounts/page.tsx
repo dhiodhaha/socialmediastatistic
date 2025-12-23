@@ -26,7 +26,6 @@ export default async function AccountsPage({
     if (!process.env.DATABASE_URL) {
         console.warn("Skipping DB fetch in AccountsPage (Build mode)");
     } else {
-        /*
         try {
             const result = await getAccounts(page, 10, search);
             if (result?.success && result?.data) {
@@ -36,7 +35,6 @@ export default async function AccountsPage({
         } catch (err) {
             // Silently fail during build/rendering errors to ensure build passes
         }
-        */
 
         return (
             <div className="flex-1 space-y-4 p-8 pt-6">

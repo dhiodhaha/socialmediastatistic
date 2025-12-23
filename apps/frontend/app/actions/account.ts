@@ -7,8 +7,7 @@ import { ZodError } from "zod";
 import { accountSchema, type AccountInput } from "@/lib/schemas";
 import { logger } from "@/lib/logger";
 
-export { accountSchema };
-export type { AccountInput };
+
 
 export async function getAccounts(page = 1, limit = 10, search = "") {
     // Build time safety check

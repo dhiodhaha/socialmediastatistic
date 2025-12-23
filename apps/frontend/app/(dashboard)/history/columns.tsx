@@ -60,7 +60,7 @@ export const columns: ColumnDef<ScrapingJob>[] = [
         cell: ({ row }) => {
             const val = row.getValue("startedAt");
             if (!val) return <span className="text-muted-foreground">-</span>;
-            return new Date(val as string).toLocaleString();
+            return <span suppressHydrationWarning>{new Date(val as string).toLocaleString()}</span>;
         },
     },
     {
@@ -69,7 +69,7 @@ export const columns: ColumnDef<ScrapingJob>[] = [
         cell: ({ row }) => {
             const val = row.getValue("completedAt");
             if (!val) return <span className="text-muted-foreground">-</span>;
-            return new Date(val as string).toLocaleString();
+            return <span suppressHydrationWarning>{new Date(val as string).toLocaleString()}</span>;
         },
     },
     {
