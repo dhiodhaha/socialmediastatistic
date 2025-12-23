@@ -55,49 +55,15 @@ export async function getComparisonData(jobId1: string, jobId2: string): Promise
             const s1 = snapshot1 || { followers: 0, posts: 0, likes: 0 };
             const s2 = snapshot2 || { followers: 0, posts: 0, likes: 0 };
 
-            // Calculate deltas
-            // Assuming jobId1 is "OLD" and jobId2 is "NEW".
-            // If the user selects them in reverse, the frontend might need to swap, 
-            // or we expect the caller to pass them in order (old, new).
-            // Let's assume order: (oldJobId, newJobId)
-
-            const followersDiff = (s2.followers || 0) - (s1.followers || 0);
-            const postsDiff = (s2.posts || 0) - (s1.posts || 0);
-
-            // Percentage calculation
-            // If old is 0, pct is 100% if new > 0, else 0? Or N/A.
-            // Be careful with division by zero.
-            let followersPct = 0;
-            if (s1.followers && s1.followers > 0) {
-                followersPct = (followersDiff / s1.followers) * 100;
-            } else if (s2.followers && s2.followers > 0) {
-                followersPct = 100; // New growth
-            }
-
-            let postsPct = 0;
-            if (s1.posts && s1.posts > 0) {
-                postsPct = (postsDiff / s1.posts) * 100;
-            } else if (s2.posts && s2.posts > 0) {
-                postsPct = 100;
-            }
-
             let handle = "";
             if (platform === "INSTAGRAM") handle = account.instagram || "";
             else if (platform === "TIKTOK") handle = account.tiktok || "";
             else if (platform === "TWITTER") handle = account.twitter || "";
 
-            // Likes calculation (only for TikTok)
-            const likesDiff = ((s2 as any).likes || 0) - ((s1 as any).likes || 0);
-            let likesPct = 0;
-            if ((s1 as any).likes && (s1 as any).likes > 0) {
-                likesPct = (likesDiff / (s1 as any).likes) * 100;
-            } else if ((s2 as any).likes && (s2 as any).likes > 0) {
-                likesPct = 100;
-            }
-
+            // Calculate deltas using helper
             rows.push({
                 accountId: account.id,
-                accountName: account.username, // Nama Unit
+                accountName: account.username,
                 handle,
                 platform,
                 oldStats: {
@@ -111,18 +77,31 @@ export async function getComparisonData(jobId1: string, jobId2: string): Promise
                     likes: s2.likes || 0,
                 },
                 delta: {
-                    followersVal: followersDiff,
-                    followersPct,
-                    postsVal: postsDiff,
-                    postsPct,
-                    likesVal: likesDiff,
-                    likesPct,
+                    ...calculateGrowth(s1.followers || 0, s2.followers || 0, "followers"),
+                    ...calculateGrowth(s1.posts || 0, s2.posts || 0, "posts"),
+                    ...calculateGrowth((s1 as any).likes || 0, (s2 as any).likes || 0, "likes"),
                 },
             });
         }
     }
 
     return rows;
+}
+
+function calculateGrowth(oldVal: number, newVal: number, key: "followers" | "posts" | "likes"): any {
+    const valDiff = newVal - oldVal;
+    let pct = 0;
+
+    if (oldVal > 0) {
+        pct = (valDiff / oldVal) * 100;
+    } else if (newVal > 0) {
+        pct = 100;
+    }
+
+    return {
+        [`${key}Val`]: valDiff,
+        [`${key}Pct`]: pct,
+    };
 }
 
 /**
