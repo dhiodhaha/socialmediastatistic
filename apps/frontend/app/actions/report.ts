@@ -79,7 +79,7 @@ export async function getComparisonData(jobId1: string, jobId2: string): Promise
                 delta: {
                     ...calculateGrowth(s1.followers || 0, s2.followers || 0, "followers"),
                     ...calculateGrowth(s1.posts || 0, s2.posts || 0, "posts"),
-                    ...calculateGrowth((s1 as any).likes || 0, (s2 as any).likes || 0, "likes"),
+                    ...calculateGrowth(s1.likes || 0, s2.likes || 0, "likes"),
                 },
             });
         }
