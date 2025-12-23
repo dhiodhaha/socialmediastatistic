@@ -17,15 +17,17 @@ model User {
 }
 
 model Account {
-  id        String     @id @default(cuid())
-  username  String     @unique // Common display name / reference
-  instagram String? // Handle
-  tiktok    String? // Handle
-  twitter   String? // Handle
-  isActive  Boolean    @default(true)
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  snapshots Snapshot[]
+  id         String     @id @default(cuid())
+  username   String     @unique // Common display name / reference
+  instagram  String? // Handle
+  tiktok     String? // Handle
+  twitter    String? // Handle
+  isActive   Boolean    @default(true)
+  categoryId String?
+  category   Category?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  snapshots  Snapshot[]
 }
 
 model Snapshot {
@@ -60,8 +62,21 @@ model ScrapingJob {
   createdAt      DateTime   @default(now())
   snapshots      Snapshot[]
 
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
   @@index([status])
   @@index([createdAt])
+  @@index([categoryId])
+}
+
+model Category {
+  id        String        @id @default(cuid())
+  name      String        @unique
+  accounts  Account[]
+  jobs      ScrapingJob[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
 }
 
 enum Platform {
