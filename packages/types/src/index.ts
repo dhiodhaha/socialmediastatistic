@@ -15,6 +15,7 @@ export interface ScrapeResult {
         following?: number;
         posts?: number;
         engagement?: number;
+        likes?: number;
     };
     error?: string;
 }

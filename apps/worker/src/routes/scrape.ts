@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { logger } from "../lib/logger";
-import { runScrapingJob } from "../services/scraper";
+import { runScrapingJob, cancelJob } from "../services/scraper";
 
 const router: Router = Router();
 
@@ -16,15 +16,13 @@ router.post("/", async (req, res) => {
     try {
         logger.info("Scraping job triggered");
 
-        // Start the scraping job in the background
-        // We don't await here to return immediately
-        runScrapingJob().catch((error) => {
-            logger.error({ error }, "Scraping job failed");
-        });
+        // runScrapingJob now returns jobId immediately, processing happens async
+        const jobId = await runScrapingJob();
 
         res.json({
             success: true,
             message: "Scraping job started",
+            jobId,
             timestamp: new Date().toISOString(),
         });
     } catch (error) {
@@ -32,6 +30,30 @@ router.post("/", async (req, res) => {
         res.status(500).json({
             success: false,
             error: "Failed to start scraping job",
+        });
+    }
+});
+
+/**
+ * Stop a running scraping job.
+ * POST /scrape/stop/:jobId
+ */
+router.post("/stop/:jobId", async (req, res) => {
+    try {
+        const { jobId } = req.params;
+        logger.info({ jobId }, "Stop job requested");
+
+        await cancelJob(jobId);
+
+        res.json({
+            success: true,
+            message: `Job ${jobId} marked for cancellation. It will stop after the current batch completes.`,
+        });
+    } catch (error) {
+        logger.error({ error }, "Failed to stop scraping job");
+        res.status(500).json({
+            success: false,
+            error: "Failed to stop scraping job",
         });
     }
 });
@@ -57,3 +79,4 @@ router.get("/status", async (_req, res) => {
 });
 
 export default router;
+

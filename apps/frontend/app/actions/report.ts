@@ -8,13 +8,15 @@ export interface ComparisonRow {
     accountName: string; // The "Nama Unit" (username in db)
     handle: string; // The specific platform handle
     platform: Platform;
-    oldStats: { followers: number; posts: number };
-    newStats: { followers: number; posts: number };
+    oldStats: { followers: number; posts: number; likes?: number };
+    newStats: { followers: number; posts: number; likes?: number };
     delta: {
         followersVal: number;
-        followersPct: number; // Percentage string e.g. "1.54" or number
+        followersPct: number;
         postsVal: number;
         postsPct: number;
+        likesVal?: number;
+        likesPct?: number;
     };
 }
 
@@ -50,8 +52,8 @@ export async function getComparisonData(jobId1: string, jobId2: string): Promise
             const snapshot2 = account.snapshots.find(s => s.jobId === jobId2 && s.platform === platform);
 
             // Use 0 if snapshot missing (e.g. account didn't exist then or failed)
-            const s1 = snapshot1 || { followers: 0, posts: 0 };
-            const s2 = snapshot2 || { followers: 0, posts: 0 };
+            const s1 = snapshot1 || { followers: 0, posts: 0, likes: 0 };
+            const s2 = snapshot2 || { followers: 0, posts: 0, likes: 0 };
 
             // Calculate deltas
             // Assuming jobId1 is "OLD" and jobId2 is "NEW".
@@ -84,6 +86,15 @@ export async function getComparisonData(jobId1: string, jobId2: string): Promise
             else if (platform === "TIKTOK") handle = account.tiktok || "";
             else if (platform === "TWITTER") handle = account.twitter || "";
 
+            // Likes calculation (only for TikTok)
+            const likesDiff = ((s2 as any).likes || 0) - ((s1 as any).likes || 0);
+            let likesPct = 0;
+            if ((s1 as any).likes && (s1 as any).likes > 0) {
+                likesPct = (likesDiff / (s1 as any).likes) * 100;
+            } else if ((s2 as any).likes && (s2 as any).likes > 0) {
+                likesPct = 100;
+            }
+
             rows.push({
                 accountId: account.id,
                 accountName: account.username, // Nama Unit
@@ -92,16 +103,20 @@ export async function getComparisonData(jobId1: string, jobId2: string): Promise
                 oldStats: {
                     followers: s1.followers || 0,
                     posts: s1.posts || 0,
+                    likes: s1.likes || 0,
                 },
                 newStats: {
                     followers: s2.followers || 0,
                     posts: s2.posts || 0,
+                    likes: s2.likes || 0,
                 },
                 delta: {
                     followersVal: followersDiff,
                     followersPct,
                     postsVal: postsDiff,
                     postsPct,
+                    likesVal: likesDiff,
+                    likesPct,
                 },
             });
         }
@@ -109,7 +124,6 @@ export async function getComparisonData(jobId1: string, jobId2: string): Promise
 
     return rows;
 }
-
 
 /**
  * Fetch available completed jobs for the dropdown.
@@ -130,3 +144,54 @@ export async function getScrapingJobsForReport() {
         }
     });
 }
+
+interface ExportData {
+    platform: string;
+    month1: string;
+    month2: string;
+    data: Array<{
+        accountName: string;
+        handle: string;
+        oldFollowers: number;
+        newFollowers: number;
+        followersPct: number;
+        oldPosts: number;
+        newPosts: number;
+        postsPct: number;
+        oldLikes?: number;
+        newLikes?: number;
+        likesPct?: number;
+    }>;
+}
+
+/**
+ * Export comparison report as PDF via worker service.
+ * Returns base64 encoded PDF data.
+ */
+export async function exportComparisonPdf(exportData: ExportData): Promise<string> {
+    const workerUrl = process.env.WORKER_URL || "http://localhost:4000";
+    const workerSecret = process.env.WORKER_SECRET;
+
+    if (!workerSecret) {
+        throw new Error("WORKER_SECRET not configured");
+    }
+
+    const response = await fetch(`${workerUrl}/export/comparison-pdf`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${workerSecret}`,
+        },
+        body: JSON.stringify(exportData),
+    });
+
+    if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`Export failed: ${response.status} - ${text}`);
+    }
+
+    const buffer = await response.arrayBuffer();
+    const base64 = Buffer.from(buffer).toString("base64");
+    return base64;
+}
+

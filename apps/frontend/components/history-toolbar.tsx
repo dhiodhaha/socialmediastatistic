@@ -19,6 +19,10 @@ export function HistoryToolbar({ activeJobId }: { activeJobId?: string }) {
     const router = useRouter();
     const searchParams = useSearchParams();
 
+    // Local state to track the current running job ID
+    // Initially set from server prop, but updates when we trigger a new scrape
+    const [currentJobId, setCurrentJobId] = useState<string | undefined>(activeJobId);
+
     // Parse initial state from URL
     const initialStatus = searchParams.get("status") || "ALL";
     const initialStart = searchParams.get("startDate")
@@ -87,7 +91,7 @@ export function HistoryToolbar({ activeJobId }: { activeJobId?: string }) {
     };
 
     const handleScrape = async () => {
-        if (activeJobId) {
+        if (currentJobId) {
             toast.error("A scraping job is already in progress");
             return;
         }
@@ -97,6 +101,10 @@ export function HistoryToolbar({ activeJobId }: { activeJobId?: string }) {
             const result = await triggerScrape();
             if (result.success) {
                 toast.success("Scraping job started");
+                // Store the new job ID to track progress
+                if (result.jobId && result.jobId !== "unknown") {
+                    setCurrentJobId(result.jobId);
+                }
                 router.refresh();
             } else {
                 toast.error(result.error || "Failed to start scraping");
@@ -106,6 +114,11 @@ export function HistoryToolbar({ activeJobId }: { activeJobId?: string }) {
         } finally {
             setIsScraping(false);
         }
+    };
+
+    const handleScrapeComplete = () => {
+        // Clear the current job ID when scrape completes
+        setCurrentJobId(undefined);
     };
 
     const handleExportCsv = async () => {
@@ -170,7 +183,7 @@ export function HistoryToolbar({ activeJobId }: { activeJobId?: string }) {
 
     return (
         <div className="flex flex-col gap-4">
-            {activeJobId && <ScrapeProgress jobId={activeJobId} />}
+            {currentJobId && <ScrapeProgress jobId={currentJobId} onComplete={handleScrapeComplete} />}
             <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center bg-card p-4 rounded-lg border">
                 <div className="flex flex-1 flex-col sm:flex-row gap-4 w-full">
                     <DatePickerWithRange date={date} setDate={handleDateChange} />
@@ -201,7 +214,7 @@ export function HistoryToolbar({ activeJobId }: { activeJobId?: string }) {
                 </div>
 
                 <div className="flex gap-2">
-                    <Button onClick={handleScrape} disabled={isScraping || !!activeJobId}>
+                    <Button onClick={handleScrape} disabled={isScraping || !!currentJobId}>
                         {isScraping ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
                         Scrape Now
                     </Button>
@@ -218,3 +231,4 @@ export function HistoryToolbar({ activeJobId }: { activeJobId?: string }) {
         </div>
     );
 }
+

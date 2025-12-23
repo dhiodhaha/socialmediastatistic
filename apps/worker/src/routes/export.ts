@@ -27,4 +27,26 @@ router.post("/pdf", async (req, res) => {
     }
 });
 
+/**
+ * Generate Comparison PDF Export
+ * POST /export/comparison-pdf
+ * Body: { platform, month1, month2, data }
+ */
+router.post("/comparison-pdf", async (req, res) => {
+    try {
+        const exportData = req.body;
+        logger.info({ platform: exportData.platform, dataCount: exportData.data?.length }, "Comparison PDF export requested");
+
+        const pdfBuffer = await ExportService.generateComparisonPdf(exportData);
+
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader("Content-Disposition", `attachment; filename=comparison-${exportData.platform}-${Date.now()}.pdf`);
+        res.send(pdfBuffer);
+
+    } catch (error) {
+        logger.error({ error }, "Failed to generate comparison PDF");
+        res.status(500).json({ success: false, error: "Failed to generate comparison PDF report" });
+    }
+});
+
 export default router;

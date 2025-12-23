@@ -1,11 +1,31 @@
 import puppeteer from "puppeteer";
 import { prisma, Prisma, JobStatus } from "@repo/database";
 import { generateReportHtml } from "./template";
+import { generateComparisonReportHtml } from "./comparison-template";
 
 interface ExportFilters {
     startDate?: string;
     endDate?: string;
     status?: string;
+}
+
+interface ComparisonExportData {
+    platform: string;
+    month1: string;
+    month2: string;
+    data: Array<{
+        accountName: string;
+        handle: string;
+        oldFollowers: number;
+        newFollowers: number;
+        followersPct: number;
+        oldPosts: number;
+        newPosts: number;
+        postsPct: number;
+        oldLikes?: number;
+        newLikes?: number;
+        likesPct?: number;
+    }>;
 }
 
 export class ExportService {
@@ -58,4 +78,36 @@ export class ExportService {
             await browser.close();
         }
     }
+
+    static async generateComparisonPdf(exportData: ComparisonExportData): Promise<Buffer> {
+        const html = generateComparisonReportHtml({
+            platform: exportData.platform,
+            month1: exportData.month1,
+            month2: exportData.month2,
+            generatedAt: new Date().toLocaleString("id-ID"),
+            data: exportData.data,
+        });
+
+        const browser = await puppeteer.launch({
+            headless: true,
+            args: ["--no-sandbox", "--disable-setuid-sandbox"],
+        });
+
+        try {
+            const page = await browser.newPage();
+            await page.setContent(html, { waitUntil: "networkidle0" });
+
+            const pdfBuffer = await page.pdf({
+                format: "A4",
+                landscape: true, // Landscape for comparison table
+                printBackground: true,
+                margin: { top: "15px", right: "15px", bottom: "15px", left: "15px" },
+            });
+
+            return Buffer.from(pdfBuffer);
+        } finally {
+            await browser.close();
+        }
+    }
 }
+

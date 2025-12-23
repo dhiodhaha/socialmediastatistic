@@ -2,9 +2,11 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { Loader2, Square } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
 import { getJobStatus } from "@/app/actions/job";
+import { stopScrape } from "@/app/actions/scrape";
 import { toast } from "sonner";
 import { JobStatus } from "@repo/database";
 
@@ -18,6 +20,7 @@ export function ScrapeProgress({ jobId, onComplete }: ScrapeProgressProps) {
     const [progress, setProgress] = useState(0);
     const [status, setStatus] = useState<JobStatus>("PENDING");
     const [stats, setStats] = useState({ completed: 0, total: 0 });
+    const [stopping, setStopping] = useState(false);
     const intervalRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
     useEffect(() => {
@@ -64,6 +67,17 @@ export function ScrapeProgress({ jobId, onComplete }: ScrapeProgressProps) {
         return () => clearInterval(intervalRef.current);
     }, [jobId, router, onComplete]);
 
+    const handleStop = async () => {
+        setStopping(true);
+        const result = await stopScrape(jobId);
+        if (result.success) {
+            toast.info("Stopping scrape... It will stop after the current batch completes.");
+        } else {
+            toast.error(result.error || "Failed to stop scrape");
+            setStopping(false);
+        }
+    };
+
     if (!jobId || status === "COMPLETED" || status === "FAILED") {
         return null;
     }
@@ -77,11 +91,27 @@ export function ScrapeProgress({ jobId, onComplete }: ScrapeProgressProps) {
                         Scraping in progress... ({status})
                     </span>
                 </div>
-                <span className="text-sm text-muted-foreground">
-                    {stats.completed} / {stats.total} accounts
-                </span>
+                <div className="flex items-center gap-3">
+                    <span className="text-sm text-muted-foreground">
+                        {stats.completed} / {stats.total} accounts
+                    </span>
+                    <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={handleStop}
+                        disabled={stopping}
+                    >
+                        {stopping ? (
+                            <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                        ) : (
+                            <Square className="h-3 w-3 mr-1" />
+                        )}
+                        Stop
+                    </Button>
+                </div>
             </div>
             <Progress value={progress} className="h-2" />
         </div>
     );
 }
+

@@ -9,6 +9,51 @@ const CONCURRENCY = 5;
 const DELAY_BETWEEN_BATCHES_MS = 2000;
 const MAX_RETRIES = 3;
 
+// Cancellation tracking (in-memory, per-process)
+const cancelledJobs = new Set<string>();
+
+export async function cancelJob(jobId: string): Promise<void> {
+    cancelledJobs.add(jobId);
+    logger.info({ jobId }, "Job marked for cancellation");
+
+    // Force update DB status immediately to handle zombie jobs
+    // (e.g. if worker restarted and lost in-memory state)
+    try {
+        const job = await prisma.scrapingJob.findUnique({
+            where: { id: jobId },
+            select: { errors: true }
+        });
+
+        const currentErrors = (job?.errors as any[]) || [];
+
+        await prisma.scrapingJob.update({
+            where: { id: jobId },
+            data: {
+                status: "FAILED",
+                completedAt: new Date(),
+                errors: [...currentErrors, {
+                    accountId: "system",
+                    platform: "SYSTEM",
+                    handle: "",
+                    error: "Stopped by user",
+                    timestamp: new Date().toISOString()
+                }]
+            }
+        });
+    } catch (error) {
+        logger.error({ jobId, error }, "Failed to force update cancelled job status");
+    }
+}
+
+export function isJobCancelled(jobId: string): boolean {
+    return cancelledJobs.has(jobId);
+}
+
+
+function clearCancellation(jobId: string): void {
+    cancelledJobs.delete(jobId);
+}
+
 interface ScrapeTask {
     accountId: string;
     platform: Platform;
@@ -30,6 +75,7 @@ interface ScrapeCreatorsResponse {
         followerCount?: number;
         followingCount?: number;
         videoCount?: number;
+        heart?: number;
         heartCount?: number;
     };
 
@@ -44,9 +90,9 @@ interface ScrapeCreatorsResponse {
 
 /**
  * Main scraping job runner.
- * Fetches all active accounts and scrapes them in batches.
+ * Creates a job, returns the ID immediately, then processes in background.
  */
-export async function runScrapingJob(): Promise<void> {
+export async function runScrapingJob(): Promise<string> {
     logger.info("Starting scraping job");
 
     // Fetch active accounts
@@ -78,6 +124,23 @@ export async function runScrapingJob(): Promise<void> {
 
     logger.info({ jobId: job.id, totalAccounts: accounts.length, totalTasks: tasks.length }, "Job created");
 
+    // Process in background (don't await)
+    processScrapingJob(job.id, accounts, tasks).catch((error) => {
+        logger.error({ jobId: job.id, error }, "Scraping job processing failed");
+    });
+
+    // Return job ID immediately
+    return job.id;
+}
+
+/**
+ * Process the scraping job (called asynchronously).
+ */
+async function processScrapingJob(
+    jobId: string,
+    accounts: Awaited<ReturnType<typeof prisma.account.findMany>>,
+    tasks: ScrapeTask[]
+): Promise<void> {
     const errors: Array<{
         accountId: string;
         platform: string;
@@ -88,84 +151,131 @@ export async function runScrapingJob(): Promise<void> {
     let completedCount = 0;
     let failedCount = 0;
 
-    // Process tasks in batches
-    for (let i = 0; i < tasks.length; i += BATCH_SIZE) {
-        const batch = tasks.slice(i, i + BATCH_SIZE);
-        logger.info(
-            { batchStart: i, batchSize: batch.length },
-            "Processing batch"
-        );
+    try {
+        // Process tasks in batches
+        for (let i = 0; i < tasks.length; i += BATCH_SIZE) {
+            // Check if job was cancelled
+            if (isJobCancelled(jobId)) {
+                logger.info({ jobId }, "Job cancelled by user");
+                await prisma.scrapingJob.update({
+                    where: { id: jobId },
+                    data: { status: "FAILED", completedAt: new Date(), errors: [...errors, { accountId: "system", platform: "SYSTEM", handle: "", error: "Cancelled by user", timestamp: new Date().toISOString() }] },
+                });
+                clearCancellation(jobId);
+                return;
+            }
 
-        // Process batch with concurrency control
-        const results = await processBatchWithConcurrency(batch, CONCURRENCY);
+            const batch = tasks.slice(i, i + BATCH_SIZE);
+            logger.info(
+                { batchStart: i, batchSize: batch.length },
+                "Processing batch"
+            );
 
-        // Save results to database
-        for (const result of results) {
-            if (result.success && result.data) {
-                await prisma.snapshot.create({
-                    data: {
+            // Process batch with concurrency control
+            const results = await processBatchWithConcurrency(batch, CONCURRENCY);
+
+            // Save results to database
+            for (const result of results) {
+                if (result.success && result.data) {
+                    const snapshotData: any = {
                         accountId: result.accountId!,
                         platform: result.platform,
                         followers: result.data.followers,
                         following: result.data.following,
                         posts: result.data.posts,
-                        engagement: result.data.engagement,
-                        jobId: job.id,
-                    },
-                });
-                completedCount++;
-            } else {
-                failedCount++;
-                errors.push({
-                    accountId: result.accountId!,
-                    platform: result.platform,
-                    handle: result.handle,
-                    error: result.error || "Unknown error",
-                    timestamp: new Date().toISOString(),
-                });
+                        engagement: result.data.engagement || 0,
+                        jobId: jobId,
+                    };
+
+                    // Only include likes for TikTok to avoid stale Prisma Client errors for other platforms
+                    // and because it's semantically null for others
+                    if (result.platform === "TIKTOK") {
+                        snapshotData.likes = result.data.likes;
+                    }
+
+                    await prisma.snapshot.create({
+                        data: snapshotData,
+                    });
+                    completedCount++;
+                } else {
+                    failedCount++;
+                    errors.push({
+                        accountId: result.accountId!,
+                        platform: result.platform,
+                        handle: result.handle,
+                        error: result.error || "Unknown error",
+                        timestamp: new Date().toISOString(),
+                    });
+                }
+            }
+
+            // Update job progress
+            await prisma.scrapingJob.update({
+                where: { id: jobId },
+                data: { completedCount, failedCount, errors },
+            });
+
+            // Delay between batches to avoid rate limiting
+            if (i + BATCH_SIZE < tasks.length) {
+                await sleep(DELAY_BETWEEN_BATCHES_MS);
             }
         }
 
-        // Update job progress
+        // Mark job as completed
+        const finalStatus = failedCount === tasks.length ? "FAILED" : "COMPLETED";
+
         await prisma.scrapingJob.update({
-            where: { id: job.id },
-            data: { completedCount, failedCount, errors },
+            where: { id: jobId },
+            data: {
+                status: finalStatus,
+                completedAt: new Date(),
+            },
         });
 
-        // Delay between batches to avoid rate limiting
-        if (i + BATCH_SIZE < tasks.length) {
-            await sleep(DELAY_BETWEEN_BATCHES_MS);
+        logger.info(
+            { jobId, completedCount, failedCount, status: finalStatus },
+            "Scraping job finished"
+        );
+
+        // Send Discord notification
+        await sendDiscordNotification({
+            title: `Scraping Job ${finalStatus}`,
+            description: `Processed: ${completedCount}/${tasks.length} handles`,
+            color: finalStatus === "COMPLETED" ? 0x00ff00 : 0xff0000,
+            fields: [
+                { name: "Total Accounts", value: String(accounts.length), inline: true },
+                { name: "Total Tasks", value: String(tasks.length), inline: true },
+                { name: "Successful", value: String(completedCount), inline: true },
+                { name: "Failed", value: String(failedCount), inline: true },
+            ],
+        });
+    } catch (error) {
+        // Fallback: Always mark job as FAILED on unhandled error
+        logger.error({ jobId, error }, "Unhandled error in scraping job");
+
+        try {
+            await prisma.scrapingJob.update({
+                where: { id: jobId },
+                data: {
+                    status: "FAILED",
+                    completedAt: new Date(),
+                    completedCount,
+                    failedCount,
+                    errors: [...errors, {
+                        accountId: "system",
+                        platform: "SYSTEM",
+                        handle: "",
+                        error: error instanceof Error ? error.message : "Unknown error",
+                        timestamp: new Date().toISOString(),
+                    }],
+                },
+            });
+        } catch (dbError) {
+            logger.error({ jobId, dbError }, "Failed to update job status after error");
         }
+
+        throw error;
     }
-
-    // Mark job as completed
-    const finalStatus = failedCount === tasks.length ? "FAILED" : "COMPLETED";
-
-    await prisma.scrapingJob.update({
-        where: { id: job.id },
-        data: {
-            status: finalStatus,
-            completedAt: new Date(),
-        },
-    });
-
-    logger.info(
-        { jobId: job.id, completedCount, failedCount, status: finalStatus },
-        "Scraping job finished"
-    );
-
-    // Send Discord notification
-    await sendDiscordNotification({
-        title: `Scraping Job ${finalStatus}`,
-        description: `Processed: ${completedCount}/${tasks.length} handles`,
-        color: finalStatus === "COMPLETED" ? 0x00ff00 : 0xff0000,
-        fields: [
-            { name: "Total Accounts", value: String(accounts.length), inline: true },
-            { name: "Total Tasks", value: String(tasks.length), inline: true },
-            { name: "Successful", value: String(completedCount), inline: true },
-            { name: "Failed", value: String(failedCount), inline: true },
-        ],
-    });
 }
 
 /**
@@ -297,6 +407,7 @@ async function scrapeAccount(
             following: 0,
             posts: 0,
             engagement: 0,
+            likes: 0,
         };
 
         // Specific parsing per platform based on docs
@@ -318,6 +429,7 @@ async function scrapeAccount(
             stats.followers = s.followerCount || 0;
             stats.following = s.followingCount || 0;
             stats.posts = s.videoCount || 0;
+            stats.likes = s.heart || s.heartCount || 0;
         } else if (platform === "TWITTER") {
             const legacy = data.legacy;
             if (!legacy) {

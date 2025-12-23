@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getComparisonData, getScrapingJobsForReport, ComparisonRow } from "@/app/actions/report";
+import { getComparisonData, getScrapingJobsForReport, exportComparisonPdf, ComparisonRow } from "@/app/actions/report";
 import { ComparisonTable } from "@/components/reports/comparison-table";
 import {
     Select,
@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
+import { Loader2, Download } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -36,6 +36,7 @@ export default function ComparisonPage() {
     const [comparisonData, setComparisonData] = useState<ComparisonRow[] | null>(null);
     const [dates, setDates] = useState<{ d1: Date; d2: Date } | null>(null);
     const [platform, setPlatform] = useState<Platform>("INSTAGRAM");
+    const [exporting, setExporting] = useState(false);
 
     useEffect(() => {
         async function fetchJobs() {
@@ -78,6 +79,57 @@ export default function ComparisonPage() {
             console.error(error);
         } finally {
             setLoadingData(false);
+        }
+    };
+
+    const handleExportPdf = async () => {
+        if (!dates || !filteredData.length) return;
+        setExporting(true);
+
+        try {
+            const month1 = format(dates.d1, "MMMM yyyy", { locale: id });
+            const month2 = format(dates.d2, "MMMM yyyy", { locale: id });
+
+            const exportData = {
+                platform,
+                month1,
+                month2,
+                data: filteredData.map(row => ({
+                    accountName: row.accountName,
+                    handle: row.handle,
+                    oldFollowers: row.oldStats.followers,
+                    newFollowers: row.newStats.followers,
+                    followersPct: row.delta.followersPct,
+                    oldPosts: row.oldStats.posts,
+                    newPosts: row.newStats.posts,
+                    postsPct: row.delta.postsPct,
+                    oldLikes: row.oldStats.likes,
+                    newLikes: row.newStats.likes,
+                    likesPct: row.delta.likesPct,
+                })),
+            };
+
+            // Call server action which has access to WORKER_SECRET
+            const base64Pdf = await exportComparisonPdf(exportData);
+
+            // Convert base64 to blob and download
+            const binaryString = atob(base64Pdf);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            const blob = new Blob([bytes], { type: "application/pdf" });
+
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `comparison-${platform}-${Date.now()}.pdf`;
+            a.click();
+            URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error("Export error:", error);
+        } finally {
+            setExporting(false);
         }
     };
 
@@ -144,22 +196,37 @@ export default function ComparisonPage() {
 
             {comparisonData && dates && (
                 <div className="mt-8 space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    {/* Platform Filter Buttons */}
-                    <div className="flex gap-2 p-1 bg-muted rounded-lg w-fit">
-                        {platforms.map((p) => (
-                            <Button
-                                key={p.value}
-                                variant={platform === p.value ? "default" : "ghost"}
-                                size="sm"
-                                onClick={() => setPlatform(p.value)}
-                                className={cn(
-                                    "rounded-md transition-all",
-                                    platform === p.value && "shadow-sm"
-                                )}
-                            >
-                                {p.label}
-                            </Button>
-                        ))}
+                    {/* Platform Filter & Export */}
+                    <div className="flex flex-wrap items-center justify-between gap-4">
+                        <div className="flex gap-2 p-1 bg-muted rounded-lg w-fit">
+                            {platforms.map((p) => (
+                                <Button
+                                    key={p.value}
+                                    variant={platform === p.value ? "default" : "ghost"}
+                                    size="sm"
+                                    onClick={() => setPlatform(p.value)}
+                                    className={cn(
+                                        "rounded-md transition-all",
+                                        platform === p.value && "shadow-sm"
+                                    )}
+                                >
+                                    {p.label}
+                                </Button>
+                            ))}
+                        </div>
+
+                        <Button
+                            variant="outline"
+                            onClick={handleExportPdf}
+                            disabled={exporting || !filteredData.length}
+                        >
+                            {exporting ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                <Download className="mr-2 h-4 w-4" />
+                            )}
+                            Export PDF
+                        </Button>
                     </div>
 
                     <div className="flex justify-between items-center">
@@ -179,3 +246,4 @@ export default function ComparisonPage() {
         </div>
     );
 }
+

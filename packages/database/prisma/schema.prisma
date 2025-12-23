@@ -37,6 +37,7 @@ model Snapshot {
   following  Int?
   posts      Int?
   engagement Float?
+  likes      Int? // TikTok totalLikes (heartCount)
   scrapedAt  DateTime     @default(now())
   jobId      String?
   job        ScrapingJob? @relation(fields: [jobId], references: [id])

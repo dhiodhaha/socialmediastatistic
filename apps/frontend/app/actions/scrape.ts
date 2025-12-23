@@ -52,3 +52,33 @@ export async function triggerScrape() {
         return { success: false, error: "Failed to trigger scrape" };
     }
 }
+
+export async function stopScrape(jobId: string) {
+    try {
+        const workerUrl = process.env.WORKER_URL;
+        const workerSecret = process.env.WORKER_SECRET;
+
+        if (!workerUrl || !workerSecret) {
+            return { success: false, error: "System configuration error" };
+        }
+
+        const res = await fetch(`${workerUrl}/scrape/stop/${jobId}`, {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${workerSecret}`,
+            },
+        });
+
+        if (!res.ok) {
+            const text = await res.text();
+            return { success: false, error: `Worker error: ${text}` };
+        }
+
+        revalidatePath("/history");
+        return { success: true };
+    } catch (error) {
+        logger.error({ error, jobId }, "Stop scrape failed");
+        return { success: false, error: "Failed to stop scrape" };
+    }
+}
+
