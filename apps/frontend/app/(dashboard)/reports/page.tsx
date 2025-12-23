@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getComparisonData, getScrapingJobsForReport, exportComparisonPdf, ComparisonRow } from "@/app/actions/report";
+import { getCategories } from "@/app/actions/category";
 import { ComparisonTable } from "@/components/reports/comparison-table";
 import {
     Select,
@@ -38,9 +39,14 @@ export default function ComparisonPage() {
     const [platform, setPlatform] = useState<Platform>("INSTAGRAM");
     const [exporting, setExporting] = useState(false);
 
+    // Category Filter
+    const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
+    const [categoryId, setCategoryId] = useState<string>("ALL");
+
     useEffect(() => {
-        async function fetchJobs() {
+        async function fetchData() {
             try {
+                // Fetch jobs
                 const data = await getScrapingJobsForReport();
                 const mapped = data.map(j => ({
                     ...j,
@@ -54,20 +60,27 @@ export default function ComparisonPage() {
                 } else if (mapped.length === 1) {
                     setJob2Id(mapped[0].id);
                 }
+
+                // Fetch categories
+                const catRes = await getCategories();
+                if (catRes.success && catRes.data) {
+                    setCategories(catRes.data as { id: string; name: string }[]);
+                }
             } catch (error) {
-                console.error("Failed to fetch jobs", error);
+                console.error("Failed to fetch data", error);
             } finally {
                 setLoadingJobs(false);
             }
         }
-        fetchJobs();
+
+        fetchData();
     }, []);
 
     const handleCompare = async () => {
         if (!job1Id || !job2Id) return;
         setLoadingData(true);
         try {
-            const data = await getComparisonData(job1Id, job2Id);
+            const data = await getComparisonData(job1Id, job2Id, categoryId === "ALL" ? undefined : categoryId);
             setComparisonData(data);
 
             const j1 = jobs.find(j => j.id === job1Id);
@@ -181,6 +194,23 @@ export default function ComparisonPage() {
                                 {jobs.map(job => (
                                     <SelectItem key={job.id} value={job.id}>
                                         {format(job.createdAt, "dd MMMM yyyy, HH:mm", { locale: id })}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="grid gap-2 w-full md:w-[300px]">
+                        <label className="text-sm font-medium">Filter Kategori</label>
+                        <Select value={categoryId} onValueChange={setCategoryId}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Semua Kategori" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="ALL">Semua Kategori</SelectItem>
+                                {categories.map(cat => (
+                                    <SelectItem key={cat.id} value={cat.id}>
+                                        {cat.name}
                                     </SelectItem>
                                 ))}
                             </SelectContent>

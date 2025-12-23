@@ -21,7 +21,7 @@ async function fetchWithRetry(url: string, options: RequestInit, retries = MAX_R
     }
 }
 
-export async function triggerScrape() {
+export async function triggerScrape(categoryId?: string) {
     try {
         const workerUrl = process.env.WORKER_URL;
         const workerSecret = process.env.WORKER_SECRET;
@@ -34,7 +34,9 @@ export async function triggerScrape() {
             method: "POST",
             headers: {
                 "Authorization": `Bearer ${workerSecret}`,
+                "Content-Type": "application/json",
             },
+            body: JSON.stringify({ categoryId }),
         });
 
         if (!res.ok) {

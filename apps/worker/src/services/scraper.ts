@@ -66,12 +66,17 @@ interface ScrapeTask {
  * Main scraping job runner.
  * Creates a job, returns the ID immediately, then processes in background.
  */
-export async function runScrapingJob(): Promise<string> {
-    logger.info("Starting scraping job");
+export async function runScrapingJob(categoryId?: string): Promise<string> {
+    logger.info({ categoryId }, "Starting scraping job");
 
-    // Fetch active accounts
+    // Fetch active accounts (optionally filtered by category)
+    const whereClause: any = { isActive: true };
+    if (categoryId) {
+        whereClause.categoryId = categoryId;
+    }
+
     const accounts = await prisma.account.findMany({
-        where: { isActive: true },
+        where: whereClause,
     });
 
     // Generate tasks (flatten accounts into platform-specific tasks)
@@ -93,6 +98,8 @@ export async function runScrapingJob(): Promise<string> {
             status: "RUNNING",
             totalAccounts: accounts.length,
             startedAt: new Date(),
+            // @ts-ignore - categoryId exists after schema migration
+            categoryId: categoryId || null,
         },
     });
 

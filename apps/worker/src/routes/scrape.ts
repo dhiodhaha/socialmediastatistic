@@ -14,10 +14,11 @@ const router: Router = Router();
  */
 router.post("/", async (req, res) => {
     try {
-        logger.info("Scraping job triggered");
+        const { categoryId } = req.body;
+        logger.info({ categoryId }, "Scraping job triggered");
 
         // runScrapingJob now returns jobId immediately, processing happens async
-        const jobId = await runScrapingJob();
+        const jobId = await runScrapingJob(categoryId);
 
         res.json({
             success: true,

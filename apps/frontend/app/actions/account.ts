@@ -9,22 +9,12 @@ import { logger } from "@/lib/logger";
 
 
 
-export async function getAccounts(page = 1, limit = 10, search = "") {
-    // Build time safety check
-    if (!process.env.DATABASE_URL) {
-        console.warn("DATABASE_URL not found, returning empty accounts (Build mode)");
-        return {
-            success: true,
-            data: [],
-            pagination: { total: 0, page, limit, totalPages: 1 }
-        };
-    }
-
+export async function getAccounts(page = 1, limit = 10, search = "", categoryId?: string) {
     try {
         const skip = (page - 1) * limit;
 
         // Search across username and all handles
-        const where = search
+        const where: any = search
             ? {
                 OR: [
                     { username: { contains: search, mode: "insensitive" as const } },
@@ -35,6 +25,10 @@ export async function getAccounts(page = 1, limit = 10, search = "") {
             }
             : {};
 
+        if (categoryId && categoryId !== "ALL") {
+            where.categoryId = categoryId;
+        }
+
         const [accounts, total] = await Promise.all([
             prisma.account.findMany({
                 where,
@@ -42,6 +36,8 @@ export async function getAccounts(page = 1, limit = 10, search = "") {
                 take: limit,
                 orderBy: { createdAt: "desc" },
                 include: {
+                    // @ts-ignore
+                    category: true,
                     snapshots: {
                         orderBy: { scrapedAt: "desc" },
                         take: 2 // We need latest 2 to calculate growth
@@ -52,9 +48,9 @@ export async function getAccounts(page = 1, limit = 10, search = "") {
         ]);
 
         // Calculate growth for each account
-        const accountsWithGrowth = accounts.map((acc: typeof accounts[number]) => {
+        const accountsWithGrowth = accounts.map((acc: any) => {
             let growth: number | null = null;
-            if (acc.snapshots.length >= 2) {
+            if (acc.snapshots && acc.snapshots.length >= 2) {
                 const latest = acc.snapshots[0].followers;
                 const prev = acc.snapshots[1].followers;
                 if (prev > 0) {
@@ -115,6 +111,8 @@ export async function createAccount(data: AccountInput) {
                 tiktok: validated.tiktok || null,
                 twitter: validated.twitter || null,
                 isActive: validated.isActive,
+                // @ts-ignore
+                categoryId: validated.categoryId || null,
             },
         });
 
@@ -159,10 +157,30 @@ export async function deleteAccount(id: string) {
 
 export async function bulkCreateAccounts(accounts: AccountInput[]) {
     try {
+        // If categories are provided in input but not created, we currently don't auto-create them 
+        // because we need IDs. 
+        // Assumption: The AccountInput for bulk create might come with 'categoryName' from CSV, 
+        // so we might need to look them up.
+        // For now, let's assume we stick to the basic AccountInput and handle resolution in the CSV component.
+
         let successCount = 0;
         const errors: string[] = [];
 
         for (const acc of accounts) {
+            // Handle category auto-creation/lookup if categoryName is provided but categoryId is not
+            if (acc.categoryName && !acc.categoryId) {
+                const catName = acc.categoryName.trim();
+                if (catName) {
+                    // @ts-ignore
+                    let cat = await prisma.category.findUnique({ where: { name: catName } });
+                    if (!cat) {
+                        // @ts-ignore
+                        cat = await prisma.category.create({ data: { name: catName } });
+                    }
+                    acc.categoryId = cat.id;
+                }
+            }
+
             const result = await createAccount(acc);
             if (result.success) {
                 successCount++;

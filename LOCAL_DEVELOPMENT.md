@@ -1,5 +1,7 @@
 # Local Development & Testing Guide
 
+> [**Main README**](./README.md) | [**Deployment Tutorial**](./TUTORIAL.md) | [**Local Development**](./LOCAL_DEVELOPMENT.md)
+
 This guide will help you set up the **Social Media Statistics** project locally for development and testing.
 
 ## 1. Prerequisites
@@ -66,12 +68,21 @@ docker run --name socialstats-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=so
 Once the database is running:
 
 ```bash
-# Push the schema to the database
+# Push the schema to the database (and sync with adapters)
 pnpm db:push
 
-# (Optional) Seed the database if seeded script exists
-# pnpm db:seed 
+# Generate Prisma Client (critical for local development)
+pnpm db:generate
+
+# Seed the database with sample admin and account data
+pnpm db:seed 
 ```
+
+### Prisma 7 Note
+This project uses **Prisma 7**. Unlike previous versions, the database connection is handled via an adapter (specifically `@prisma/adapter-neon`). 
+- Configuration is centralized in `packages/database/prisma.config.ts`.
+- Avoid adding a `url` property directly to the `datasource` block in `schema.prisma`.
+- Always run `pnpm db:generate` after changing the schema to ensure the client is in sync.
 
 ## 5. Running the Application
 

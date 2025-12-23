@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createAccount, updateAccount } from "@/app/actions/account";
+import { getCategories } from "@/app/actions/category";
 import { accountSchema, type AccountInput } from "@/lib/schemas";
 
 
@@ -20,6 +21,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { useEffect } from "react";
 
 interface AccountDialogProps {
     open?: boolean;
@@ -44,14 +53,27 @@ export function AccountDialog({
     const setIsOpen = isControlled ? onOpenChange : setInternalOpen;
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
 
-    const { register, handleSubmit, formState: { errors }, reset } = useForm<AccountInput>({
+    useEffect(() => {
+        if (isOpen) {
+            getCategories().then((res) => {
+                if (res.success && res.data) {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    setCategories(res.data as any[]);
+                }
+            });
+        }
+    }, [isOpen]);
+
+    const { register, handleSubmit, formState: { errors }, reset, setValue, watch } = useForm<AccountInput>({
         resolver: zodResolver(accountSchema),
         defaultValues: {
             username: defaultValues?.username || "",
             instagram: defaultValues?.instagram || "",
             tiktok: defaultValues?.tiktok || "",
             twitter: defaultValues?.twitter || "",
+            categoryId: defaultValues?.categoryId || null,
             isActive: defaultValues?.isActive ?? true,
         },
     });
@@ -138,6 +160,30 @@ export function AccountDialog({
                         </Label>
                         <div className="col-span-3">
                             <Input id="twitter" {...register("twitter")} placeholder="handle" />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="category" className="text-right">
+                            Category
+                        </Label>
+                        <div className="col-span-3">
+                            <Select
+                                onValueChange={(val) => setValue("categoryId", val === "none" ? null : val)}
+                                defaultValue={defaultValues?.categoryId || undefined}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select a category" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="none">No Category</SelectItem>
+                                    {categories.map((cat) => (
+                                        <SelectItem key={cat.id} value={cat.id}>
+                                            {cat.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
                     </div>
 

@@ -12,7 +12,8 @@ import {
     BarChart2,
     ChevronLeft,
     ChevronRight,
-    LineChart
+    LineChart,
+    FolderTree
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -41,6 +42,11 @@ const navItems = [
         href: "/settings",
         label: "Settings",
         icon: Settings,
+    },
+    {
+        href: "/categories",
+        label: "Categories",
+        icon: FolderTree,
     },
 ];
 

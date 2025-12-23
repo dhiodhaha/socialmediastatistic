@@ -35,7 +35,9 @@ export function CsvUpload() {
                         name?: string; Name?: string;
                         instagram?: string; Instagram?: string;
                         tiktok?: string; TikTok?: string;
+
                         x?: string; X?: string; twitter?: string; Twitter?: string;
+                        category?: string; Category?: string;
                     }
                     for (const row of results.data as CsvRow[]) {
                         if (!row.name && !row.Name) continue; // Name is required
@@ -52,6 +54,7 @@ export function CsvUpload() {
                             instagram: clean(row.instagram || row.Instagram),
                             tiktok: clean(row.tiktok || row.TikTok),
                             twitter: clean(row.x || row.X || row.twitter || row.Twitter),
+                            categoryName: clean(row.category || row.Category) || undefined,
                             isActive: true,
                         });
                     }
@@ -108,7 +111,7 @@ export function CsvUpload() {
                     {loading ? "Uploading..." : "Import CSV"}
                 </Button>
                 <span className="text-xs text-muted-foreground">
-                    Headers: name, tiktok, instagram, x
+                    Headers: name, tiktok, instagram, x, category
                 </span>
             </div>
 

@@ -6,6 +6,8 @@ export const accountSchema = z.object({
     tiktok: z.string().optional().nullable(),
     twitter: z.string().optional().nullable(),
     isActive: z.boolean(),
+    categoryId: z.string().optional().nullable(),
+    categoryName: z.string().optional(), // For CSV import convenience
 });
 
 export type AccountInput = z.infer<typeof accountSchema>;

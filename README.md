@@ -1,5 +1,7 @@
 # Social Media Statistics Dashboard
 
+> [**Main README**](./README.md) | [**Deployment Tutorial**](./TUTORIAL.md) | [**Local Development**](./LOCAL_DEVELOPMENT.md)
+
 A specialized analytics dashboard for tracking and visualizing social media performance across **Instagram**, **TikTok**, and **Twitter (X)**. Built with high-performance modern web technologies including **Next.js 14**, **Prisma**, and **Docker**.
 
 ![Dashboard Preview](https://placehold.co/1200x600?text=Dashboard+Preview)
@@ -10,8 +12,10 @@ A specialized analytics dashboard for tracking and visualizing social media perf
 -   **Automated Scraping Engine**: Integrated background worker that auto-refreshes data on the last day of every month.
 -   **Manual Trigger**: instant scrape triggering via the dashboard for real-time updates.
 -   **Historical Data**: comprehensive history log with "Time Travel" growth calculation.
--   **Export Capabilities**: One-click export to **CSV** and **PDF** reports.
--   **Bulk Management**: Easy mass-import of accounts via CSV upload.
+-   **Account Categorization**: Group creators for easier management and targeted reporting.
+-   **Report Filtering**: Filter comparison reports by category to focus on specific segments.
+-   **Export Capabilities**: One-click export to **CSV** and **PDF** reports (now with category filtering support).
+-   **Bulk Management**: Easy mass-import of accounts via CSV upload with optional category assignment.
 
 ## 🛠 Tech Stack
 

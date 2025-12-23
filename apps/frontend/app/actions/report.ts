@@ -19,13 +19,18 @@ export interface ComparisonRow {
     };
 }
 
-export async function getComparisonData(jobId1: string, jobId2: string): Promise<ComparisonRow[]> {
+export async function getComparisonData(jobId1: string, jobId2: string, categoryId?: string): Promise<ComparisonRow[]> {
     // 1. Fetch details of both jobs to ensure they exist and get dates (optional, for sorting?)
     // Actually we just need the snapshots associated with these jobIds.
 
     // 2. Fetch all accounts to have the base list
+    const whereClause: any = { isActive: true };
+    if (categoryId) {
+        whereClause.categoryId = categoryId;
+    }
+
     const accounts = await prisma.account.findMany({
-        where: { isActive: true },
+        where: whereClause,
         include: {
             snapshots: {
                 where: {

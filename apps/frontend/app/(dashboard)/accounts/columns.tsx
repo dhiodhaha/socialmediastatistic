@@ -27,6 +27,7 @@ export type Account = {
     createdAt: Date;
     updatedAt: Date;
     growth?: number | null;
+    category?: { name: string } | null;
 };
 
 const HandleLink = ({ handle, urlPrefix }: { handle: string | null, urlPrefix: string }) => {
@@ -44,6 +45,14 @@ export const columns: ColumnDef<Account>[] = [
         accessorKey: "username",
         header: "Name",
         cell: ({ row }) => <span className="font-medium">{row.getValue("username")}</span>,
+    },
+    {
+        accessorKey: "category.name",
+        header: "Category",
+        cell: ({ row }) => {
+            const cat = row.original.category;
+            return cat ? <Badge variant="outline">{cat.name}</Badge> : <span className="text-muted-foreground text-xs">Uncategorized</span>;
+        }
     },
     {
         accessorKey: "growth",

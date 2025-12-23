@@ -1,5 +1,7 @@
 # Deployment Tutorial
 
+> [**Main README**](./README.md) | [**Deployment Tutorial**](./TUTORIAL.md) | [**Local Development**](./LOCAL_DEVELOPMENT.md)
+
 This guide covers how to deploy the Social Media Statistics application to production.
 
 ## 1. Database Deployment (PostgreSQL)
@@ -95,3 +97,12 @@ If you don't want a VPS, you can use Railway or Render.
 4.  Set Start Command: `node apps/worker/dist/index.js`
 5.  Add Variables (`DATABASE_URL`, `SCRAPECREATORS_API_KEY`, `WORKER_SECRET`, `PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true`).
 6.  **Important**: You might need a custom Dockerfile for Puppeteer support on these platforms because they don't always have Chrome installed by default. Using the VPS method above is safer for Puppeteer.
+
+---
+
+## 6. Post-Deployment: Category Management
+Once deployed, you should:
+1.  **Login**: Use your admin credentials (`admin@socialmedia.gov`).
+2.  **Create Categories**: Navigate to `/categories` and create at least one category (e.g., "Main Government", "Regional Offices").
+3.  **Assign Accounts**: Go to `/accounts` and edit your existing accounts or add new ones, assigning them to the relevant categories.
+4.  **Targeted Reporting**: Use the Comparison Report at `/reports` to filter results by category for specialized analysis.

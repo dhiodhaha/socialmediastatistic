@@ -6,14 +6,15 @@ import { DateRange } from "react-day-picker";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Download, Loader2, FileSpreadsheet } from "lucide-react";
+import { Download, Loader2, FileSpreadsheet, Play } from "lucide-react";
 import { exportHistoryPdf, exportHistoryCsv } from "@/app/actions/history";
+import { getCategories } from "@/app/actions/category";
 import { Platform } from "@repo/database";
 
 import { ScrapeProgress } from "@/components/scrape-progress";
 import { triggerScrape } from "@/app/actions/scrape";
 import { toast } from "sonner";
-import { Play } from "lucide-react";
+import { useEffect } from "react";
 
 export function HistoryToolbar({ activeJobId }: { activeJobId?: string }) {
     const router = useRouter();
@@ -41,6 +42,17 @@ export function HistoryToolbar({ activeJobId }: { activeJobId?: string }) {
     const [platform, setPlatform] = useState(initialPlatform);
     const [isExporting, setIsExporting] = useState(false);
     const [isScraping, setIsScraping] = useState(false);
+
+    const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
+    const [scrapeCategoryId, setScrapeCategoryId] = useState<string>("ALL");
+
+    useEffect(() => {
+        getCategories().then(res => {
+            if (res.success && res.data) {
+                setCategories(res.data as any[]);
+            }
+        });
+    }, []);
 
     const updateFilters = (newDate: DateRange | undefined, newStatus: string, newPlatform: string) => {
         const params = new URLSearchParams(searchParams.toString());
@@ -98,9 +110,10 @@ export function HistoryToolbar({ activeJobId }: { activeJobId?: string }) {
 
         setIsScraping(true);
         try {
-            const result = await triggerScrape();
+            const catId = scrapeCategoryId === "ALL" ? undefined : scrapeCategoryId;
+            const result = await triggerScrape(catId);
             if (result.success) {
-                toast.success("Scraping job started");
+                toast.success(catId ? "Category scraping job started" : "Scraping job started");
                 // Store the new job ID to track progress
                 if (result.jobId && result.jobId !== "unknown") {
                     setCurrentJobId(result.jobId);
@@ -214,6 +227,20 @@ export function HistoryToolbar({ activeJobId }: { activeJobId?: string }) {
                 </div>
 
                 <div className="flex gap-2">
+                    <Select value={scrapeCategoryId} onValueChange={setScrapeCategoryId}>
+                        <SelectTrigger className="w-[180px]">
+                            <SelectValue placeholder="Urgent Scrape Scope" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="ALL">Scrape All</SelectItem>
+                            {categories.map(cat => (
+                                <SelectItem key={cat.id} value={cat.id}>
+                                    Scrape {cat.name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+
                     <Button onClick={handleScrape} disabled={isScraping || !!currentJobId}>
                         {isScraping ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
                         Scrape Now
@@ -227,8 +254,8 @@ export function HistoryToolbar({ activeJobId }: { activeJobId?: string }) {
                         PDF
                     </Button>
                 </div>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 }
 
