@@ -109,7 +109,7 @@ export function HistoryToolbar({ activeJobId }: { activeJobId?: string }) {
             } else {
                 toast.error(result.error || "Failed to start scraping");
             }
-        } catch (error) {
+        } catch {
             toast.error("An unexpected error occurred");
         } finally {
             setIsScraping(false);

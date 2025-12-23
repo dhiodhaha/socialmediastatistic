@@ -35,7 +35,7 @@ export default async function HistoryPage({
                 orderBy: { createdAt: "desc" },
                 select: { id: true }
             });
-        } catch (error) {
+        } catch {
             console.warn("Failed to fetch active job (likely build time or DB unreachable)");
         }
     }

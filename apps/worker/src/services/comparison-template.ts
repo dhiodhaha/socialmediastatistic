@@ -68,7 +68,6 @@ export function generateComparisonReportHtml(config: ReportConfig): string {
         })
         .join("");
 
-    const colCount = isTikTok ? 11 : 8;
 
     return `
     <!DOCTYPE html>

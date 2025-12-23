@@ -1,7 +1,6 @@
 "use server";
 
-import { prisma } from "@repo/database";
-import { Platform } from "@prisma/client";
+import { prisma, Platform } from "@repo/database";
 
 export interface ComparisonRow {
     accountId: string;
@@ -88,7 +87,11 @@ export async function getComparisonData(jobId1: string, jobId2: string): Promise
     return rows;
 }
 
-function calculateGrowth(oldVal: number, newVal: number, key: "followers" | "posts" | "likes"): any {
+function calculateGrowth(
+    oldVal: number,
+    newVal: number,
+    key: "followers" | "posts" | "likes"
+): { [K in `${typeof key}Val` | `${typeof key}Pct`]: number } {
     const valDiff = newVal - oldVal;
     let pct = 0;
 
@@ -98,10 +101,11 @@ function calculateGrowth(oldVal: number, newVal: number, key: "followers" | "pos
         pct = 100;
     }
 
+    // Use type assertion to satisfy TypeScript
     return {
         [`${key}Val`]: valDiff,
         [`${key}Pct`]: pct,
-    };
+    } as { [K in `${typeof key}Val` | `${typeof key}Pct`]: number };
 }
 
 /**

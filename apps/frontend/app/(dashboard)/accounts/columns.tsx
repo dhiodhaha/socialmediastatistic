@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { deleteAccount } from "@/app/actions/account";
-import { type AccountInput } from "@/lib/schemas";
 import { useState } from "react";
 import { AccountDialog } from "@/components/account-dialog";
 

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { bulkCreateAccounts } from './actions/account';
 import { getAllScrapingHistory } from './actions/history';
-import { triggerScrape } from './actions/scrape';
+// triggerScrape is dynamically imported in tests below
 import { Account, ScrapingJob } from '@repo/database';
 import { prismaMock, resetMocks } from '../test/utils';
 

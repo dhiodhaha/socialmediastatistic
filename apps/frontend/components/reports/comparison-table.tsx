@@ -10,10 +10,9 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Platform } from "@prisma/client";
-import { ArrowDown, ArrowUp, Minus } from "lucide-react";
+import { Platform } from "@repo/database";
+import { ArrowDown, ArrowUp } from "lucide-react";
 
 interface ComparisonTableProps {
     data: ComparisonRow[];

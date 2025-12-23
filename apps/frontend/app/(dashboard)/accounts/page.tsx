@@ -2,7 +2,7 @@ import { getAccounts } from "@/app/actions/account";
 
 export const dynamic = "force-dynamic";
 import { DataTable } from "@/components/ui/data-table";
-import { columns } from "./columns";
+import { columns, type Account } from "./columns";
 import { AccountDialog } from "@/components/account-dialog";
 import { CsvUpload } from "@/components/csv-upload";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,7 @@ export default async function AccountsPage({
     const search = params.search || "";
 
     // Fetch data via server action
-    let data: any[] = [];
+    let data: Account[] = [];
     let totalPages = 1;
 
     // Build safety: Skip DB calls if no DB URL
@@ -32,7 +32,7 @@ export default async function AccountsPage({
                 data = result.data;
                 totalPages = result.pagination?.totalPages || 1;
             }
-        } catch (err) {
+        } catch {
             // Silently fail during build/rendering errors to ensure build passes
         }
 

@@ -24,7 +24,7 @@ export async function cancelJob(jobId: string): Promise<void> {
             select: { errors: true }
         });
 
-        const currentErrors = (job?.errors as any[]) || [];
+        const currentErrors = (job?.errors as { accountId: string; platform: string; error: string }[]) || [];
 
         await prisma.scrapingJob.update({
             where: { id: jobId },
@@ -151,6 +151,7 @@ async function processScrapingJob(
             // Save results to database
             for (const result of results) {
                 if (result.success && result.data) {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     const snapshotData: any = {
                         accountId: result.accountId!,
                         platform: result.platform,
@@ -371,24 +372,21 @@ async function scrapeAccount(
         }
 
         // Use generic unknown for initial parse, then delegate
-        const data = await response.json() as any;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const data = (await response.json()) as any;
 
         // Log successful raw data for debugging if needed (using debug level)
         // logger.debug({ platform, handle, data }, "Scrape raw data received");
 
         // Delegate parsing to dedicated parser (SRP)
-        try {
-            const stats = parsePlatformData(platform, handle, data);
+        const stats = parsePlatformData(platform, handle, data);
 
-            return {
-                success: true,
-                platform,
-                handle,
-                data: stats,
-            };
-        } catch (parseError) {
-            throw parseError;
-        }
+        return {
+            success: true,
+            platform,
+            handle,
+            data: stats,
+        };
 
     } catch (e) {
         // Enhance error catching to log if it wasn't caught above
