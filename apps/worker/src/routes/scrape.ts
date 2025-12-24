@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { logger } from "../lib/logger";
-import { runScrapingJob, cancelJob } from "../services/scraper";
+import { runScrapingJob, cancelJob, retryFailedAccounts } from "../services/scraper";
 
 const router: Router = Router();
 
@@ -31,6 +31,38 @@ router.post("/", async (req, res) => {
         res.status(500).json({
             success: false,
             error: "Failed to start scraping job",
+        });
+    }
+});
+
+/**
+ * Retry scraping only for accounts that failed in the latest job.
+ * POST /scrape/retry-failed
+ */
+router.post("/retry-failed", async (_req, res) => {
+    try {
+        logger.info("Retry failed accounts requested");
+
+        const result = await retryFailedAccounts();
+
+        if (!result.success) {
+            return res.status(400).json({
+                success: false,
+                error: result.error,
+            });
+        }
+
+        res.json({
+            success: true,
+            message: `Retry job started for ${result.failedCount} failed accounts`,
+            jobId: result.jobId,
+            timestamp: new Date().toISOString(),
+        });
+    } catch (error) {
+        logger.error({ error }, "Failed to retry failed accounts");
+        res.status(500).json({
+            success: false,
+            error: "Failed to retry failed accounts",
         });
     }
 });
@@ -80,4 +112,3 @@ router.get("/status", async (_req, res) => {
 });
 
 export default router;
-

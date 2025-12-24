@@ -12,47 +12,62 @@ import {
     BarChart2,
     ChevronLeft,
     ChevronRight,
+    ChevronDown,
     LineChart,
-    FolderTree
+    FolderTree,
+    BookOpen,
+    LucideIcon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const navItems = [
+interface NavItem {
+    href: string;
+    label: string;
+    icon: LucideIcon;
+}
+
+interface NavGroup {
+    label: string;
+    items: NavItem[];
+}
+
+const navGroups: NavGroup[] = [
     {
-        href: "/dashboard",
-        label: "Overview",
-        icon: LayoutDashboard,
+        label: "Main",
+        items: [
+            { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
+            { href: "/accounts", label: "Accounts", icon: Users },
+            { href: "/categories", label: "Categories", icon: FolderTree },
+        ],
     },
     {
-        href: "/accounts",
-        label: "Accounts",
-        icon: Users,
+        label: "Analytics",
+        items: [
+            { href: "/history", label: "Scraping History", icon: History },
+            { href: "/reports", label: "Reports", icon: BarChart2 },
+        ],
     },
     {
-        href: "/history",
-        label: "History",
-        icon: History,
-    },
-    {
-        href: "/reports",
-        label: "Reports",
-        icon: BarChart2,
-    },
-    {
-        href: "/settings",
-        label: "Settings",
-        icon: Settings,
-    },
-    {
-        href: "/categories",
-        label: "Categories",
-        icon: FolderTree,
+        label: "System",
+        items: [
+            { href: "/docs", label: "Documentation", icon: BookOpen },
+            { href: "/settings", label: "Settings", icon: Settings },
+        ],
     },
 ];
 
 export function Sidebar() {
     const pathname = usePathname();
     const [isCollapsed, setIsCollapsed] = useState(false);
+    const [expandedGroups, setExpandedGroups] = useState<string[]>(["Main", "Analytics", "System"]);
+
+    const toggleGroup = (groupLabel: string) => {
+        setExpandedGroups((prev) =>
+            prev.includes(groupLabel)
+                ? prev.filter((g) => g !== groupLabel)
+                : [...prev, groupLabel]
+        );
+    };
 
     return (
         <aside
@@ -77,37 +92,67 @@ export function Sidebar() {
             </div>
 
             {/* Navigation */}
-            <nav className="flex-1 p-3 space-y-1 overflow-x-hidden overflow-y-auto">
-                {navItems.map((item) => {
-                    const isActive = pathname === item.href;
-                    const Icon = item.icon;
+            <nav className="flex-1 p-3 space-y-4 overflow-x-hidden overflow-y-auto">
+                {navGroups.map((group) => {
+                    const isExpanded = expandedGroups.includes(group.label);
                     return (
-                        <Link
-                            key={item.href}
-                            href={item.href}
-                            title={isCollapsed ? item.label : undefined}
-                            className={cn(
-                                "flex items-center rounded-md transition-all text-sm font-medium whitespace-nowrap group relative h-10",
-                                isActive
-                                    ? "bg-primary/10 text-primary hover:bg-primary/20"
-                                    : "text-muted-foreground hover:bg-muted/80 hover:text-foreground",
-                                isCollapsed ? "justify-center px-0" : "px-3 gap-3"
-                            )}
-                        >
-                            <Icon className={cn("shrink-0 transition-all", isCollapsed ? "w-5 h-5" : "w-4 h-4")} />
-                            {!isCollapsed && (
-                                <span className="animate-in fade-in slide-in-from-left-1 duration-200">
-                                    {item.label}
-                                </span>
+                        <div key={group.label}>
+                            {/* Group Header */}
+                            {!isCollapsed ? (
+                                <button
+                                    onClick={() => toggleGroup(group.label)}
+                                    className="flex items-center justify-between w-full px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors"
+                                >
+                                    <span>{group.label}</span>
+                                    <ChevronDown
+                                        className={cn(
+                                            "h-3 w-3 transition-transform",
+                                            isExpanded ? "" : "-rotate-90"
+                                        )}
+                                    />
+                                </button>
+                            ) : (
+                                <div className="h-px bg-border mx-2 my-2" />
                             )}
 
-                            {/* Hover Tooltip for Collapsed State */}
-                            {isCollapsed && (
-                                <div className="absolute left-10 ml-4 px-2 py-1 bg-popover text-popover-foreground text-xs rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border z-50 pointer-events-none">
-                                    {item.label}
+                            {/* Group Items */}
+                            {(isCollapsed || isExpanded) && (
+                                <div className="space-y-1 mt-1">
+                                    {group.items.map((item) => {
+                                        const isActive = pathname === item.href;
+                                        const Icon = item.icon;
+                                        return (
+                                            <Link
+                                                key={item.href}
+                                                href={item.href}
+                                                title={isCollapsed ? item.label : undefined}
+                                                className={cn(
+                                                    "flex items-center rounded-md transition-all text-sm font-medium whitespace-nowrap group relative h-10",
+                                                    isActive
+                                                        ? "bg-primary/10 text-primary hover:bg-primary/20"
+                                                        : "text-muted-foreground hover:bg-muted/80 hover:text-foreground",
+                                                    isCollapsed ? "justify-center px-0" : "px-3 gap-3"
+                                                )}
+                                            >
+                                                <Icon className={cn("shrink-0 transition-all", isCollapsed ? "w-5 h-5" : "w-4 h-4")} />
+                                                {!isCollapsed && (
+                                                    <span className="animate-in fade-in slide-in-from-left-1 duration-200">
+                                                        {item.label}
+                                                    </span>
+                                                )}
+
+                                                {/* Hover Tooltip for Collapsed State */}
+                                                {isCollapsed && (
+                                                    <div className="absolute left-10 ml-4 px-2 py-1 bg-popover text-popover-foreground text-xs rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border z-50 pointer-events-none">
+                                                        {item.label}
+                                                    </div>
+                                                )}
+                                            </Link>
+                                        );
+                                    })}
                                 </div>
                             )}
-                        </Link>
+                        </div>
                     );
                 })}
             </nav>

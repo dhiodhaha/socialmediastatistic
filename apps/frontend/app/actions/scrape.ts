@@ -84,3 +84,42 @@ export async function stopScrape(jobId: string) {
     }
 }
 
+export async function retryFailedAccounts() {
+    try {
+        const workerUrl = process.env.WORKER_URL;
+        const workerSecret = process.env.WORKER_SECRET;
+
+        if (!workerUrl || !workerSecret) {
+            return { success: false, error: "System configuration error" };
+        }
+
+        const res = await fetch(`${workerUrl}/scrape/retry-failed`, {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${workerSecret}`,
+            },
+        });
+
+        if (!res.ok) {
+            let errorMsg = `HTTP ${res.status}`;
+            try {
+                const data = await res.json();
+                errorMsg = data.error || errorMsg;
+            } catch {
+                // JSON parse failed, use status text
+                errorMsg = res.statusText || errorMsg;
+            }
+            logger.error({ status: res.status, error: errorMsg }, "Worker retry-failed endpoint error");
+            return { success: false, error: errorMsg };
+        }
+
+        const data = await res.json();
+        revalidatePath("/history");
+        revalidatePath("/accounts");
+        return { success: true, jobId: data.jobId, failedCount: data.failedCount };
+    } catch (error) {
+        const errMsg = error instanceof Error ? error.message : String(error);
+        logger.error({ error: errMsg }, "Retry failed accounts request failed");
+        return { success: false, error: `Connection failed: ${errMsg}` };
+    }
+}

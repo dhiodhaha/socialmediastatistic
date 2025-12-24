@@ -29,8 +29,12 @@ export function generateComparisonReportHtml(config: ReportConfig): string {
 
     const isTikTok = platform.toUpperCase() === "TIKTOK";
 
-    const formatNumber = (n: number) => n.toLocaleString("id-ID");
-    const formatPct = (n: number) => {
+    const formatNumber = (n: number) => {
+        if (n === -1) return '<span style="color: #d97706; font-weight: bold;">N/A</span>';
+        return n.toLocaleString("id-ID");
+    };
+    const formatPct = (n: number, isNA: boolean = false) => {
+        if (isNA) return '<span style="color: #d97706; font-weight: bold;">N/A</span>';
         if (n === 0) return "-";
         const sign = n > 0 ? "+" : "";
         const color = n > 0 ? "#22c55e" : n < 0 ? "#ef4444" : "#64748b";
@@ -43,25 +47,33 @@ export function generateComparisonReportHtml(config: ReportConfig): string {
 
     const rows = data
         .map((row, idx) => {
+            const isNA = row.oldFollowers === -1;
+
             const likesColumns = isTikTok
-                ? `<td>${formatNumber(row.oldLikes || 0)}</td>
-                   <td>${formatNumber(row.newLikes || 0)}</td>
-                   <td>${formatPct(row.likesPct || 0)}</td>`
+                ? `<td>${isNA ? formatNumber(-1) : formatNumber(row.oldLikes || 0)}</td>
+                   <td>${isNA ? formatNumber(-1) : formatNumber(row.newLikes || 0)}</td>
+                   <td>${formatPct(row.likesPct || 0, isNA)}</td>`
                 : "";
 
+            const handleDisplay = isNA
+                ? '<span style="color: #d97706; font-weight: bold;">N/A</span>'
+                : `@${row.handle}`;
+
+            const rowBg = isNA ? 'background-color: #fef3c7;' : '';
+
             return `
-            <tr>
+            <tr style="${rowBg}">
                 <td style="text-align: center;">${idx + 1}</td>
                 <td>
                     <strong>${row.accountName}</strong><br/>
-                    <span style="color: #666; font-size: 12px;">@${row.handle}</span>
+                    <span style="color: #666; font-size: 12px;">${handleDisplay}</span>
                 </td>
                 <td style="text-align: right;">${formatNumber(row.oldFollowers)}</td>
                 <td style="text-align: right;">${formatNumber(row.newFollowers)}</td>
-                <td style="text-align: center;">${formatPct(row.followersPct)}</td>
+                <td style="text-align: center;">${formatPct(row.followersPct, isNA)}</td>
                 <td style="text-align: right;">${formatNumber(row.oldPosts)}</td>
                 <td style="text-align: right;">${formatNumber(row.newPosts)}</td>
-                <td style="text-align: center;">${formatPct(row.postsPct)}</td>
+                <td style="text-align: center;">${formatPct(row.postsPct, isNA)}</td>
                 ${likesColumns}
             </tr>
         `;
@@ -99,6 +111,16 @@ export function generateComparisonReportHtml(config: ReportConfig): string {
                 border-collapse: collapse; 
                 margin-top: 15px;
             }
+            thead {
+                display: table-header-group;
+            }
+            tbody {
+                display: table-row-group;
+            }
+            tr {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
             th { 
                 background-color: #2563eb; 
                 color: white; 
@@ -121,9 +143,50 @@ export function generateComparisonReportHtml(config: ReportConfig): string {
                 border-top: 1px solid #eee;
                 padding-top: 15px;
             }
+            /* Cover page styles */
+            .cover-page {
+                page-break-after: always;
+                height: 100vh;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: flex-start;
+                background: linear-gradient(135deg, #3B5BDB 0%, #1E3A8A 100%);
+                color: white;
+                margin: -30px;
+                padding: 80px;
+            }
+            .cover-title {
+                font-size: 72px;
+                font-weight: 300;
+                line-height: 1.1;
+                letter-spacing: -1px;
+            }
+            @media print {
+                tr {
+                    page-break-inside: avoid;
+                    break-inside: avoid;
+                }
+                thead {
+                    display: table-header-group;
+                }
+                .cover-page {
+                    page-break-after: always;
+                }
+            }
         </style>
     </head>
     <body>
+        <!-- Cover Page -->
+        <div class="cover-page">
+            <div class="cover-title">
+                Laporan<br/>
+                Audiens<br/>
+                ${platform}
+            </div>
+        </div>
+
+        <!-- Report Content -->
         <div class="header">
             <h1>Laporan Perbandingan - ${platform}</h1>
             <div class="meta">

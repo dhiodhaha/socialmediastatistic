@@ -12,6 +12,8 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Download } from "lucide-react";
 import { format } from "date-fns";
@@ -42,6 +44,9 @@ export default function ComparisonPage() {
     // Category Filter
     const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
     const [categoryId, setCategoryId] = useState<string>("ALL");
+
+    // Include N/A (accounts without this platform)
+    const [includeNA, setIncludeNA] = useState(false);
 
     useEffect(() => {
         async function fetchData() {
@@ -80,7 +85,7 @@ export default function ComparisonPage() {
         if (!job1Id || !job2Id) return;
         setLoadingData(true);
         try {
-            const data = await getComparisonData(job1Id, job2Id, categoryId === "ALL" ? undefined : categoryId);
+            const data = await getComparisonData(job1Id, job2Id, categoryId === "ALL" ? undefined : categoryId, includeNA);
             setComparisonData(data);
 
             const j1 = jobs.find(j => j.id === job1Id);
@@ -96,7 +101,7 @@ export default function ComparisonPage() {
     };
 
     const handleExportPdf = async () => {
-        if (!dates || !filteredData.length) return;
+        if (!dates || !sortedData.length) return;
         setExporting(true);
 
         try {
@@ -107,19 +112,22 @@ export default function ComparisonPage() {
                 platform,
                 month1,
                 month2,
-                data: filteredData.map(row => ({
-                    accountName: row.accountName,
-                    handle: row.handle,
-                    oldFollowers: row.oldStats.followers,
-                    newFollowers: row.newStats.followers,
-                    followersPct: row.delta.followersPct,
-                    oldPosts: row.oldStats.posts,
-                    newPosts: row.newStats.posts,
-                    postsPct: row.delta.postsPct,
-                    oldLikes: row.oldStats.likes,
-                    newLikes: row.newStats.likes,
-                    likesPct: row.delta.likesPct,
-                })),
+                data: sortedData.map(row => {
+                    const isNA = row.oldStats.followers === -1;
+                    return {
+                        accountName: row.accountName,
+                        handle: isNA ? "N/A" : row.handle,
+                        oldFollowers: isNA ? -1 : row.oldStats.followers,
+                        newFollowers: isNA ? -1 : row.newStats.followers,
+                        followersPct: isNA ? 0 : row.delta.followersPct,
+                        oldPosts: isNA ? -1 : row.oldStats.posts,
+                        newPosts: isNA ? -1 : row.newStats.posts,
+                        postsPct: isNA ? 0 : row.delta.postsPct,
+                        oldLikes: isNA ? -1 : row.oldStats.likes,
+                        newLikes: isNA ? -1 : row.newStats.likes,
+                        likesPct: isNA ? 0 : row.delta.likesPct,
+                    };
+                }),
             };
 
             // Call server action which has access to WORKER_SECRET
@@ -146,7 +154,45 @@ export default function ComparisonPage() {
         }
     };
 
+    // Sort options
+    type SortOption = "followers" | "growth" | "name" | "na-first";
+    const [sortBy, setSortBy] = useState<SortOption>("followers");
+
     const filteredData = comparisonData?.filter(row => row.platform === platform) || [];
+
+    // Apply sorting
+    const sortedData = [...filteredData].sort((a, b) => {
+        const aIsNA = a.oldStats.followers === -1;
+        const bIsNA = b.oldStats.followers === -1;
+
+        if (sortBy === "na-first") {
+            if (aIsNA && !bIsNA) return -1;
+            if (!aIsNA && bIsNA) return 1;
+            return b.newStats.followers - a.newStats.followers;
+        }
+        if (sortBy === "followers") {
+            // N/A goes to bottom
+            if (aIsNA) return 1;
+            if (bIsNA) return -1;
+            return b.newStats.followers - a.newStats.followers;
+        }
+        if (sortBy === "growth") {
+            if (aIsNA) return 1;
+            if (bIsNA) return -1;
+            return b.delta.followersPct - a.delta.followersPct;
+        }
+        if (sortBy === "name") {
+            return a.accountName.localeCompare(b.accountName);
+        }
+        return 0;
+    });
+
+    const sortOptions: { value: SortOption; label: string }[] = [
+        { value: "followers", label: "Pengikut Terbanyak" },
+        { value: "growth", label: "Pertumbuhan Tertinggi" },
+        { value: "name", label: "Nama A-Z" },
+        { value: "na-first", label: "Tanpa Akun (N/A) Dulu" },
+    ];
 
     const platforms: { value: Platform; label: string }[] = [
         { value: "INSTAGRAM", label: "Instagram" },
@@ -175,11 +221,18 @@ export default function ComparisonPage() {
                                 <SelectValue placeholder="Pilih Tanggal..." />
                             </SelectTrigger>
                             <SelectContent>
-                                {jobs.map(job => (
-                                    <SelectItem key={job.id} value={job.id}>
-                                        {format(job.createdAt, "dd MMMM yyyy, HH:mm", { locale: id })}
-                                    </SelectItem>
-                                ))}
+                                {jobs
+                                    .filter(job => {
+                                        if (job.id === job2Id) return false;
+                                        const job2 = jobs.find(j => j.id === job2Id);
+                                        if (job2 && job.createdAt >= job2.createdAt) return false;
+                                        return true;
+                                    })
+                                    .map(job => (
+                                        <SelectItem key={job.id} value={job.id}>
+                                            {format(job.createdAt, "dd MMMM yyyy, HH:mm", { locale: id })}
+                                        </SelectItem>
+                                    ))}
                             </SelectContent>
                         </Select>
                     </div>
@@ -191,11 +244,18 @@ export default function ComparisonPage() {
                                 <SelectValue placeholder="Pilih Tanggal..." />
                             </SelectTrigger>
                             <SelectContent>
-                                {jobs.map(job => (
-                                    <SelectItem key={job.id} value={job.id}>
-                                        {format(job.createdAt, "dd MMMM yyyy, HH:mm", { locale: id })}
-                                    </SelectItem>
-                                ))}
+                                {jobs
+                                    .filter(job => {
+                                        if (job.id === job1Id) return false;
+                                        const job1 = jobs.find(j => j.id === job1Id);
+                                        if (job1 && job.createdAt <= job1.createdAt) return false;
+                                        return true;
+                                    })
+                                    .map(job => (
+                                        <SelectItem key={job.id} value={job.id}>
+                                            {format(job.createdAt, "dd MMMM yyyy, HH:mm", { locale: id })}
+                                        </SelectItem>
+                                    ))}
                             </SelectContent>
                         </Select>
                     </div>
@@ -215,6 +275,17 @@ export default function ComparisonPage() {
                                 ))}
                             </SelectContent>
                         </Select>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                        <Checkbox
+                            id="includeNA"
+                            checked={includeNA}
+                            onCheckedChange={(checked) => setIncludeNA(checked === true)}
+                        />
+                        <Label htmlFor="includeNA" className="text-sm cursor-pointer">
+                            Tampilkan akun tanpa sosmed (N/A)
+                        </Label>
                     </div>
 
                     <Button onClick={handleCompare} disabled={loadingData || !job1Id || !job2Id}>
@@ -259,14 +330,29 @@ export default function ComparisonPage() {
                         </Button>
                     </div>
 
-                    <div className="flex justify-between items-center">
+                    <div className="flex flex-wrap justify-between items-center gap-4">
                         <h3 className="text-lg font-semibold">
                             Hasil Perbandingan: {format(dates.d1, "dd MMM yyyy", { locale: id })} vs {format(dates.d2, "dd MMM yyyy", { locale: id })}
                         </h3>
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm text-muted-foreground">Urutkan:</span>
+                            <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
+                                <SelectTrigger className="w-[200px]">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {sortOptions.map(opt => (
+                                        <SelectItem key={opt.value} value={opt.value}>
+                                            {opt.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
 
                     <ComparisonTable
-                        data={filteredData}
+                        data={sortedData}
                         job1Date={dates.d1}
                         job2Date={dates.d2}
                         platform={platform}

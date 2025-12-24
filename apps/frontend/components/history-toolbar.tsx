@@ -7,6 +7,17 @@ import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Download, Loader2, FileSpreadsheet, Play } from "lucide-react";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { exportHistoryPdf, exportHistoryCsv } from "@/app/actions/history";
 import { getCategories } from "@/app/actions/category";
 import { Platform } from "@repo/database";
@@ -241,18 +252,29 @@ export function HistoryToolbar({ activeJobId }: { activeJobId?: string }) {
                         </SelectContent>
                     </Select>
 
-                    <Button onClick={handleScrape} disabled={isScraping || !!currentJobId}>
-                        {isScraping ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
-                        Scrape Now
-                    </Button>
-                    <Button variant="outline" onClick={handleExportCsv} disabled={isExporting}>
-                        {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileSpreadsheet className="mr-2 h-4 w-4" />}
-                        CSV
-                    </Button>
-                    <Button variant="outline" onClick={handleExport} disabled={isExporting}>
-                        {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-                        PDF
-                    </Button>
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button disabled={isScraping || !!currentJobId}>
+                                {isScraping ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
+                                Scrape Now
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Mulai Proses Scraping?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    {scrapeCategoryId === "ALL"
+                                        ? "Ini akan menjalankan scraping untuk SEMUA akun. Proses ini bisa memakan waktu beberapa menit."
+                                        : `Ini akan menjalankan scraping untuk kategori yang dipilih. Proses ini bisa memakan waktu beberapa menit.`
+                                    }
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Batal</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleScrape}>Ya, Mulai Scraping</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
                 </div>
             </div >
         </div >

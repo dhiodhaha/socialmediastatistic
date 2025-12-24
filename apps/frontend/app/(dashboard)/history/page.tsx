@@ -1,9 +1,12 @@
 import { getScrapingHistory } from "@/app/actions/history";
 import { columns } from "./columns";
 import { HistoryToolbar } from "@/components/history-toolbar";
-import { DataTable } from "@/components/ui/data-table";
+import { HistoryDataTable } from "./history-data-table";
+import { FailedAccountsAlert } from "@/components/failed-accounts-alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Platform, prisma } from "@repo/database";
+import { DataImportUpload } from "@/components/data-import-upload";
+import { FixOrphanButton } from "./fix-orphan-button";
 
 export default async function HistoryPage({
     searchParams,
@@ -43,12 +46,20 @@ export default async function HistoryPage({
 
     return (
         <div className="space-y-6">
-            <div>
-                <h1 className="text-2xl font-bold">Scraping History</h1>
-                <p className="text-muted-foreground mt-1">
-                    View logs of past scraping jobs
-                </p>
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold">Scraping History</h1>
+                    <p className="text-muted-foreground mt-1">
+                        View logs of past scraping jobs
+                    </p>
+                </div>
+                <div className="flex items-center gap-2">
+                    <FixOrphanButton />
+                    <DataImportUpload />
+                </div>
             </div>
+
+            <FailedAccountsAlert />
 
             <HistoryToolbar activeJobId={activeJob?.id} />
 
@@ -57,14 +68,10 @@ export default async function HistoryPage({
                     <CardTitle>Job Logs</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <DataTable
-                        columns={columns}
+                    <HistoryDataTable
                         data={jobs || []}
-                        pageCount={pagination?.totalPages}
-                        pagination={{
-                            pageIndex: (pagination?.page || 1) - 1,
-                            pageSize: pagination?.limit || 10
-                        }}
+                        pageCount={pagination?.totalPages || 1}
+                        currentPage={page}
                     />
                 </CardContent>
             </Card>
