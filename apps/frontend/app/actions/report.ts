@@ -168,22 +168,26 @@ export async function getScrapingJobsForReport() {
 }
 
 interface ExportData {
-    platform: string;
+    sections: Array<{
+        platform: string;
+        data: Array<{
+            accountName: string;
+            handle: string;
+            oldFollowers: number;
+            newFollowers: number;
+            followersPct: number;
+            oldPosts: number;
+            newPosts: number;
+            postsPct: number;
+            oldLikes?: number;
+            newLikes?: number;
+            likesPct?: number;
+        }>;
+    }>;
     month1: string;
     month2: string;
-    data: Array<{
-        accountName: string;
-        handle: string;
-        oldFollowers: number;
-        newFollowers: number;
-        followersPct: number;
-        oldPosts: number;
-        newPosts: number;
-        postsPct: number;
-        oldLikes?: number;
-        newLikes?: number;
-        likesPct?: number;
-    }>;
+    includeCover?: boolean;
+    customTitle?: string;
 }
 
 /**

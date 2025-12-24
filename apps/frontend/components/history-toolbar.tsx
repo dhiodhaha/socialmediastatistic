@@ -23,6 +23,7 @@ import { getCategories } from "@/app/actions/category";
 import { Platform } from "@repo/database";
 
 import { ScrapeProgress } from "@/components/scrape-progress";
+import { ExportModal } from "@/components/export-modal";
 import { triggerScrape } from "@/app/actions/scrape";
 import { toast } from "sonner";
 import { useEffect } from "react";
@@ -238,6 +239,8 @@ export function HistoryToolbar({ activeJobId }: { activeJobId?: string }) {
                 </div>
 
                 <div className="flex gap-2">
+                    <ExportModal />
+
                     <Select value={scrapeCategoryId} onValueChange={setScrapeCategoryId}>
                         <SelectTrigger className="w-[180px]">
                             <SelectValue placeholder="Urgent Scrape Scope" />

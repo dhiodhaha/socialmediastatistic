@@ -1,124 +1,261 @@
-# Local Development & Testing Guide
+# Local Development Guide
 
 > [**Main README**](./README.md) | [**Deployment Tutorial**](./TUTORIAL.md) | [**Local Development**](./LOCAL_DEVELOPMENT.md)
 
-This guide will help you set up the **Social Media Statistics** project locally for development and testing.
+Complete guide for setting up the Social Media Statistics project for local development.
 
-## 1. Prerequisites
+---
 
-Ensure you have the following installed:
--   **Node.js** (v18 or higher)
--   **pnpm** (preferred package manager)
--   **PostgreSQL** (Database)
--   **Redis** (Optional, if used by the worker for queues, though currently it seems to use internal scheduling)
+## Prerequisites
 
-## 2. Clone and Install Dependencies
+| Requirement | Version | Notes |
+|:------------|:--------|:------|
+| Node.js | v18+ | Required for Turbopack |
+| pnpm | Latest | Monorepo package manager |
+| PostgreSQL | v14+ | Can use Docker |
+| Chromium | Latest | Bundled with Puppeteer |
+
+---
+
+## 1. Clone & Install
 
 ```bash
-# Install dependencies for all apps (root, frontend, worker)
+git clone <repository-url>
+cd socialmediastatistic
 pnpm install
 ```
 
-## 3. Environment Configuration
+---
 
-You need to configure environment variables for both the **Frontend** and the **Worker**.
+## 2. Environment Configuration
 
-### A. Frontend Setup (`apps/frontend`)
-
-1.  Navigate to `apps/frontend`.
-2.  Copy `.env.example` to `.env`.
-    ```bash
-    cp apps/frontend/.env.example apps/frontend/.env
-    ```
-3.  Fill in the values in `apps/frontend/.env`:
-
-    | Variable | Description | Example |
-    | :--- | :--- | :--- |
-    | `DATABASE_URL` | Connection string to your local Postgres database. | `postgresql://postgres:postgres@localhost:5432/socialstats_dev` |
-    | `NEXTAUTH_SECRET` | A random string for session security. | `development-secret-key-123` |
-    | `NEXTAUTH_URL` | The URL where the frontend runs locally. | `http://localhost:3000` |
-    | `AUTH_SECRET` | Secret for Auth.js (same as NEXTAUTH_SECRET). | `development-secret-key-123` |
-    | `WORKER_URL` | URL of the running worker service. | `http://localhost:4000` |
-    | `WORKER_SECRET` | Shared secret to secure communication with worker. | `local-worker-secret` |
-
-### B. Worker Setup (`apps/worker`)
-
-1.  Navigate to `apps/worker`.
-2.  Copy `.env.example` to `.env`.
-    ```bash
-    cp apps/worker/.env.example apps/worker/.env
-    ```
-3.  Fill in the values in `apps/worker/.env`:
-
-    | Variable | Description | Example |
-    | :--- | :--- | :--- |
-    | `PORT` | Port for the worker server. | `4000` |
-    | `WORKER_SECRET` | Must match the one in Frontend. | `local-worker-secret` |
-    | `DATABASE_URL` | Connection string (same as Frontend). | `postgresql://postgres:postgres@localhost:5432/socialstats_dev` |
-    | `SCRAPECREATORS_API_KEY`| API Key for external scraping service. | Get from [ScrapeCreators](https://scrapecreators.com) or use dummy for dev if mocked. |
-
-## 4. Database Setup
-
-You need a running PostgreSQL instance. If you don't have one, you can run one using Docker:
+### Frontend (`apps/frontend/.env`)
 
 ```bash
-docker run --name socialstats-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=socialstats_dev -p 5432:5432 -d postgres
+cp apps/frontend/.env.example apps/frontend/.env
 ```
 
-Once the database is running:
+```env
+# Database
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/socialstats_dev
+
+# Auth
+AUTH_SECRET=development-secret-key-123
+NEXTAUTH_SECRET=development-secret-key-123
+NEXTAUTH_URL=http://localhost:3000
+
+# Worker Connection
+WORKER_URL=http://localhost:4000
+WORKER_SECRET=local-worker-secret
+```
+
+### Worker (`apps/worker/.env`)
 
 ```bash
-# Push the schema to the database (and sync with adapters)
-pnpm db:push
+cp apps/worker/.env.example apps/worker/.env
+```
 
-# Generate Prisma Client (critical for local development)
+```env
+# Server
+PORT=4000
+
+# Security
+WORKER_SECRET=local-worker-secret
+
+# Database (same as frontend)
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/socialstats_dev
+
+# Scraping API (get from https://scrapecreators.com)
+SCRAPECREATORS_API_KEY=your_api_key_here
+```
+
+> ⚠️ **Important**: `WORKER_SECRET` must match in both `.env` files!
+
+---
+
+## 3. Database Setup
+
+### Option A: Docker (Recommended)
+
+```bash
+docker run --name socialstats-db \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=socialstats_dev \
+  -p 5432:5432 \
+  -d postgres:14
+```
+
+### Option B: Local PostgreSQL
+
+Install PostgreSQL and create a database:
+```sql
+CREATE DATABASE socialstats_dev;
+```
+
+### Initialize Database
+
+```bash
+# Generate Prisma Client (REQUIRED for Prisma 7)
 pnpm db:generate
 
-# Seed the database with sample admin and account data
-pnpm db:seed 
+# Push schema to database
+pnpm db:push
+
+# Seed with sample data (optional)
+pnpm db:seed
 ```
 
-### Prisma 7 Note
-This project uses **Prisma 7**. Unlike previous versions, the database connection is handled via an adapter (specifically `@prisma/adapter-neon`). 
-- Configuration is centralized in `packages/database/prisma.config.ts`.
-- Avoid adding a `url` property directly to the `datasource` block in `schema.prisma`.
-- Always run `pnpm db:generate` after changing the schema to ensure the client is in sync.
+### Prisma 7 Notes
 
-## 5. Running the Application
+This project uses **Prisma 7** with adapter-based configuration:
+- Configuration is in `packages/database/prisma.config.ts`
+- Uses `@prisma/adapter-neon` for database connections
+- Always run `pnpm db:generate` after schema changes
 
-You can run both the frontend and worker simultaneously from the root directory using Turbo:
+---
+
+## 4. Running the Application
 
 ```bash
+# Run both frontend and worker (Turbo)
 pnpm dev
 ```
 
--   **Frontend Dashboard**: [http://localhost:3000](http://localhost:3000)
--   **Worker API**: [http://localhost:4000](http://localhost:4000)
+This starts:
+- **Frontend**: http://localhost:3000
+- **Worker API**: http://localhost:4000
 
-## 6. Testing the Flow
-
-### Triggering a Manual Scrape
-1.  Open the Dashboard at `http://localhost:3000`.
-2.  Go to the settings or a specific creator page.
-3.  Click the **"Refresh Data"** or **"Scrape"** button.
-4.  Check the **Terminal** where `pnpm dev` is running. You should see logs from the `worker` app indicating it received the request and is processing it.
-
-### Verifying Database Data
-You can use Prisma Studio to inspect the data in your database:
+### Run Individually
 
 ```bash
+# Frontend only
+pnpm dev --filter=frontend
+
+# Worker only
+pnpm dev --filter=worker
+```
+
+---
+
+## 5. Development Workflow
+
+### Adding Accounts
+
+1. Open http://localhost:3000/accounts
+2. Click "Add Account" or import via CSV
+3. Fill in Instagram/TikTok/Twitter handles
+
+### Testing Scraping
+
+1. Go to http://localhost:3000/history
+2. Select category or "Scrape All"
+3. Click "Scrape Now" button
+4. Watch worker logs for progress
+
+### Testing Export
+
+1. Go to http://localhost:3000/reports
+2. Select date range and category
+3. Click "Export PDF" button
+4. Check download for combined PDF
+
+### Database Inspection
+
+```bash
+# Open Prisma Studio
+pnpm db:studio
+
+# Or with full path
 npx prisma studio --schema=packages/database/prisma/schema.prisma
 ```
-*(Note: Adjust the schema path if necessary, or check `package.json` for `db:studio` scripts)*
 
-## 7. Running Tests
+---
 
-To run the automated test suite:
+## 6. Testing
 
 ```bash
 # Run all tests
 pnpm test
 
-# Run only frontend tests
+# Frontend tests only
 pnpm test --filter=frontend
+
+# Watch mode
+pnpm test --filter=frontend -- --watch
 ```
+
+---
+
+## 7. Common Issues
+
+### "Module not found" errors in monorepo
+
+Turborepo requires dependencies in the app that uses them:
+```bash
+# Install in specific app
+cd apps/frontend
+pnpm add <package-name>
+
+# Then from root
+pnpm install
+```
+
+### Puppeteer issues on Mac
+
+Install Chromium manually if needed:
+```bash
+brew install chromium
+```
+
+### Database connection errors
+
+1. Verify PostgreSQL is running
+2. Check `DATABASE_URL` format
+3. Run `pnpm db:generate` after any schema changes
+
+### Worker not responding
+
+1. Check worker is running on port 4000
+2. Verify `WORKER_SECRET` matches in both apps
+3. Check worker logs: `pnpm dev --filter=worker`
+
+---
+
+## 8. Project Structure
+
+```
+socialmediastatistic/
+├── apps/
+│   ├── frontend/              # Next.js 16 dashboard
+│   │   ├── app/               # App Router pages
+│   │   ├── components/        # React components
+│   │   └── actions/           # Server actions
+│   └── worker/                # Express + Puppeteer worker
+│       ├── routes/            # API endpoints
+│       └── services/          # Business logic (scraper, export)
+├── packages/
+│   ├── database/              # Prisma schema & client
+│   │   ├── prisma/
+│   │   │   └── schema.prisma
+│   │   └── prisma.config.ts
+│   └── types/                 # Shared TypeScript types
+├── docker-compose.prod.yml    # Production Docker config
+├── turbo.json                 # Turborepo configuration
+└── pnpm-workspace.yaml        # Workspace definition
+```
+
+---
+
+## 9. Available Scripts
+
+| Script | Description |
+|:-------|:------------|
+| `pnpm dev` | Run all apps in development mode |
+| `pnpm build` | Build all apps |
+| `pnpm test` | Run test suite |
+| `pnpm db:generate` | Generate Prisma client |
+| `pnpm db:push` | Push schema to database |
+| `pnpm db:studio` | Open Prisma Studio |
+| `pnpm db:seed` | Seed database with sample data |
+| `pnpm lint` | Run ESLint |
+| `pnpm typecheck` | Run TypeScript checks |

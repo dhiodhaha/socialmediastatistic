@@ -19,6 +19,7 @@ import { Loader2, Download } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { ExportModal } from "@/components/export-modal";
 
 type Platform = "INSTAGRAM" | "TIKTOK" | "TWITTER";
 
@@ -109,25 +110,27 @@ export default function ComparisonPage() {
             const month2 = format(dates.d2, "MMMM yyyy", { locale: id });
 
             const exportData = {
-                platform,
+                sections: [{
+                    platform,
+                    data: sortedData.map(row => {
+                        const isNA = row.oldStats.followers === -1;
+                        return {
+                            accountName: row.accountName,
+                            handle: isNA ? "N/A" : row.handle,
+                            oldFollowers: isNA ? -1 : row.oldStats.followers,
+                            newFollowers: isNA ? -1 : row.newStats.followers,
+                            followersPct: isNA ? 0 : row.delta.followersPct,
+                            oldPosts: isNA ? -1 : row.oldStats.posts,
+                            newPosts: isNA ? -1 : row.newStats.posts,
+                            postsPct: isNA ? 0 : row.delta.postsPct,
+                            oldLikes: isNA ? -1 : row.oldStats.likes,
+                            newLikes: isNA ? -1 : row.newStats.likes,
+                            likesPct: isNA ? 0 : row.delta.likesPct,
+                        };
+                    }),
+                }],
                 month1,
                 month2,
-                data: sortedData.map(row => {
-                    const isNA = row.oldStats.followers === -1;
-                    return {
-                        accountName: row.accountName,
-                        handle: isNA ? "N/A" : row.handle,
-                        oldFollowers: isNA ? -1 : row.oldStats.followers,
-                        newFollowers: isNA ? -1 : row.newStats.followers,
-                        followersPct: isNA ? 0 : row.delta.followersPct,
-                        oldPosts: isNA ? -1 : row.oldStats.posts,
-                        newPosts: isNA ? -1 : row.newStats.posts,
-                        postsPct: isNA ? 0 : row.delta.postsPct,
-                        oldLikes: isNA ? -1 : row.oldStats.likes,
-                        newLikes: isNA ? -1 : row.newStats.likes,
-                        likesPct: isNA ? 0 : row.delta.likesPct,
-                    };
-                }),
             };
 
             // Call server action which has access to WORKER_SECRET
@@ -144,7 +147,7 @@ export default function ComparisonPage() {
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
             a.href = url;
-            a.download = `comparison-${platform}-${Date.now()}.pdf`;
+            a.download = `pertumbuhan-${platform}-${Date.now()}.pdf`;
             a.click();
             URL.revokeObjectURL(url);
         } catch (error) {
@@ -202,8 +205,9 @@ export default function ComparisonPage() {
 
     return (
         <div className="flex-1 space-y-4 p-8 pt-6">
-            <div className="flex items-center justify-between space-y-2">
-                <h2 className="text-3xl font-bold tracking-tight">Laporan Perbandingan</h2>
+            <div className="flex items-center justify-between">
+                <h2 className="text-3xl font-bold tracking-tight">Laporan Pertumbuhan</h2>
+                <ExportModal defaultCategoryId={categoryId !== "ALL" ? categoryId : undefined} />
             </div>
 
             <Card>
@@ -332,7 +336,7 @@ export default function ComparisonPage() {
 
                     <div className="flex flex-wrap justify-between items-center gap-4">
                         <h3 className="text-lg font-semibold">
-                            Hasil Perbandingan: {format(dates.d1, "dd MMM yyyy", { locale: id })} vs {format(dates.d2, "dd MMM yyyy", { locale: id })}
+                            Hasil Pertumbuhan: {format(dates.d1, "dd MMM yyyy", { locale: id })} vs {format(dates.d2, "dd MMM yyyy", { locale: id })}
                         </h3>
                         <div className="flex items-center gap-2">
                             <span className="text-sm text-muted-foreground">Urutkan:</span>

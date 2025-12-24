@@ -35,7 +35,7 @@ export function ComparisonTable({ data, job1Date, job2Date, platform }: Comparis
     return (
         <Card className="w-full">
             <CardHeader className="bg-primary/5 pb-2">
-                <CardTitle className="text-xl text-primary">Laporan Perbandingan - {platformName}</CardTitle>
+                <CardTitle className="text-xl text-primary">Laporan Pertumbuhan - {platformName}</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
                 <div className="overflow-x-auto">

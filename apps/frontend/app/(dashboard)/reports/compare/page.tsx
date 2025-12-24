@@ -91,22 +91,24 @@ export default function ComparisonPage() {
             const month2 = format(dates.d2, "MMMM yyyy", { locale: id });
 
             const exportData = {
-                platform,
+                sections: [{
+                    platform,
+                    data: filteredData.map(row => ({
+                        accountName: row.accountName,
+                        handle: row.handle,
+                        oldFollowers: row.oldStats.followers,
+                        newFollowers: row.newStats.followers,
+                        followersPct: row.delta.followersPct,
+                        oldPosts: row.oldStats.posts,
+                        newPosts: row.newStats.posts,
+                        postsPct: row.delta.postsPct,
+                        oldLikes: row.oldStats.likes,
+                        newLikes: row.newStats.likes,
+                        likesPct: row.delta.likesPct,
+                    })),
+                }],
                 month1,
                 month2,
-                data: filteredData.map(row => ({
-                    accountName: row.accountName,
-                    handle: row.handle,
-                    oldFollowers: row.oldStats.followers,
-                    newFollowers: row.newStats.followers,
-                    followersPct: row.delta.followersPct,
-                    oldPosts: row.oldStats.posts,
-                    newPosts: row.newStats.posts,
-                    postsPct: row.delta.postsPct,
-                    oldLikes: row.oldStats.likes,
-                    newLikes: row.newStats.likes,
-                    likesPct: row.delta.likesPct,
-                })),
             };
 
             // Call server action which has access to WORKER_SECRET
@@ -123,7 +125,7 @@ export default function ComparisonPage() {
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
             a.href = url;
-            a.download = `comparison-${platform}-${Date.now()}.pdf`;
+            a.download = `pertumbuhan-${platform}-${Date.now()}.pdf`;
             a.click();
             URL.revokeObjectURL(url);
         } catch (error) {
@@ -144,7 +146,7 @@ export default function ComparisonPage() {
     return (
         <div className="flex-1 space-y-4 p-8 pt-6">
             <div className="flex items-center justify-between space-y-2">
-                <h2 className="text-3xl font-bold tracking-tight">Laporan Perbandingan</h2>
+                <h2 className="text-3xl font-bold tracking-tight">Laporan Pertumbuhan</h2>
             </div>
 
             <Card>
@@ -231,7 +233,7 @@ export default function ComparisonPage() {
 
                     <div className="flex justify-between items-center">
                         <h3 className="text-lg font-semibold">
-                            Hasil Perbandingan: {format(dates.d1, "dd MMM yyyy", { locale: id })} vs {format(dates.d2, "dd MMM yyyy", { locale: id })}
+                            Hasil Pertumbuhan: {format(dates.d1, "dd MMM yyyy", { locale: id })} vs {format(dates.d2, "dd MMM yyyy", { locale: id })}
                         </h3>
                     </div>
 
