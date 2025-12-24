@@ -32,12 +32,10 @@ export function ComparisonTable({ data, job1Date, job2Date, platform }: Comparis
     // Platform display name
     const platformName = platform === "INSTAGRAM" ? "Instagram" : platform === "TIKTOK" ? "TikTok" : "Twitter";
 
-    const sortedData = [...data].sort((a, b) => b.newStats.followers - a.newStats.followers);
-
     return (
         <Card className="w-full">
             <CardHeader className="bg-primary/5 pb-2">
-                <CardTitle className="text-xl text-primary">Laporan Perbandingan - {platformName}</CardTitle>
+                <CardTitle className="text-xl text-primary">Laporan Pertumbuhan - {platformName}</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
                 <div className="overflow-x-auto">
@@ -76,38 +74,44 @@ export function ComparisonTable({ data, job1Date, job2Date, platform }: Comparis
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {sortedData.map((row, index) => (
-                                <TableRow key={`${row.accountId}-${row.platform}`} className="hover:bg-muted/50">
-                                    <TableCell className="text-center font-medium border-r p-2">
-                                        {index + 1}
-                                    </TableCell>
-                                    <TableCell className="border-r p-2 max-w-[250px]">
-                                        <div className="flex flex-col">
-                                            <span className="font-semibold text-sm line-clamp-2">{row.accountName}</span>
-                                            <span className="text-xs text-muted-foreground">@{row.handle}</span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="text-center border-r p-2 tabular-nums">
-                                        {row.oldStats.followers.toLocaleString("id-ID")}
-                                    </TableCell>
-                                    <TableCell className="text-center border-r p-2 tabular-nums font-medium">
-                                        {row.newStats.followers.toLocaleString("id-ID")}
-                                    </TableCell>
-                                    <TableCell className="text-center border-r p-2">
-                                        <DeltaBadge value={row.delta.followersPct} />
-                                    </TableCell>
-                                    <TableCell className="text-center border-r p-2 tabular-nums">
-                                        {row.oldStats.posts.toLocaleString("id-ID")}
-                                    </TableCell>
-                                    <TableCell className="text-center border-r p-2 tabular-nums font-medium">
-                                        {row.newStats.posts.toLocaleString("id-ID")}
-                                    </TableCell>
-                                    <TableCell className="text-center p-2">
-                                        <DeltaBadge value={row.delta.postsPct} />
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                            {sortedData.length === 0 && (
+                            {data.map((row, index) => {
+                                const isNA = row.oldStats.followers === -1;
+
+                                return (
+                                    <TableRow key={`${row.accountId}-${row.platform}`} className={cn("hover:bg-muted/50", isNA && "bg-amber-50")}>
+                                        <TableCell className="text-center font-medium border-r p-2">
+                                            {index + 1}
+                                        </TableCell>
+                                        <TableCell className="border-r p-2 max-w-[250px]">
+                                            <div className="flex flex-col">
+                                                <span className="font-semibold text-sm line-clamp-2">{row.accountName}</span>
+                                                <span className={cn("text-xs", isNA ? "text-amber-600 font-medium" : "text-muted-foreground")}>
+                                                    {isNA ? "N/A" : `@${row.handle}`}
+                                                </span>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-center border-r p-2 tabular-nums">
+                                            {isNA ? <span className="text-amber-600">N/A</span> : row.oldStats.followers.toLocaleString("id-ID")}
+                                        </TableCell>
+                                        <TableCell className="text-center border-r p-2 tabular-nums font-medium">
+                                            {isNA ? <span className="text-amber-600">N/A</span> : row.newStats.followers.toLocaleString("id-ID")}
+                                        </TableCell>
+                                        <TableCell className="text-center border-r p-2">
+                                            {isNA ? <span className="text-amber-600">N/A</span> : <DeltaBadge value={row.delta.followersPct} />}
+                                        </TableCell>
+                                        <TableCell className="text-center border-r p-2 tabular-nums">
+                                            {isNA ? <span className="text-amber-600">N/A</span> : row.oldStats.posts.toLocaleString("id-ID")}
+                                        </TableCell>
+                                        <TableCell className="text-center border-r p-2 tabular-nums font-medium">
+                                            {isNA ? <span className="text-amber-600">N/A</span> : row.newStats.posts.toLocaleString("id-ID")}
+                                        </TableCell>
+                                        <TableCell className="text-center p-2">
+                                            {isNA ? <span className="text-amber-600">N/A</span> : <DeltaBadge value={row.delta.postsPct} />}
+                                        </TableCell>
+                                    </TableRow>
+                                );
+                            })}
+                            {data.length === 0 && (
                                 <TableRow>
                                     <TableCell colSpan={8} className="h-24 text-center">
                                         Tidak ada data untuk dibandingkan.

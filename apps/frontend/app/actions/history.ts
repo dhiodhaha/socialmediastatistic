@@ -165,3 +165,90 @@ export async function exportHistoryCsv(filters: HistoryFilters) {
         return { success: false, error: "Failed to export CSV" };
     }
 }
+
+/**
+ * Delete a scraping job and all associated snapshots
+ */
+export async function deleteScrapingJob(jobId: string) {
+    try {
+        // Delete associated snapshots first
+        await prisma.snapshot.deleteMany({
+            where: { jobId }
+        });
+
+        // Then delete the job
+        await prisma.scrapingJob.delete({
+            where: { id: jobId }
+        });
+
+        return { success: true };
+    } catch (error) {
+        logger.error({ error }, "Failed to delete scraping job");
+        return { success: false, error: "Failed to delete scraping job" };
+    }
+}
+
+/**
+ * Fix orphan snapshots (snapshots without jobId) by creating jobs for them
+ * Groups by date and creates a completed job for each date
+ */
+export async function fixOrphanSnapshots() {
+    try {
+        // Find all snapshots without a jobId
+        const orphanSnapshots = await prisma.snapshot.findMany({
+            where: { jobId: null },
+            select: { id: true, accountId: true, scrapedAt: true }
+        });
+
+        if (orphanSnapshots.length === 0) {
+            return { success: true, fixed: 0, message: "No orphan snapshots found" };
+        }
+
+        // Group by date
+        const dateGroups = new Map<string, { snapshotIds: string[]; accountIds: Set<string> }>();
+
+        for (const snapshot of orphanSnapshots) {
+            const dateKey = snapshot.scrapedAt.toISOString().split('T')[0];
+            if (!dateGroups.has(dateKey)) {
+                dateGroups.set(dateKey, { snapshotIds: [], accountIds: new Set() });
+            }
+            dateGroups.get(dateKey)!.snapshotIds.push(snapshot.id);
+            dateGroups.get(dateKey)!.accountIds.add(snapshot.accountId);
+        }
+
+        let fixed = 0;
+
+        // Create a job for each date and update snapshots
+        for (const [dateKey, group] of dateGroups) {
+            const jobDate = new Date(dateKey);
+
+            const job = await prisma.scrapingJob.create({
+                data: {
+                    status: "COMPLETED",
+                    totalAccounts: group.accountIds.size,
+                    completedCount: group.accountIds.size,
+                    createdAt: jobDate,
+                    completedAt: jobDate,
+                }
+            });
+
+            // Update all snapshots in this group with the new jobId
+            await prisma.snapshot.updateMany({
+                where: { id: { in: group.snapshotIds } },
+                data: { jobId: job.id }
+            });
+
+            fixed += group.snapshotIds.length;
+        }
+
+        return {
+            success: true,
+            fixed,
+            jobsCreated: dateGroups.size,
+            message: `Fixed ${fixed} snapshots across ${dateGroups.size} jobs`
+        };
+    } catch (error) {
+        logger.error({ error }, "Failed to fix orphan snapshots");
+        return { success: false, error: "Failed to fix orphan snapshots" };
+    }
+}

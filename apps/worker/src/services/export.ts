@@ -1,7 +1,7 @@
 import puppeteer from "puppeteer";
 import { prisma, Prisma, JobStatus } from "@repo/database";
 import { generateReportHtml } from "./template";
-import { generateComparisonReportHtml } from "./comparison-template";
+import { generateCombinedReportHtml } from "./comparison-template";
 
 interface ExportFilters {
     startDate?: string;
@@ -9,23 +9,27 @@ interface ExportFilters {
     status?: string;
 }
 
-interface ComparisonExportData {
-    platform: string;
+interface CombinedExportData {
+    sections: Array<{
+        platform: string;
+        data: Array<{
+            accountName: string;
+            handle: string;
+            oldFollowers: number;
+            newFollowers: number;
+            followersPct: number;
+            oldPosts: number;
+            newPosts: number;
+            postsPct: number;
+            oldLikes?: number;
+            newLikes?: number;
+            likesPct?: number;
+        }>;
+    }>;
     month1: string;
     month2: string;
-    data: Array<{
-        accountName: string;
-        handle: string;
-        oldFollowers: number;
-        newFollowers: number;
-        followersPct: number;
-        oldPosts: number;
-        newPosts: number;
-        postsPct: number;
-        oldLikes?: number;
-        newLikes?: number;
-        likesPct?: number;
-    }>;
+    includeCover?: boolean;
+    customTitle?: string;
 }
 
 export class ExportService {
@@ -79,13 +83,14 @@ export class ExportService {
         }
     }
 
-    static async generateComparisonPdf(exportData: ComparisonExportData): Promise<Buffer> {
-        const html = generateComparisonReportHtml({
-            platform: exportData.platform,
+    static async generateComparisonPdf(exportData: CombinedExportData): Promise<Buffer> {
+        const html = generateCombinedReportHtml({
+            sections: exportData.sections,
             month1: exportData.month1,
             month2: exportData.month2,
             generatedAt: new Date().toLocaleString("id-ID"),
-            data: exportData.data,
+            includeCover: exportData.includeCover,
+            customTitle: exportData.customTitle,
         });
 
         const browser = await puppeteer.launch({
@@ -110,4 +115,3 @@ export class ExportService {
         }
     }
 }
-

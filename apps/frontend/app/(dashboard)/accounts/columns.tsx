@@ -27,7 +27,7 @@ export type Account = {
     createdAt: Date;
     updatedAt: Date;
     growth?: number | null;
-    category?: { name: string } | null;
+    category?: { id: string; name: string } | null;
 };
 
 const HandleLink = ({ handle, urlPrefix }: { handle: string | null, urlPrefix: string }) => {
@@ -44,15 +44,11 @@ export const columns: ColumnDef<Account>[] = [
     {
         accessorKey: "username",
         header: "Name",
-        cell: ({ row }) => <span className="font-medium">{row.getValue("username")}</span>,
-    },
-    {
-        accessorKey: "category.name",
-        header: "Category",
-        cell: ({ row }) => {
-            const cat = row.original.category;
-            return cat ? <Badge variant="outline">{cat.name}</Badge> : <span className="text-muted-foreground text-xs">Uncategorized</span>;
-        }
+        cell: ({ row }) => (
+            <span className="font-medium max-w-[150px] truncate block" title={row.getValue("username")}>
+                {row.getValue("username")}
+            </span>
+        ),
     },
     {
         accessorKey: "growth",
@@ -87,18 +83,6 @@ export const columns: ColumnDef<Account>[] = [
         cell: ({ row }) => <HandleLink handle={row.getValue("twitter")} urlPrefix="https://x.com/" />,
     },
     {
-        accessorKey: "isActive",
-        header: "Status",
-        cell: ({ row }) => {
-            const isActive = row.getValue("isActive");
-            return (
-                <Badge variant={isActive ? "default" : "secondary"} className={isActive ? "bg-green-500 hover:bg-green-600" : ""}>
-                    {isActive ? "Active" : "Inactive"}
-                </Badge>
-            );
-        },
-    },
-    {
         id: "actions",
         cell: ({ row }) => <AccountActionsCell account={row.original} />,
     },
@@ -116,6 +100,7 @@ function AccountActionsCell({ account }: { account: Account }) {
     return (
         <>
             <AccountDialog
+                key={account.id}
                 open={isEditOpen}
                 onOpenChange={setIsEditOpen}
                 mode="edit"
@@ -124,7 +109,8 @@ function AccountActionsCell({ account }: { account: Account }) {
                     instagram: account.instagram || "",
                     tiktok: account.tiktok || "",
                     twitter: account.twitter || "",
-                    isActive: account.isActive
+                    isActive: account.isActive,
+                    categoryId: account.category?.id || null
                 }}
                 accountId={account.id}
             />

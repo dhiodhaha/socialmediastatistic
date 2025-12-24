@@ -200,3 +200,68 @@ export async function bulkCreateAccounts(accounts: AccountInput[]) {
         return { success: false, error: "Bulk create failed" };
     }
 }
+
+/**
+ * Get accounts that had errors in the latest scraping job
+ */
+export async function getAccountsWithErrors() {
+    try {
+        // Get the latest completed job with errors
+        const latestJob = await prisma.scrapingJob.findFirst({
+            where: {
+                status: "COMPLETED",
+                failedCount: { gt: 0 }
+            },
+            orderBy: { completedAt: "desc" },
+            select: {
+                id: true,
+                errors: true,
+                completedAt: true
+            }
+        });
+
+        if (!latestJob || !latestJob.errors) {
+            return { success: true, data: [], jobId: null, jobDate: null };
+        }
+
+        const errors = latestJob.errors as Array<{
+            accountId: string;
+            platform: string;
+            handle: string;
+            error: string;
+            timestamp: string;
+        }>;
+
+        // Get unique account IDs from errors
+        const accountIds = [...new Set(errors.map(e => e.accountId).filter(id => id !== "system"))];
+
+        // Fetch account details
+        const accounts = await prisma.account.findMany({
+            where: { id: { in: accountIds } },
+            include: { category: true }
+        });
+
+        // Merge account info with error details
+        const accountsWithErrors = accounts.map(acc => {
+            const accErrors = errors.filter(e => e.accountId === acc.id);
+            return {
+                ...acc,
+                errors: accErrors.map(e => ({
+                    platform: e.platform,
+                    handle: e.handle,
+                    error: e.error
+                }))
+            };
+        });
+
+        return {
+            success: true,
+            data: accountsWithErrors,
+            jobId: latestJob.id,
+            jobDate: latestJob.completedAt
+        };
+    } catch (error) {
+        logger.error({ error }, "Failed to get accounts with errors");
+        return { success: false, error: "Failed to get accounts with errors", data: [] };
+    }
+}

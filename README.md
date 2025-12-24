@@ -2,39 +2,53 @@
 
 > [**Main README**](./README.md) | [**Deployment Tutorial**](./TUTORIAL.md) | [**Local Development**](./LOCAL_DEVELOPMENT.md)
 
-A specialized analytics dashboard for tracking and visualizing social media performance across **Instagram**, **TikTok**, and **Twitter (X)**. Built with high-performance modern web technologies including **Next.js 14**, **Prisma**, and **Docker**.
+A specialized analytics dashboard for tracking and visualizing social media performance across **Instagram**, **TikTok**, and **Twitter (X)**. Built with modern web technologies including **Next.js 16**, **Prisma 7**, and **Docker**.
 
 ![Dashboard Preview](https://placehold.co/1200x600?text=Dashboard+Preview)
 
 ## 🚀 Key Features
 
--   **Multi-Platform Analytics**: Unified view for followers, posts, and engagement metrics.
--   **Automated Scraping Engine**: Integrated background worker that auto-refreshes data on the last day of every month.
--   **Manual Trigger**: instant scrape triggering via the dashboard for real-time updates.
--   **Historical Data**: comprehensive history log with "Time Travel" growth calculation.
--   **Account Categorization**: Group creators for easier management and targeted reporting.
--   **Report Filtering**: Filter comparison reports by category to focus on specific segments.
--   **Export Capabilities**: One-click export to **CSV** and **PDF** reports (now with category filtering support).
--   **Bulk Management**: Easy mass-import of accounts via CSV upload with optional category assignment.
+### Analytics & Tracking
+- **Multi-Platform Analytics**: Unified view for followers, posts, and engagement metrics across Instagram, TikTok, and Twitter.
+- **Growth Reports (Laporan Pertumbuhan)**: Compare data between two dates to track audience growth with percentage calculations.
+- **Historical Data**: Comprehensive history log with date-based filtering and growth visualization.
+
+### Automation & Scraping
+- **Automated Scraping Engine**: Background worker with configurable cron schedule (default: midnight on last day of month).
+- **Manual Trigger**: Instant scrape triggering via dashboard with confirmation modal.
+- **Retry Failed Accounts**: One-click retry for accounts that failed during scraping.
+- **Category-based Scraping**: Scrape all accounts or filter by specific category.
+
+### Export & Reporting
+- **Export Modal**: Configurable export with platform selection, category filter, and date range.
+- **Combined PDF Export**: All platforms in a single PDF with main cover page + individual platform sections.
+- **CSV Export**: Quick data export for spreadsheet analysis.
+- **Custom Cover Page**: Optional cover page with custom title for branded reports.
+
+### Account Management
+- **Bulk Import**: CSV upload for mass-importing accounts.
+- **Category Management**: Organize accounts into categories for targeted reporting.
+- **Account Status**: Active/inactive toggle for each account.
 
 ## 🛠 Tech Stack
 
--   **Frontend**: Next.js 14 (App Router), TypeScript, Tailwind CSS, Shadcn UI, Recharts.
--   **Backend**: Server Actions, Prisma ORM, PostgreSQL.
--   **Worker Service**: Node.js, Puppeteer (for reliable scraping/PDFs), Express.
--   **Infrastructure**: Docker, Docker Compose, GitHub Actions (CI).
+- **Frontend**: Next.js 16 (Turbopack), TypeScript, Tailwind CSS, Shadcn UI.
+- **Backend**: Server Actions, Prisma 7 ORM, PostgreSQL.
+- **Worker Service**: Node.js, Express, Puppeteer (scraping & PDF generation).
+- **Infrastructure**: Docker, Docker Compose, Turborepo (monorepo).
 
 ## 📖 Documentation
 
--   **[Deployment Guide (TUTORIAL.md)](./TUTORIAL.md)**: Step-by-step instructions for deploying to Vercel and VPS.
--   **[Database Schema](./packages/database/prisma/schema.prisma)**: Overview of the data model.
+- **[Deployment Guide (TUTORIAL.md)](./TUTORIAL.md)**: Deploy to Vercel (frontend) + VPS (worker).
+- **[Local Development (LOCAL_DEVELOPMENT.md)](./LOCAL_DEVELOPMENT.md)**: Setup for local development.
+- **[Database Schema](./packages/database/prisma/schema.prisma)**: Prisma schema overview.
 
-## ⚡️ Quick Start (Local Development)
+## ⚡️ Quick Start
 
 ### Prerequisites
--   Node.js 18+ & pnpm
--   PostgreSQL Database
--   Chromium (for local worker testing)
+- Node.js 18+ & pnpm
+- PostgreSQL Database
+- Chromium (for worker PDF/scraping)
 
 ### 1. Clone & Install
 ```bash
@@ -44,27 +58,47 @@ pnpm install
 ```
 
 ### 2. Environment Setup
-Copy `.env.example` in both `apps/frontend` and `apps/worker` to `.env` and fill in:
--   `DATABASE_URL`
--   `SCRAPECREATORS_API_KEY` (Get one at [ScrapeCreators](https://scrapecreators.com))
--   `WORKER_SECRET` (Generate a random string)
+Copy `.env.example` in both `apps/frontend` and `apps/worker` to `.env`:
+```bash
+cp apps/frontend/.env.example apps/frontend/.env
+cp apps/worker/.env.example apps/worker/.env
+```
+
+Required variables:
+- `DATABASE_URL` - PostgreSQL connection string
+- `SCRAPECREATORS_API_KEY` - Get from [ScrapeCreators](https://scrapecreators.com)
+- `WORKER_SECRET` - Shared secret between frontend and worker
 
 ### 3. Database
 ```bash
-pnpm db:generate
-pnpm db:push
+pnpm db:generate  # Generate Prisma client
+pnpm db:push      # Push schema to database
+pnpm db:seed      # (Optional) Seed with sample data
 ```
 
-### 4. Run Locally
+### 4. Run
 ```bash
 pnpm dev
 ```
--   **Dashboard**: [http://localhost:3000](http://localhost:3000)
--   **Worker API**: [http://localhost:4000](http://localhost:4000)
+- **Dashboard**: http://localhost:3000
+- **Worker API**: http://localhost:4000
 
 ## 🧪 Testing
 
-Run the automated test suite to verify frontend logic:
 ```bash
-pnpm test --filter=frontend
+pnpm test                    # Run all tests
+pnpm test --filter=frontend  # Frontend tests only
+```
+
+## 📁 Project Structure
+
+```
+socialmediastatistic/
+├── apps/
+│   ├── frontend/     # Next.js dashboard
+│   └── worker/       # Express API + scraper
+├── packages/
+│   ├── database/     # Prisma schema & client
+│   └── types/        # Shared TypeScript types
+└── docker-compose.prod.yml
 ```

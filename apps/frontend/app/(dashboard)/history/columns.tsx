@@ -2,7 +2,12 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
+import { Trash2 } from "lucide-react";
+import { deleteScrapingJob } from "@/app/actions/history";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 // We need to define the type based on Prisma model, but for now we can infer or define interface
 // Importing from database package might be tricky client side if not careful with types
@@ -16,6 +21,28 @@ interface ScrapingJob {
     startedAt: Date | string | null;
     completedAt: Date | string | null;
     createdAt: Date | string;
+}
+
+function DeleteButton({ jobId }: { jobId: string }) {
+    const router = useRouter();
+
+    const handleDelete = async () => {
+        if (!confirm("Delete this job and all associated snapshot data?")) return;
+
+        const result = await deleteScrapingJob(jobId);
+        if (result.success) {
+            toast.success("Job deleted successfully");
+            router.refresh();
+        } else {
+            toast.error(result.error || "Failed to delete job");
+        }
+    };
+
+    return (
+        <Button variant="ghost" size="icon" onClick={handleDelete} className="h-8 w-8 text-muted-foreground hover:text-destructive">
+            <Trash2 className="h-4 w-4" />
+        </Button>
+    );
 }
 
 export const columns: ColumnDef<ScrapingJob>[] = [
@@ -96,5 +123,10 @@ export const columns: ColumnDef<ScrapingJob>[] = [
                 </span>
             );
         },
+    },
+    {
+        id: "actions",
+        header: "",
+        cell: ({ row }) => <DeleteButton jobId={row.original.id} />,
     },
 ];

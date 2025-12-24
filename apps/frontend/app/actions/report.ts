@@ -19,11 +19,13 @@ export interface ComparisonRow {
     };
 }
 
-export async function getComparisonData(jobId1: string, jobId2: string, categoryId?: string): Promise<ComparisonRow[]> {
-    // 1. Fetch details of both jobs to ensure they exist and get dates (optional, for sorting?)
-    // Actually we just need the snapshots associated with these jobIds.
-
-    // 2. Fetch all accounts to have the base list
+export async function getComparisonData(
+    jobId1: string,
+    jobId2: string,
+    categoryId?: string,
+    includeNA?: boolean
+): Promise<ComparisonRow[]> {
+    // Fetch all accounts to have the base list
     const whereClause: any = { isActive: true };
     if (categoryId) {
         whereClause.categoryId = categoryId;
@@ -41,28 +43,59 @@ export async function getComparisonData(jobId1: string, jobId2: string, category
     });
 
     const rows: ComparisonRow[] = [];
+    const allPlatforms: Platform[] = ["INSTAGRAM", "TIKTOK", "TWITTER"];
 
     for (const account of accounts) {
-        // For each platform this account has, we generate a comparison row
-        // Check which platforms are active/present
-        const platforms: Platform[] = [];
-        if (account.instagram) platforms.push("INSTAGRAM");
-        if (account.tiktok) platforms.push("TIKTOK");
-        if (account.twitter) platforms.push("TWITTER");
+        // Determine which platforms to include
+        const platformsToCheck = includeNA ? allPlatforms : [];
 
-        for (const platform of platforms) {
+        if (!includeNA) {
+            // Only include platforms the account actually has
+            if (account.instagram) platformsToCheck.push("INSTAGRAM");
+            if (account.tiktok) platformsToCheck.push("TIKTOK");
+            if (account.twitter) platformsToCheck.push("TWITTER");
+        }
+
+        for (const platform of platformsToCheck) {
+            // Check if account has this platform
+            let handle = "";
+            let hasThisPlatform = false;
+
+            if (platform === "INSTAGRAM") {
+                handle = account.instagram || "";
+                hasThisPlatform = !!account.instagram;
+            } else if (platform === "TIKTOK") {
+                handle = account.tiktok || "";
+                hasThisPlatform = !!account.tiktok;
+            } else if (platform === "TWITTER") {
+                handle = account.twitter || "";
+                hasThisPlatform = !!account.twitter;
+            }
+
+            // Skip if not including N/A and account doesn't have this platform
+            if (!includeNA && !hasThisPlatform) continue;
+
             // Find snapshots for this platform and the two jobs
             const snapshot1 = account.snapshots.find(s => s.jobId === jobId1 && s.platform === platform);
             const snapshot2 = account.snapshots.find(s => s.jobId === jobId2 && s.platform === platform);
 
+            // If account doesn't have this platform, show as N/A
+            if (!hasThisPlatform) {
+                rows.push({
+                    accountId: account.id,
+                    accountName: account.username,
+                    handle: "N/A",
+                    platform,
+                    oldStats: { followers: -1, posts: -1, likes: -1 }, // -1 indicates N/A
+                    newStats: { followers: -1, posts: -1, likes: -1 },
+                    delta: { followersVal: 0, followersPct: 0, postsVal: 0, postsPct: 0, likesVal: 0, likesPct: 0 },
+                });
+                continue;
+            }
+
             // Use 0 if snapshot missing (e.g. account didn't exist then or failed)
             const s1 = snapshot1 || { followers: 0, posts: 0, likes: 0 };
             const s2 = snapshot2 || { followers: 0, posts: 0, likes: 0 };
-
-            let handle = "";
-            if (platform === "INSTAGRAM") handle = account.instagram || "";
-            else if (platform === "TIKTOK") handle = account.tiktok || "";
-            else if (platform === "TWITTER") handle = account.twitter || "";
 
             // Calculate deltas using helper
             rows.push({
@@ -91,6 +124,7 @@ export async function getComparisonData(jobId1: string, jobId2: string, category
 
     return rows;
 }
+
 
 function calculateGrowth(
     oldVal: number,
@@ -134,22 +168,26 @@ export async function getScrapingJobsForReport() {
 }
 
 interface ExportData {
-    platform: string;
+    sections: Array<{
+        platform: string;
+        data: Array<{
+            accountName: string;
+            handle: string;
+            oldFollowers: number;
+            newFollowers: number;
+            followersPct: number;
+            oldPosts: number;
+            newPosts: number;
+            postsPct: number;
+            oldLikes?: number;
+            newLikes?: number;
+            likesPct?: number;
+        }>;
+    }>;
     month1: string;
     month2: string;
-    data: Array<{
-        accountName: string;
-        handle: string;
-        oldFollowers: number;
-        newFollowers: number;
-        followersPct: number;
-        oldPosts: number;
-        newPosts: number;
-        postsPct: number;
-        oldLikes?: number;
-        newLikes?: number;
-        likesPct?: number;
-    }>;
+    includeCover?: boolean;
+    customTitle?: string;
 }
 
 /**
@@ -183,3 +221,109 @@ export async function exportComparisonPdf(exportData: ExportData): Promise<strin
     return base64;
 }
 
+/**
+ * Get all dates that have snapshot data (for calendar display)
+ */
+export async function getAvailableDates(): Promise<string[]> {
+    const snapshots = await prisma.snapshot.findMany({
+        select: { scrapedAt: true },
+        distinct: ['scrapedAt'],
+        orderBy: { scrapedAt: 'desc' }
+    });
+
+    // Group by date (not datetime) - return unique dates
+    const dates = new Set<string>();
+    for (const s of snapshots) {
+        dates.add(s.scrapedAt.toISOString().split('T')[0]);
+    }
+
+    return Array.from(dates);
+}
+
+/**
+ * Get comparison data by date range instead of job ID
+ * This includes both scraped and imported historical data
+ */
+export async function getComparisonDataByDate(
+    date1: string,
+    date2: string,
+    categoryId?: string
+): Promise<ComparisonRow[]> {
+    const d1Start = new Date(date1);
+    const d1End = new Date(new Date(date1).getTime() + 24 * 60 * 60 * 1000);
+    const d2Start = new Date(date2);
+    const d2End = new Date(new Date(date2).getTime() + 24 * 60 * 60 * 1000);
+
+    const whereClause: any = { isActive: true };
+    if (categoryId) {
+        whereClause.categoryId = categoryId;
+    }
+
+    const accounts = await prisma.account.findMany({
+        where: whereClause,
+        include: {
+            snapshots: {
+                where: {
+                    OR: [
+                        { scrapedAt: { gte: d1Start, lt: d1End } },
+                        { scrapedAt: { gte: d2Start, lt: d2End } },
+                    ]
+                },
+            },
+        },
+    });
+
+    const rows: ComparisonRow[] = [];
+
+    for (const account of accounts) {
+        const platforms: Platform[] = [];
+        if (account.instagram) platforms.push("INSTAGRAM");
+        if (account.tiktok) platforms.push("TIKTOK");
+        if (account.twitter) platforms.push("TWITTER");
+
+        for (const platform of platforms) {
+            // Find snapshots for this platform on each date
+            const snapshot1 = account.snapshots.find(
+                s => s.platform === platform && s.scrapedAt >= d1Start && s.scrapedAt < d1End
+            );
+            const snapshot2 = account.snapshots.find(
+                s => s.platform === platform && s.scrapedAt >= d2Start && s.scrapedAt < d2End
+            );
+
+            // Skip if no data for either date
+            if (!snapshot1 && !snapshot2) continue;
+
+            const s1 = snapshot1 || { followers: 0, posts: 0, likes: 0 };
+            const s2 = snapshot2 || { followers: 0, posts: 0, likes: 0 };
+
+            let handle = "";
+            if (platform === "INSTAGRAM") handle = account.instagram || "";
+            else if (platform === "TIKTOK") handle = account.tiktok || "";
+            else if (platform === "TWITTER") handle = account.twitter || "";
+
+            rows.push({
+                accountId: account.id,
+                accountName: account.username,
+                handle,
+                platform,
+                oldStats: {
+                    followers: s1.followers || 0,
+                    posts: s1.posts || 0,
+                    likes: s1.likes || 0,
+                },
+                newStats: {
+                    followers: s2.followers || 0,
+                    posts: s2.posts || 0,
+                    likes: s2.likes || 0,
+                },
+                delta: {
+                    ...calculateGrowth(s1.followers || 0, s2.followers || 0, "followers"),
+                    ...calculateGrowth(s1.posts || 0, s2.posts || 0, "posts"),
+                    ...calculateGrowth(s1.likes || 0, s2.likes || 0, "likes"),
+                },
+            });
+        }
+    }
+
+    return rows;
+}

@@ -311,13 +311,16 @@ async function processBatchWithConcurrency(
  */
 async function scrapeWithRetry(
     platform: Platform,
-    handle: string
+    handle: string,
+    accountId?: string
 ): Promise<ScrapeResult> {
     let lastError: Error | null = null;
 
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
         try {
-            return await scrapeAccount(platform, handle);
+            const result = await scrapeAccount(platform, handle);
+            // Add accountId to the result if provided
+            return { ...result, accountId };
         } catch (error) {
             lastError = error as Error;
             logger.warn(
@@ -336,6 +339,7 @@ async function scrapeWithRetry(
         success: false,
         platform,
         handle,
+        accountId,
         error: lastError?.message || "Max retries exceeded",
     };
 }
@@ -409,4 +413,196 @@ async function scrapeAccount(
  */
 function sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Retry scraping only for accounts that failed in the latest completed job.
+ * Saves snapshots to the ORIGINAL job to keep data together.
+ */
+export async function retryFailedAccounts(): Promise<{
+    success: boolean;
+    jobId?: string;
+    failedCount?: number;
+    error?: string;
+}> {
+    logger.info("Starting retry for failed accounts");
+
+    // Get the latest completed job with errors
+    const latestJob = await prisma.scrapingJob.findFirst({
+        where: {
+            status: "COMPLETED",
+            failedCount: { gt: 0 }
+        },
+        orderBy: { completedAt: "desc" },
+        select: {
+            id: true,
+            errors: true,
+            completedCount: true,
+            failedCount: true,
+            totalAccounts: true
+        }
+    });
+
+    if (!latestJob || !latestJob.errors) {
+        return { success: false, error: "No failed accounts found to retry" };
+    }
+
+    const originalJobId = latestJob.id;
+    const errors = latestJob.errors as Array<{
+        accountId: string;
+        platform: string;
+        handle: string;
+        error: string;
+    }>;
+
+    // Get unique account IDs from errors (exclude "system" errors)
+    const failedAccountIds = [...new Set(errors.map(e => e.accountId).filter(id => id !== "system"))];
+
+    if (failedAccountIds.length === 0) {
+        return { success: false, error: "No valid failed accounts to retry" };
+    }
+
+    // Fetch the failed accounts
+    const accounts = await prisma.account.findMany({
+        where: {
+            id: { in: failedAccountIds },
+            isActive: true
+        }
+    });
+
+    if (accounts.length === 0) {
+        return { success: false, error: "Failed accounts are no longer active" };
+    }
+
+    // Generate tasks for the failed accounts
+    const tasks: ScrapeTask[] = [];
+    for (const account of accounts) {
+        // Check which platforms failed for this account
+        const accountErrors = errors.filter(e => e.accountId === account.id);
+        const failedPlatforms = new Set(accountErrors.map(e => e.platform));
+
+        // Only retry platforms that failed
+        if (failedPlatforms.has("INSTAGRAM") && account.instagram) {
+            tasks.push({ accountId: account.id, platform: "INSTAGRAM" as Platform, handle: account.instagram });
+        }
+        if (failedPlatforms.has("TIKTOK") && account.tiktok) {
+            tasks.push({ accountId: account.id, platform: "TIKTOK" as Platform, handle: account.tiktok });
+        }
+        if (failedPlatforms.has("TWITTER") && account.twitter) {
+            tasks.push({ accountId: account.id, platform: "TWITTER" as Platform, handle: account.twitter });
+        }
+    }
+
+    if (tasks.length === 0) {
+        return { success: false, error: "No valid tasks to retry (handles may have been removed)" };
+    }
+
+    // Set the original job back to RUNNING so it shows in job logs
+    await prisma.scrapingJob.update({
+        where: { id: originalJobId },
+        data: { status: "RUNNING" }
+    });
+
+    logger.info({ jobId: originalJobId, totalTasks: tasks.length }, "Retrying failed accounts for original job");
+
+    // Process retry in background, saving to the ORIGINAL job
+    processRetryJob(originalJobId, accounts, tasks, latestJob.completedCount, latestJob.failedCount).catch((error) => {
+        logger.error({ jobId: originalJobId, error }, "Retry processing failed");
+    });
+
+    return {
+        success: true,
+        jobId: originalJobId,
+        failedCount: tasks.length
+    };
+}
+
+/**
+ * Process retry job - saves snapshots to the original job and updates its counts.
+ */
+async function processRetryJob(
+    jobId: string,
+    accounts: Awaited<ReturnType<typeof prisma.account.findMany>>,
+    tasks: ScrapeTask[],
+    originalCompletedCount: number,
+    originalFailedCount: number
+): Promise<void> {
+    let completedCount = originalCompletedCount;
+    let failedCount = originalFailedCount;
+    const newErrors: Array<{
+        accountId: string;
+        platform: string;
+        handle: string;
+        error: string;
+        timestamp: string;
+    }> = [];
+
+    // Process tasks in batches
+    for (let i = 0; i < tasks.length; i += BATCH_SIZE) {
+        const batch = tasks.slice(i, i + BATCH_SIZE);
+
+        // Scrape batch with concurrency
+        const results = await Promise.all(
+            batch.map((task) =>
+                scrapeWithRetry(task.platform, task.handle, task.accountId)
+            )
+        );
+
+        // Process results
+        for (const result of results) {
+            if (result.success && result.data) {
+                const snapshotData: Parameters<typeof prisma.snapshot.create>[0]["data"] = {
+                    accountId: result.accountId!,
+                    platform: result.platform,
+                    followers: result.data.followers,
+                    following: result.data.following,
+                    posts: result.data.posts,
+                    engagement: result.data.engagement,
+                    jobId: jobId, // Use ORIGINAL job ID
+                };
+
+                if (result.platform === "TIKTOK") {
+                    snapshotData.likes = result.data.likes;
+                }
+
+                await prisma.snapshot.create({
+                    data: snapshotData,
+                });
+                completedCount++;
+                failedCount--; // Reduce failed count since we succeeded
+            } else {
+                // Still failed
+                newErrors.push({
+                    accountId: result.accountId!,
+                    platform: result.platform,
+                    handle: result.handle,
+                    error: result.error || "Unknown error",
+                    timestamp: new Date().toISOString(),
+                });
+            }
+        }
+
+        // Update job progress
+        await prisma.scrapingJob.update({
+            where: { id: jobId },
+            data: {
+                completedCount,
+                failedCount,
+                errors: newErrors.length > 0 ? newErrors : [],
+            },
+        });
+
+        // Delay between batches
+        if (i + BATCH_SIZE < tasks.length) {
+            await sleep(DELAY_BETWEEN_BATCHES_MS);
+        }
+    }
+
+    // Set job back to COMPLETED
+    await prisma.scrapingJob.update({
+        where: { id: jobId },
+        data: { status: "COMPLETED", completedAt: new Date() }
+    });
+
+    logger.info({ jobId, completedCount, failedCount, retriedTasks: tasks.length }, "Retry job completed");
 }

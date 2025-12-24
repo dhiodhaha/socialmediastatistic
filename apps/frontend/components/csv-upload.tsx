@@ -2,18 +2,32 @@
 
 import { useState, useRef } from "react";
 import Papa from "papaparse";
-import { Upload, AlertCircle, CheckCircle } from "lucide-react";
+import { Upload, Download, AlertCircle, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { bulkCreateAccounts } from "@/app/actions/account";
 import { type AccountInput } from "@/lib/schemas";
 
-// Used simple div for alerts instead of components
+// Template for account import (client-side, no server cost)
+const ACCOUNT_TEMPLATE = `name,instagram,tiktok,x,category
+Kementerian Keuangan,kemenkeuri,kemenkeuri,KemenkeuRI,Lingkungan Kementerian
+Sekretariat Kabinet,setkabgoid,,setkabgoid,Lingkungan Kementerian
+Menteri Pendidikan,mendikdasmen,mendikdasmen_ri,Aborsi,Menteri-Menteri`;
 
 export function CsvUpload() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [loading, setLoading] = useState(false);
     const [status, setStatus] = useState<{ type: 'success' | 'error', message: string, details?: string[] } | null>(null);
+
+    const handleDownloadTemplate = () => {
+        const blob = new Blob([ACCOUNT_TEMPLATE], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "account_import_template.csv";
+        a.click();
+        URL.revokeObjectURL(url);
+    };
 
     const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -46,7 +60,8 @@ export function CsvUpload() {
                             if (!val) return null;
                             const lower = val.toLowerCase().trim();
                             if (lower === 'n/a' || lower === 'na' || lower === '-') return null;
-                            return val.trim();
+                            // Remove @ symbol from usernames
+                            return val.trim().replace(/^@/, '');
                         };
 
                         accounts.push({
@@ -104,15 +119,20 @@ export function CsvUpload() {
                 />
                 <Button
                     variant="outline"
+                    size="sm"
+                    onClick={handleDownloadTemplate}
+                >
+                    <Download className="mr-2 h-4 w-4" />
+                    Template
+                </Button>
+                <Button
+                    variant="outline"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={loading}
                 >
                     <Upload className="mr-2 h-4 w-4" />
                     {loading ? "Uploading..." : "Import CSV"}
                 </Button>
-                <span className="text-xs text-muted-foreground">
-                    Headers: name, tiktok, instagram, x, category
-                </span>
             </div>
 
             {status && (

@@ -10,6 +10,7 @@ export interface ScrapeResult {
     success: boolean;
     platform: Platform;
     handle: string;
+    accountId?: string; // Optional - added for retry functionality
     data?: {
         followers: number;
         following?: number;
