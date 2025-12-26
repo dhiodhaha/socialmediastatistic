@@ -70,6 +70,7 @@ export function CsvUpload() {
                             tiktok: clean(row.tiktok || row.TikTok),
                             twitter: clean(row.x || row.X || row.twitter || row.Twitter),
                             categoryName: clean(row.category || row.Category) || undefined,
+                            categoryIds: [], // Will be populated from categoryName by bulkCreateAccounts
                             isActive: true,
                         });
                     }

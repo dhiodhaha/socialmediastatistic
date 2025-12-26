@@ -65,14 +65,21 @@ interface ScrapeTask {
 /**
  * Main scraping job runner.
  * Creates a job, returns the ID immediately, then processes in background.
+ * 
+ * Smart deduplication: Skips account+platform combinations already scraped today
+ * to avoid wasting API credits when categories overlap.
  */
 export async function runScrapingJob(categoryId?: string): Promise<string> {
     logger.info({ categoryId }, "Starting scraping job");
 
-    // Fetch active accounts (optionally filtered by category)
+    // Fetch active accounts (optionally filtered by category via many-to-many)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const whereClause: any = { isActive: true };
     if (categoryId) {
-        whereClause.categoryId = categoryId;
+        // Many-to-many: filter via join table
+        whereClause.categories = {
+            some: { categoryId: categoryId }
+        };
     }
 
     const accounts = await prisma.account.findMany({
@@ -93,20 +100,43 @@ export async function runScrapingJob(categoryId?: string): Promise<string> {
         }
     }
 
+    // Smart deduplication: Find accounts/platforms already scraped today
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const alreadyScrapedToday = await prisma.snapshot.findMany({
+        where: { scrapedAt: { gte: todayStart } },
+        select: { accountId: true, platform: true },
+        distinct: ['accountId', 'platform']
+    });
+
+    const skipSet = new Set(
+        alreadyScrapedToday.map(s => `${s.accountId}:${s.platform}`)
+    );
+
+    // Filter out tasks that were already scraped today
+    const filteredTasks = tasks.filter(
+        t => !skipSet.has(`${t.accountId}:${t.platform}`)
+    );
+
+    const skippedCount = tasks.length - filteredTasks.length;
+    if (skippedCount > 0) {
+        logger.info({ skippedCount }, "Skipped tasks - already scraped today (smart deduplication)");
+    }
+
     const job = await prisma.scrapingJob.create({
         data: {
             status: "RUNNING",
             totalAccounts: accounts.length,
             startedAt: new Date(),
-            // @ts-ignore - categoryId exists after schema migration
             categoryId: categoryId || null,
         },
     });
 
-    logger.info({ jobId: job.id, totalAccounts: accounts.length, totalTasks: tasks.length }, "Job created");
+    logger.info({ jobId: job.id, totalAccounts: accounts.length, totalTasks: filteredTasks.length, skippedTasks: skippedCount }, "Job created");
 
     // Process in background (don't await)
-    processScrapingJob(job.id, accounts, tasks).catch((error) => {
+    processScrapingJob(job.id, accounts, filteredTasks).catch((error) => {
         logger.error({ jobId: job.id, error }, "Scraping job processing failed");
     });
 

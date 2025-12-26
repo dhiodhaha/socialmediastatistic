@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
 import * as z from "zod";
 import { createCategory, updateCategory } from "@/app/actions/category";
 
@@ -48,7 +48,7 @@ export function CategoryDialog({
     const [loading, setLoading] = useState(false);
 
     const { register, handleSubmit, formState: { errors }, reset, setValue } = useForm<CategoryInput>({
-        resolver: zodResolver(categorySchema),
+        resolver: standardSchemaResolver(categorySchema),
         defaultValues: {
             name: defaultValues?.name || "",
         },

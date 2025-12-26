@@ -5,7 +5,6 @@ import { revalidatePath } from "next/cache";
 
 export async function getCategories() {
     try {
-        // @ts-ignore - Category model exists after schema migration
         const categories = await prisma.category.findMany({
             orderBy: { name: "asc" },
             include: {
@@ -23,7 +22,6 @@ export async function getCategories() {
 
 export async function createCategory(name: string) {
     try {
-        // @ts-ignore
         const existing = await prisma.category.findUnique({
             where: { name }
         });
@@ -32,7 +30,6 @@ export async function createCategory(name: string) {
             return { success: false, error: "Category already exists" };
         }
 
-        // @ts-ignore
         const category = await prisma.category.create({
             data: { name }
         });
@@ -47,7 +44,6 @@ export async function createCategory(name: string) {
 
 export async function updateCategory(id: string, name: string) {
     try {
-        // @ts-ignore
         const category = await prisma.category.update({
             where: { id },
             data: { name }
@@ -63,7 +59,6 @@ export async function updateCategory(id: string, name: string) {
 
 export async function deleteCategory(id: string) {
     try {
-        // @ts-ignore
         await prisma.category.delete({
             where: { id }
         });

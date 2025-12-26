@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
 import { createAccount, updateAccount } from "@/app/actions/account";
 import { getCategories } from "@/app/actions/category";
-import { accountSchema, type AccountInput } from "@/lib/schemas";
+import { accountSchema, type AccountInput, type AccountFormInput } from "@/lib/schemas";
 
 
 import {
@@ -66,21 +66,42 @@ export function AccountDialog({
         }
     }, [isOpen]);
 
-    const { register, handleSubmit, formState: { errors }, reset, setValue, watch } = useForm<AccountInput>({
-        resolver: zodResolver(accountSchema),
+    // Track selected categories for multi-select
+    const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>(
+        (defaultValues as any)?.categoryIds || []
+    );
+
+    const { register, handleSubmit, formState: { errors }, reset, setValue, watch } = useForm<AccountFormInput>({
+        resolver: standardSchemaResolver(accountSchema),
         defaultValues: {
             username: defaultValues?.username || "",
             instagram: defaultValues?.instagram || "",
             tiktok: defaultValues?.tiktok || "",
             twitter: defaultValues?.twitter || "",
-            categoryId: defaultValues?.categoryId || null,
+            categoryIds: (defaultValues as any)?.categoryIds || [],
             isActive: defaultValues?.isActive ?? true,
         },
     });
 
-    const onSubmit = async (data: AccountInput) => {
+    // Sync selectedCategoryIds with form
+    useEffect(() => {
+        setValue("categoryIds", selectedCategoryIds);
+    }, [selectedCategoryIds, setValue]);
+
+    const toggleCategory = (categoryId: string) => {
+        setSelectedCategoryIds(prev =>
+            prev.includes(categoryId)
+                ? prev.filter(id => id !== categoryId)
+                : [...prev, categoryId]
+        );
+    };
+
+    const onSubmit = async (formData: AccountFormInput) => {
         setLoading(true);
         setError("");
+
+        // Parse with zod to apply defaults and get AccountInput type
+        const data: AccountInput = accountSchema.parse(formData);
 
         // Cleanup empty strings to null/undefined if necessary, or handled by server action validation
         const payload = {
@@ -163,27 +184,30 @@ export function AccountDialog({
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="category" className="text-right">
-                            Category
+                    <div className="grid grid-cols-4 items-start gap-4">
+                        <Label className="text-right pt-2">
+                            Categories
                         </Label>
-                        <div className="col-span-3">
-                            <Select
-                                onValueChange={(val) => setValue("categoryId", val === "none" ? null : val)}
-                                defaultValue={defaultValues?.categoryId || undefined}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select a category" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="none">No Category</SelectItem>
-                                    {categories.map((cat) => (
-                                        <SelectItem key={cat.id} value={cat.id}>
+                        <div className="col-span-3 space-y-2 max-h-32 overflow-y-auto border rounded-md p-2">
+                            {categories.length === 0 ? (
+                                <p className="text-sm text-muted-foreground">No categories available</p>
+                            ) : (
+                                categories.map((cat) => (
+                                    <div key={cat.id} className="flex items-center space-x-2">
+                                        <Checkbox
+                                            id={`cat-${cat.id}`}
+                                            checked={selectedCategoryIds.includes(cat.id)}
+                                            onCheckedChange={() => toggleCategory(cat.id)}
+                                        />
+                                        <label
+                                            htmlFor={`cat-${cat.id}`}
+                                            className="text-sm font-medium leading-none cursor-pointer"
+                                        >
                                             {cat.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                                        </label>
+                                    </div>
+                                ))
+                            )}
                         </div>
                     </div>
 

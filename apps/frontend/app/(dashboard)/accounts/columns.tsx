@@ -16,7 +16,7 @@ import { deleteAccount } from "@/app/actions/account";
 import { useState } from "react";
 import { AccountDialog } from "@/components/account-dialog";
 
-// Define the shape of our data (must match Prisma Account model)
+// Define the shape of our data (must match Prisma Account model with join table)
 export type Account = {
     id: string;
     username: string; // Display Name
@@ -27,7 +27,7 @@ export type Account = {
     createdAt: Date;
     updatedAt: Date;
     growth?: number | null;
-    category?: { id: string; name: string } | null;
+    categories?: Array<{ category: { id: string; name: string } }>;
 };
 
 const HandleLink = ({ handle, urlPrefix }: { handle: string | null, urlPrefix: string }) => {
@@ -110,7 +110,7 @@ function AccountActionsCell({ account }: { account: Account }) {
                     tiktok: account.tiktok || "",
                     twitter: account.twitter || "",
                     isActive: account.isActive,
-                    categoryId: account.category?.id || null
+                    categoryIds: account.categories?.map(c => c.category.id) || []
                 }}
                 accountId={account.id}
             />
