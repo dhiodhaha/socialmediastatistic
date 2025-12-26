@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getComparisonData, getScrapingJobsForReport, exportComparisonPdf, ComparisonRow } from "@/app/actions/report";
+import { getComparisonData, getScrapingJobsForReport, ComparisonRow } from "@/app/actions/report";
 import { getCategories } from "@/app/actions/category";
 import { ComparisonTable } from "@/components/reports/comparison-table";
 import {
@@ -14,12 +14,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Download } from "lucide-react";
+import { Loader2, ArrowRight, Filter, Play } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { ExportModal } from "@/components/export-modal";
+import { Separator } from "@/components/ui/separator";
 
 type Platform = "INSTAGRAM" | "TIKTOK" | "TWITTER";
 
@@ -40,7 +40,6 @@ export default function ComparisonPage() {
     const [comparisonData, setComparisonData] = useState<ComparisonRow[] | null>(null);
     const [dates, setDates] = useState<{ d1: Date; d2: Date } | null>(null);
     const [platform, setPlatform] = useState<Platform>("INSTAGRAM");
-    const [exporting, setExporting] = useState(false);
 
     // Category Filter
     const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
@@ -101,62 +100,6 @@ export default function ComparisonPage() {
         }
     };
 
-    const handleExportPdf = async () => {
-        if (!dates || !sortedData.length) return;
-        setExporting(true);
-
-        try {
-            const month1 = format(dates.d1, "MMMM yyyy", { locale: id });
-            const month2 = format(dates.d2, "MMMM yyyy", { locale: id });
-
-            const exportData = {
-                sections: [{
-                    platform,
-                    data: sortedData.map(row => {
-                        const isNA = row.oldStats.followers === -1;
-                        return {
-                            accountName: row.accountName,
-                            handle: isNA ? "N/A" : row.handle,
-                            oldFollowers: isNA ? -1 : row.oldStats.followers,
-                            newFollowers: isNA ? -1 : row.newStats.followers,
-                            followersPct: isNA ? 0 : row.delta.followersPct,
-                            oldPosts: isNA ? -1 : row.oldStats.posts,
-                            newPosts: isNA ? -1 : row.newStats.posts,
-                            postsPct: isNA ? 0 : row.delta.postsPct,
-                            oldLikes: isNA ? -1 : row.oldStats.likes,
-                            newLikes: isNA ? -1 : row.newStats.likes,
-                            likesPct: isNA ? 0 : row.delta.likesPct,
-                        };
-                    }),
-                }],
-                month1,
-                month2,
-            };
-
-            // Call server action which has access to WORKER_SECRET
-            const base64Pdf = await exportComparisonPdf(exportData);
-
-            // Convert base64 to blob and download
-            const binaryString = atob(base64Pdf);
-            const bytes = new Uint8Array(binaryString.length);
-            for (let i = 0; i < binaryString.length; i++) {
-                bytes[i] = binaryString.charCodeAt(i);
-            }
-            const blob = new Blob([bytes], { type: "application/pdf" });
-
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = `pertumbuhan-${platform}-${Date.now()}.pdf`;
-            a.click();
-            URL.revokeObjectURL(url);
-        } catch (error) {
-            console.error("Export error:", error);
-        } finally {
-            setExporting(false);
-        }
-    };
-
     // Sort options
     type SortOption = "followers" | "growth" | "name" | "na-first";
     const [sortBy, setSortBy] = useState<SortOption>("followers");
@@ -203,145 +146,150 @@ export default function ComparisonPage() {
         { value: "TWITTER", label: "Twitter" },
     ];
 
+    const getJobOptions = (excludeId?: string, isBefore?: boolean, referenceDate?: Date) => {
+        return jobs
+            .filter(job => {
+                if (excludeId && job.id === excludeId) return false;
+                if (referenceDate) {
+                    if (isBefore && job.createdAt >= referenceDate) return false;
+                    if (!isBefore && job.createdAt <= referenceDate) return false;
+                }
+                return true;
+            })
+            .map(job => (
+                <SelectItem key={job.id} value={job.id}>
+                    {format(job.createdAt, "dd MMM yyyy", { locale: id })}
+                </SelectItem>
+            ));
+    };
+
+    const job1Obj = jobs.find(j => j.id === job1Id);
+    const job2Obj = jobs.find(j => j.id === job2Id);
+
     return (
-        <div className="flex-1 space-y-4 p-8 pt-6">
+        <div className="flex flex-col h-full space-y-6 p-8 pt-6">
+            {/* Header with Title & Export Action */}
             <div className="flex items-center justify-between">
-                <h2 className="text-3xl font-bold tracking-tight">Laporan Pertumbuhan</h2>
-                <ExportModal defaultCategoryId={categoryId !== "ALL" ? categoryId : undefined} />
+                <div>
+                    <h2 className="text-2xl font-bold tracking-tight">Laporan Pertumbuhan</h2>
+                    <p className="text-muted-foreground text-sm">
+                        Analisis performa akun antar periode
+                    </p>
+                </div>
+                <div className="flex items-center gap-2">
+                    {/* Unified Export Button */}
+                    <ExportModal
+                        trigger={
+                            <Button variant="outline" className="h-9">
+                                Export PDF
+                            </Button>
+                        }
+                        defaultCategoryId={categoryId !== "ALL" ? categoryId : undefined}
+                    />
+                </div>
             </div>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Pilih Periode</CardTitle>
-                    <CardDescription>
-                        Bandingkan data statistik antara dua waktu pengambilan data (snapshot).
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="flex flex-col md:flex-row gap-4 items-end">
-                    <div className="grid gap-2 w-full md:w-[300px]">
-                        <label className="text-sm font-medium">Data Awal (Lama)</label>
-                        <Select value={job1Id} onValueChange={setJob1Id} disabled={loadingJobs}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Pilih Tanggal..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {jobs
-                                    .filter(job => {
-                                        if (job.id === job2Id) return false;
-                                        const job2 = jobs.find(j => j.id === job2Id);
-                                        if (job2 && job.createdAt >= job2.createdAt) return false;
-                                        return true;
-                                    })
-                                    .map(job => (
-                                        <SelectItem key={job.id} value={job.id}>
-                                            {format(job.createdAt, "dd MMMM yyyy, HH:mm", { locale: id })}
+            {/* Filter Strip - Sticky/Prominent */}
+            <div className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border rounded-lg shadow-sm p-4 sticky top-4 z-10 transition-all">
+                <div className="flex flex-col xl:flex-row xl:items-center gap-4 justify-between">
+
+                    {/* Date Logic */}
+                    <div className="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto">
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                            <div className="grid gap-1.5 flex-1 sm:w-[180px]">
+                                <Label className="text-xs text-muted-foreground uppercase font-semibold">Data Lama</Label>
+                                <Select value={job1Id} onValueChange={setJob1Id} disabled={loadingJobs}>
+                                    <SelectTrigger className="h-9">
+                                        <SelectValue placeholder="Pilih..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {getJobOptions(job2Id, true, job2Obj?.createdAt)}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <ArrowRight className="h-4 w-4 text-muted-foreground mt-5" />
+
+                            <div className="grid gap-1.5 flex-1 sm:w-[180px]">
+                                <Label className="text-xs text-muted-foreground uppercase font-semibold">Data Baru</Label>
+                                <Select value={job2Id} onValueChange={setJob2Id} disabled={loadingJobs}>
+                                    <SelectTrigger className="h-9">
+                                        <SelectValue placeholder="Pilih..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {getJobOptions(job1Id, false, job1Obj?.createdAt)}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+
+                        <Separator orientation="vertical" className="hidden xl:block h-8 mx-2" />
+
+                        {/* Categories */}
+                        <div className="grid gap-1.5 w-full sm:w-[200px]">
+                            <Label className="text-xs text-muted-foreground uppercase font-semibold">Kategori</Label>
+                            <Select value={categoryId} onValueChange={setCategoryId}>
+                                <SelectTrigger className="h-9">
+                                    <SelectValue placeholder="Semua Kategori" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="ALL">Semua Kategori</SelectItem>
+                                    {categories.map(cat => (
+                                        <SelectItem key={cat.id} value={cat.id}>
+                                            {cat.name}
                                         </SelectItem>
                                     ))}
-                            </SelectContent>
-                        </Select>
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
 
-                    <div className="grid gap-2 w-full md:w-[300px]">
-                        <label className="text-sm font-medium">Data Akhir (Baru)</label>
-                        <Select value={job2Id} onValueChange={setJob2Id} disabled={loadingJobs}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Pilih Tanggal..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {jobs
-                                    .filter(job => {
-                                        if (job.id === job1Id) return false;
-                                        const job1 = jobs.find(j => j.id === job1Id);
-                                        if (job1 && job.createdAt <= job1.createdAt) return false;
-                                        return true;
-                                    })
-                                    .map(job => (
-                                        <SelectItem key={job.id} value={job.id}>
-                                            {format(job.createdAt, "dd MMMM yyyy, HH:mm", { locale: id })}
-                                        </SelectItem>
-                                    ))}
-                            </SelectContent>
-                        </Select>
+                    {/* Actions */}
+                    <div className="flex items-end gap-3 w-full xl:w-auto">
+                        <div className="flex items-center gap-2 h-9 pb-1">
+                            <Checkbox
+                                id="includeNA"
+                                checked={includeNA}
+                                onCheckedChange={(c) => setIncludeNA(!!c)}
+                            />
+                            <Label htmlFor="includeNA" className="cursor-pointer text-sm">Include N/A</Label>
+                        </div>
+
+                        <Button onClick={handleCompare} disabled={loadingData || !job1Id || !job2Id} className="h-9 min-w-[140px] px-6">
+                            {loadingData ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4 fill-current" />}
+                            Bandingkan
+                        </Button>
                     </div>
+                </div>
+            </div>
 
-                    <div className="grid gap-2 w-full md:w-[300px]">
-                        <label className="text-sm font-medium">Filter Kategori</label>
-                        <Select value={categoryId} onValueChange={setCategoryId}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Semua Kategori" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="ALL">Semua Kategori</SelectItem>
-                                {categories.map(cat => (
-                                    <SelectItem key={cat.id} value={cat.id}>
-                                        {cat.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
+            {/* Results Area */}
+            {comparisonData && dates ? (
+                <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
 
-                    <div className="flex items-center space-x-2">
-                        <Checkbox
-                            id="includeNA"
-                            checked={includeNA}
-                            onCheckedChange={(checked) => setIncludeNA(checked === true)}
-                        />
-                        <Label htmlFor="includeNA" className="text-sm cursor-pointer">
-                            Tampilkan akun tanpa sosmed (N/A)
-                        </Label>
-                    </div>
-
-                    <Button onClick={handleCompare} disabled={loadingData || !job1Id || !job2Id}>
-                        {loadingData ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                        Bandingkan Data
-                    </Button>
-                </CardContent>
-            </Card>
-
-            {comparisonData && dates && (
-                <div className="mt-8 space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    {/* Platform Filter & Export */}
-                    <div className="flex flex-wrap items-center justify-between gap-4">
-                        <div className="flex gap-2 p-1 bg-muted rounded-lg w-fit">
+                    {/* Results Toolbar */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4">
+                        <div className="flex p-1 bg-muted/50 rounded-lg w-fit">
                             {platforms.map((p) => (
-                                <Button
+                                <button
                                     key={p.value}
-                                    variant={platform === p.value ? "default" : "ghost"}
-                                    size="sm"
                                     onClick={() => setPlatform(p.value)}
                                     className={cn(
-                                        "rounded-md transition-all",
-                                        platform === p.value && "shadow-sm"
+                                        "px-4 py-1.5 text-sm font-medium rounded-md transition-all",
+                                        platform === p.value
+                                            ? "bg-background shadow-sm text-foreground"
+                                            : "text-muted-foreground hover:text-foreground hover:bg-background/50"
                                     )}
                                 >
                                     {p.label}
-                                </Button>
+                                </button>
                             ))}
                         </div>
 
-                        <Button
-                            variant="outline"
-                            onClick={handleExportPdf}
-                            disabled={exporting || !filteredData.length}
-                        >
-                            {exporting ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : (
-                                <Download className="mr-2 h-4 w-4" />
-                            )}
-                            Export PDF
-                        </Button>
-                    </div>
-
-                    <div className="flex flex-wrap justify-between items-center gap-4">
-                        <h3 className="text-lg font-semibold">
-                            Hasil Pertumbuhan: {format(dates.d1, "dd MMM yyyy", { locale: id })} vs {format(dates.d2, "dd MMM yyyy", { locale: id })}
-                        </h3>
                         <div className="flex items-center gap-2">
-                            <span className="text-sm text-muted-foreground">Urutkan:</span>
+                            <span className="text-sm text-muted-foreground">Sort:</span>
                             <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
-                                <SelectTrigger className="w-[200px]">
+                                <SelectTrigger className="h-9 w-[180px] text-sm">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -355,12 +303,25 @@ export default function ComparisonPage() {
                         </div>
                     </div>
 
-                    <ComparisonTable
-                        data={sortedData}
-                        job1Date={dates.d1}
-                        job2Date={dates.d2}
-                        platform={platform}
-                    />
+                    <div className="min-h-[400px]">
+                        <ComparisonTable
+                            data={sortedData}
+                            job1Date={dates.d1}
+                            job2Date={dates.d2}
+                            platform={platform}
+                        />
+                    </div>
+                </div>
+            ) : (
+                // Empty State
+                <div className="flex flex-col items-center justify-center py-20 text-center border-2 border-dashed rounded-xl bg-muted/20 h-[400px]">
+                    <div className="bg-muted p-4 rounded-full mb-4">
+                        <Filter className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                    <h3 className="text-lg font-medium">Bandingkan Data</h3>
+                    <p className="text-muted-foreground max-w-sm mt-2">
+                        Pilih dua periode (snapshot) di panel atas untuk melihat analisis pertumbuhan akun.
+                    </p>
                 </div>
             )}
         </div>

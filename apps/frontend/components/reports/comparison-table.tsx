@@ -9,10 +9,10 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Platform } from "@repo/database";
-import { ArrowDown, ArrowUp } from "lucide-react";
+import { ArrowDown, ArrowUp, Minus } from "lucide-react";
 
 interface ComparisonTableProps {
     data: ComparisonRow[];
@@ -23,7 +23,7 @@ interface ComparisonTableProps {
 
 export function ComparisonTable({ data, job1Date, job2Date, platform }: ComparisonTableProps) {
     const formatDate = (date: Date) => {
-        return date.toLocaleDateString("id-ID", { month: "long" }); // e.g. "Mei", "Juli"
+        return date.toLocaleDateString("id-ID", { month: "short", day: "numeric" });
     };
 
     const month1 = formatDate(job1Date);
@@ -33,44 +33,24 @@ export function ComparisonTable({ data, job1Date, job2Date, platform }: Comparis
     const platformName = platform === "INSTAGRAM" ? "Instagram" : platform === "TIKTOK" ? "TikTok" : "Twitter";
 
     return (
-        <Card className="w-full">
-            <CardHeader className="bg-primary/5 pb-2">
-                <CardTitle className="text-xl text-primary">Laporan Pertumbuhan - {platformName}</CardTitle>
-            </CardHeader>
+        <Card className="w-full border shadow-sm">
             <CardContent className="p-0">
-                <div className="overflow-x-auto">
+                <div className="rounded-md border">
                     <Table>
-                        <TableHeader>
-                            <TableRow className="bg-blue-600 hover:bg-blue-600 text-white border-b-0">
-                                <TableHead className="w-[50px] text-white font-bold border-r border-blue-500 text-center align-middle" rowSpan={2}>
-                                    #
-                                </TableHead>
-                                <TableHead className="text-white font-bold border-r border-blue-500 align-middle" rowSpan={2}>
-                                    Nama Unit
-                                </TableHead>
-                                <TableHead className="text-center text-white font-bold bg-blue-600 border-b border-blue-500" colSpan={6}>
-                                    {platformName}
-                                </TableHead>
-                            </TableRow>
-                            <TableRow className="bg-blue-600 hover:bg-blue-600 text-white">
-                                <TableHead className="text-center text-white text-xs px-2 border-r border-blue-500">
-                                    Pengikut<br />{month1}
-                                </TableHead>
-                                <TableHead className="text-center text-white text-xs px-2 border-r border-blue-500">
-                                    Pengikut<br />{month2}
-                                </TableHead>
-                                <TableHead className="text-center text-white text-xs px-2 border-r border-blue-500">
-                                    Peningkatan<br />Pengikut
-                                </TableHead>
-                                <TableHead className="text-center text-white text-xs px-2 border-r border-blue-500">
-                                    Postingan<br />{month1}
-                                </TableHead>
-                                <TableHead className="text-center text-white text-xs px-2 border-r border-blue-500">
-                                    Postingan<br />{month2}
-                                </TableHead>
-                                <TableHead className="text-center text-white text-xs px-2">
-                                    Peningkatan<br />Post
-                                </TableHead>
+                        <TableHeader className="bg-muted/50">
+                            <TableRow className="hover:bg-transparent">
+                                <TableHead className="w-[50px] text-center font-semibold text-xs uppercase tracking-wider">#</TableHead>
+                                <TableHead className="w-[300px] font-semibold text-xs uppercase tracking-wider">Akun</TableHead>
+
+                                {/* Metrics Group: Followers */}
+                                <TableHead className="text-right font-semibold text-xs uppercase tracking-wider border-l">Followers ({month1})</TableHead>
+                                <TableHead className="text-right font-semibold text-xs uppercase tracking-wider">Followers ({month2})</TableHead>
+                                <TableHead className="text-center font-semibold text-xs uppercase tracking-wider bg-muted/60">Limitasi</TableHead>
+                                <TableHead className="text-center font-semibold text-xs uppercase tracking-wider bg-primary/5 text-primary">Pertumbuhan</TableHead>
+
+                                {/* Metrics Group: Posts */}
+                                <TableHead className="text-right font-semibold text-xs uppercase tracking-wider border-l">Posts ({month1})</TableHead>
+                                <TableHead className="text-right font-semibold text-xs uppercase tracking-wider">Posts ({month2})</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -78,43 +58,60 @@ export function ComparisonTable({ data, job1Date, job2Date, platform }: Comparis
                                 const isNA = row.oldStats.followers === -1;
 
                                 return (
-                                    <TableRow key={`${row.accountId}-${row.platform}`} className={cn("hover:bg-muted/50", isNA && "bg-amber-50")}>
-                                        <TableCell className="text-center font-medium border-r p-2">
+                                    <TableRow
+                                        key={`${row.accountId}-${row.platform}`}
+                                        className={cn(
+                                            "group transition-colors",
+                                            isNA ? "bg-muted/30" : "hover:bg-muted/20"
+                                        )}
+                                    >
+                                        <TableCell className="text-center text-muted-foreground font-mono text-xs">
                                             {index + 1}
                                         </TableCell>
-                                        <TableCell className="border-r p-2 max-w-[250px]">
+                                        <TableCell>
                                             <div className="flex flex-col">
-                                                <span className="font-semibold text-sm line-clamp-2">{row.accountName}</span>
-                                                <span className={cn("text-xs", isNA ? "text-amber-600 font-medium" : "text-muted-foreground")}>
+                                                <span className="font-medium text-sm text-foreground group-hover:text-primary transition-colors">
+                                                    {row.accountName}
+                                                </span>
+                                                <span className={cn("text-xs font-mono", isNA ? "text-amber-600/70" : "text-muted-foreground")}>
                                                     {isNA ? "N/A" : `@${row.handle}`}
                                                 </span>
                                             </div>
                                         </TableCell>
-                                        <TableCell className="text-center border-r p-2 tabular-nums">
-                                            {isNA ? <span className="text-amber-600">N/A</span> : row.oldStats.followers.toLocaleString("id-ID")}
+
+                                        {/* Followers Data */}
+                                        <TableCell className="text-right font-mono text-sm border-l tabular-nums text-muted-foreground">
+                                            {isNA ? "-" : row.oldStats.followers.toLocaleString("id-ID")}
                                         </TableCell>
-                                        <TableCell className="text-center border-r p-2 tabular-nums font-medium">
-                                            {isNA ? <span className="text-amber-600">N/A</span> : row.newStats.followers.toLocaleString("id-ID")}
+                                        <TableCell className="text-right font-mono text-sm tabular-nums font-medium">
+                                            {isNA ? "-" : row.newStats.followers.toLocaleString("id-ID")}
                                         </TableCell>
-                                        <TableCell className="text-center border-r p-2">
-                                            {isNA ? <span className="text-amber-600">N/A</span> : <DeltaBadge value={row.delta.followersPct} />}
+
+                                        {/* Placeholder column (Limitasi was in header but data unclear? Replaced with empty check or spacer) */}
+                                        <TableCell className="text-center bg-muted/30">
+                                            {/* Could be used for limit indicators or just spacer, keeping minimal for now */}
+                                            <span className="text-xs text-muted-foreground/30">-</span>
                                         </TableCell>
-                                        <TableCell className="text-center border-r p-2 tabular-nums">
-                                            {isNA ? <span className="text-amber-600">N/A</span> : row.oldStats.posts.toLocaleString("id-ID")}
+
+                                        {/* GROWTH Badge */}
+                                        <TableCell className="text-center bg-primary/5">
+                                            {isNA ? "-" : <DeltaBadge value={row.delta.followersPct} />}
                                         </TableCell>
-                                        <TableCell className="text-center border-r p-2 tabular-nums font-medium">
-                                            {isNA ? <span className="text-amber-600">N/A</span> : row.newStats.posts.toLocaleString("id-ID")}
+
+                                        {/* Posts Data */}
+                                        <TableCell className="text-right font-mono text-sm border-l tabular-nums text-muted-foreground">
+                                            {isNA ? "-" : row.oldStats.posts.toLocaleString("id-ID")}
                                         </TableCell>
-                                        <TableCell className="text-center p-2">
-                                            {isNA ? <span className="text-amber-600">N/A</span> : <DeltaBadge value={row.delta.postsPct} />}
+                                        <TableCell className="text-right font-mono text-sm tabular-nums">
+                                            {isNA ? "-" : row.newStats.posts.toLocaleString("id-ID")}
                                         </TableCell>
                                     </TableRow>
                                 );
                             })}
                             {data.length === 0 && (
                                 <TableRow>
-                                    <TableCell colSpan={8} className="h-24 text-center">
-                                        Tidak ada data untuk dibandingkan.
+                                    <TableCell colSpan={8} className="h-32 text-center text-muted-foreground">
+                                        Tidak ada data yang ditemukan.
                                     </TableCell>
                                 </TableRow>
                             )}
@@ -127,15 +124,19 @@ export function ComparisonTable({ data, job1Date, job2Date, platform }: Comparis
 }
 
 function DeltaBadge({ value }: { value: number }) {
-    if (value === 0) return <span className="text-muted-foreground text-xs">-</span>;
+    if (value === 0) return <span className="text-muted-foreground text-xs"><Minus className="w-3 h-3 inline opacity-50" /> 0%</span>;
 
     const isPositive = value > 0;
     const isNegative = value < 0;
 
     return (
         <div className={cn(
-            "flex items-center justify-center gap-1 text-xs font-bold",
-            isPositive ? "text-green-600" : isNegative ? "text-red-600" : "text-gray-500"
+            "inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full border",
+            isPositive
+                ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800"
+                : isNegative
+                    ? "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800"
+                    : "bg-gray-50 text-gray-600 border-gray-200"
         )}>
             {isPositive && <ArrowUp className="w-3 h-3" />}
             {isNegative && <ArrowDown className="w-3 h-3" />}
