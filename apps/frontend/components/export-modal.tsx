@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, Loader2 } from "lucide-react";
+import { Download, Loader2, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { getCategories } from "@/app/actions/category";
 import { getScrapingJobsForReport, getComparisonData, exportComparisonPdf, ComparisonRow } from "@/app/actions/report";
@@ -85,7 +85,7 @@ export function ExportModal({ trigger, defaultCategoryId }: ExportModalProps) {
     const noneSelected = !platforms.INSTAGRAM && !platforms.TIKTOK && !platforms.TWITTER;
 
     const formatJobLabel = (job: { createdAt: Date; totalAccounts: number }) => {
-        return `${format(new Date(job.createdAt), "dd MMM yyyy", { locale: id })} (${job.totalAccounts} akun)`;
+        return format(new Date(job.createdAt), "dd MMM yyyy", { locale: id });
     };
 
     const handleExport = async () => {
@@ -190,153 +190,236 @@ export function ExportModal({ trigger, defaultCategoryId }: ExportModalProps) {
                     </Button>
                 )}
             </DialogTrigger>
-            <DialogContent className="max-w-md">
+            <DialogContent className="sm:max-w max-h-[90vh] flex flex-col">
                 <DialogHeader>
                     <DialogTitle>Export Report</DialogTitle>
                 </DialogHeader>
 
-                <div className="space-y-6 py-4">
-                    {/* Mode Selection */}
-                    <div className="space-y-2">
-                        <Label>Mode Export</Label>
-                        <Select value={mode} onValueChange={(v) => setMode(v as "single" | "comparison")}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Pilih mode" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="comparison">Pertumbuhan (2 tanggal)</SelectItem>
-                                <SelectItem value="single">Snapshot tunggal</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    {/* Platform Selection */}
-                    <div className="space-y-2">
-                        <Label>Platform</Label>
-                        <div className="flex flex-col gap-2">
-                            <div className="flex items-center space-x-2">
-                                <Checkbox
-                                    id="all"
-                                    checked={allSelected}
-                                    onCheckedChange={(checked) => handleSelectAll(!!checked)}
-                                />
-                                <Label htmlFor="all" className="font-normal cursor-pointer">
-                                    Semua Platform
-                                </Label>
-                            </div>
-                            <div className="ml-6 flex flex-col gap-2">
-                                <div className="flex items-center space-x-2">
-                                    <Checkbox
-                                        id="instagram"
-                                        checked={platforms.INSTAGRAM}
-                                        onCheckedChange={() => handlePlatformToggle("INSTAGRAM")}
-                                    />
-                                    <Label htmlFor="instagram" className="font-normal cursor-pointer">
-                                        Instagram
-                                    </Label>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <Checkbox
-                                        id="tiktok"
-                                        checked={platforms.TIKTOK}
-                                        onCheckedChange={() => handlePlatformToggle("TIKTOK")}
-                                    />
-                                    <Label htmlFor="tiktok" className="font-normal cursor-pointer">
-                                        TikTok
-                                    </Label>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <Checkbox
-                                        id="twitter"
-                                        checked={platforms.TWITTER}
-                                        onCheckedChange={() => handlePlatformToggle("TWITTER")}
-                                    />
-                                    <Label htmlFor="twitter" className="font-normal cursor-pointer">
-                                        Twitter / X
-                                    </Label>
-                                </div>
-                            </div>
+                <div className="space-y-6 py-4 overflow-y-auto flex-1">
+                    {/* ===== SECTION 1: KONFIGURASI DATA ===== */}
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-2">
+                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground">1</span>
+                            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Konfigurasi Data</h3>
                         </div>
-                    </div>
 
-                    {/* Category Filter */}
-                    <div className="space-y-2">
-                        <Label>Kategori</Label>
-                        <Select value={categoryId} onValueChange={setCategoryId}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Pilih kategori" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="ALL">Semua Kategori</SelectItem>
-                                {categories.map((cat) => (
-                                    <SelectItem key={cat.id} value={cat.id}>
-                                        {cat.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    {/* Job Selection */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label>Data Lama</Label>
-                            <Select value={job1} onValueChange={setJob1}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Pilih tanggal" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {jobs.map((job) => (
-                                        <SelectItem key={job.id} value={job.id}>
-                                            {formatJobLabel(job)}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        {mode === "comparison" && (
+                        <div className="rounded-lg border bg-muted/30 p-4 space-y-4">
+                            {/* Mode Export */}
                             <div className="space-y-2">
-                                <Label>Data Baru</Label>
-                                <Select value={job2} onValueChange={setJob2}>
+                                <Label className="text-xs text-muted-foreground">Mode Export</Label>
+                                <Select value={mode} onValueChange={(v) => setMode(v as "single" | "comparison")}>
                                     <SelectTrigger>
-                                        <SelectValue placeholder="Pilih tanggal" />
+                                        <SelectValue placeholder="Pilih mode" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {jobs.map((job) => (
-                                            <SelectItem key={job.id} value={job.id}>
-                                                {formatJobLabel(job)}
+                                        <SelectItem value="comparison">Pertumbuhan (2 tanggal)</SelectItem>
+                                        <SelectItem value="single">Snapshot tunggal</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            {/* Periode Perbandingan with Arrow */}
+                            {mode === "comparison" && (
+                                <div className="space-y-2">
+                                    <Label className="text-xs text-muted-foreground">Periode Perbandingan</Label>
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex-1 space-y-1">
+                                            <span className="text-xs text-muted-foreground">Awal (Data Lama)</span>
+                                            <Select value={job1} onValueChange={setJob1}>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Pilih tanggal" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {jobs.map((job) => (
+                                                        <SelectItem key={job.id} value={job.id}>
+                                                            {formatJobLabel(job)}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <ArrowRight className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-5" />
+                                        <div className="flex-1 space-y-1">
+                                            <span className="text-xs text-muted-foreground">Akhir (Data Baru)</span>
+                                            <Select value={job2} onValueChange={setJob2}>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Pilih tanggal" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {jobs.map((job) => (
+                                                        <SelectItem key={job.id} value={job.id}>
+                                                            {formatJobLabel(job)}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Single mode date picker */}
+                            {mode === "single" && (
+                                <div className="space-y-2">
+                                    <Label className="text-xs text-muted-foreground">Tanggal Snapshot</Label>
+                                    <Select value={job1} onValueChange={setJob1}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Pilih tanggal" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {jobs.map((job) => (
+                                                <SelectItem key={job.id} value={job.id}>
+                                                    {formatJobLabel(job)}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* ===== SECTION 2: FILTER & CAKUPAN ===== */}
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-2">
+                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground">2</span>
+                            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Filter & Cakupan</h3>
+                        </div>
+
+                        <div className="space-y-4">
+                            {/* Category Filter */}
+                            <div className="space-y-2">
+                                <Label className="text-xs text-muted-foreground">Kategori</Label>
+                                <Select value={categoryId} onValueChange={setCategoryId}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Pilih kategori" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="ALL">Semua Kategori</SelectItem>
+                                        {categories.map((cat) => (
+                                            <SelectItem key={cat.id} value={cat.id}>
+                                                {cat.name}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
                             </div>
-                        )}
+
+                            {/* Platform as Horizontal Tiles */}
+                            <div className="space-y-3">
+                                <Label className="text-xs text-muted-foreground">Platform</Label>
+
+                                {/* Select All */}
+                                <div className="flex items-center space-x-2">
+                                    <Checkbox
+                                        id="all"
+                                        checked={allSelected}
+                                        onCheckedChange={(checked) => handleSelectAll(!!checked)}
+                                    />
+                                    <Label htmlFor="all" className="text-sm font-normal cursor-pointer">
+                                        Pilih Semua
+                                    </Label>
+                                </div>
+
+                                {/* Horizontal Platform Tiles */}
+                                <div className="flex items-center gap-2">
+                                    <label
+                                        htmlFor="instagram"
+                                        className={`flex items-center justify-center gap-2 rounded-lg border p-3 cursor-pointer transition-colors ${platforms.INSTAGRAM
+                                            ? "border-primary bg-primary/5"
+                                            : "border-border hover:bg-muted/50"
+                                            }`}
+                                    >
+                                        <Checkbox
+                                            id="instagram"
+                                            checked={platforms.INSTAGRAM}
+                                            onCheckedChange={() => handlePlatformToggle("INSTAGRAM")}
+                                            className="sr-only"
+                                        />
+                                        <span className={`text-sm font-medium ${platforms.INSTAGRAM ? "text-primary" : ""}`}>
+                                            Instagram
+                                        </span>
+                                    </label>
+
+                                    <label
+                                        htmlFor="tiktok"
+                                        className={`flex items-center justify-center gap-2 rounded-lg border p-3 cursor-pointer transition-colors ${platforms.TIKTOK
+                                            ? "border-primary bg-primary/5"
+                                            : "border-border hover:bg-muted/50"
+                                            }`}
+                                    >
+                                        <Checkbox
+                                            id="tiktok"
+                                            checked={platforms.TIKTOK}
+                                            onCheckedChange={() => handlePlatformToggle("TIKTOK")}
+                                            className="sr-only"
+                                        />
+                                        <span className={`text-sm font-medium ${platforms.TIKTOK ? "text-primary" : ""}`}>
+                                            TikTok
+                                        </span>
+                                    </label>
+
+                                    <label
+                                        htmlFor="twitter"
+                                        className={`flex items-center justify-center gap-2 rounded-lg border p-3 cursor-pointer transition-colors ${platforms.TWITTER
+                                            ? "border-primary bg-primary/5"
+                                            : "border-border hover:bg-muted/50"
+                                            }`}
+                                    >
+                                        <Checkbox
+                                            id="twitter"
+                                            checked={platforms.TWITTER}
+                                            onCheckedChange={() => handlePlatformToggle("TWITTER")}
+                                            className="sr-only"
+                                        />
+                                        <span className={`text-sm font-medium ${platforms.TWITTER ? "text-primary" : ""}`}>
+                                            Twitter/X
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    {/* Cover Page Options */}
+                    {/* ===== SECTION 3: PREFERENSI FILE ===== */}
                     <div className="space-y-4">
-                        <div className="flex items-center space-x-2">
-                            <Checkbox
-                                id="cover"
-                                checked={includeCover}
-                                onCheckedChange={(checked) => setIncludeCover(!!checked)}
-                            />
-                            <Label htmlFor="cover" className="cursor-pointer">Include Cover Page</Label>
+                        <div className="flex items-center gap-2">
+                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground">3</span>
+                            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Preferensi File</h3>
                         </div>
-                        {includeCover && (
+
+                        <div className="space-y-4">
+                            {/* Custom Title */}
                             <div className="space-y-2">
-                                <Label>Custom Title (opsional)</Label>
+                                <Label className="text-xs text-muted-foreground">Judul Laporan (Opsional)</Label>
                                 <Input
-                                    placeholder="Judul laporan..."
+                                    placeholder="Masukkan judul custom..."
                                     value={customTitle}
                                     onChange={(e) => setCustomTitle(e.target.value)}
                                 />
                             </div>
-                        )}
-                    </div>
 
-                    {/* Export Button */}
-                    <Button onClick={handleExport} disabled={isExporting || noneSelected} className="w-full">
+                            {/* Cover Page Toggle */}
+                            <div className="flex items-center space-x-2">
+                                <Checkbox
+                                    id="cover"
+                                    checked={includeCover}
+                                    onCheckedChange={(checked) => setIncludeCover(!!checked)}
+                                />
+                                <Label htmlFor="cover" className="text-sm font-normal cursor-pointer">
+                                    Sertakan Halaman Cover
+                                </Label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Footer with Cancel + Export buttons */}
+                <DialogFooter className="gap-2 sm:gap-0">
+                    <DialogClose asChild>
+                        <Button variant="ghost">Cancel</Button>
+                    </DialogClose>
+                    <Button onClick={handleExport} disabled={isExporting || noneSelected}>
                         {isExporting ? (
                             <>
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -349,7 +432,7 @@ export function ExportModal({ trigger, defaultCategoryId }: ExportModalProps) {
                             </>
                         )}
                     </Button>
-                </div>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
     );

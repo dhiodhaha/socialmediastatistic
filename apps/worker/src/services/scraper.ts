@@ -65,14 +65,21 @@ interface ScrapeTask {
 /**
  * Main scraping job runner.
  * Creates a job, returns the ID immediately, then processes in background.
+ * 
+ * Smart deduplication: Skips account+platform combinations already scraped today
+ * to avoid wasting API credits when categories overlap.
  */
 export async function runScrapingJob(categoryId?: string): Promise<string> {
     logger.info({ categoryId }, "Starting scraping job");
 
-    // Fetch active accounts (optionally filtered by category)
+    // Fetch active accounts (optionally filtered by category via many-to-many)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const whereClause: any = { isActive: true };
     if (categoryId) {
-        whereClause.categoryId = categoryId;
+        // Many-to-many: filter via join table
+        whereClause.categories = {
+            some: { categoryId: categoryId }
+        };
     }
 
     const accounts = await prisma.account.findMany({
@@ -82,36 +89,120 @@ export async function runScrapingJob(categoryId?: string): Promise<string> {
     // Generate tasks (flatten accounts into platform-specific tasks)
     const tasks: ScrapeTask[] = [];
     for (const account of accounts) {
-        if (account.instagram) {
-            tasks.push({ accountId: account.id, platform: "INSTAGRAM", handle: account.instagram });
+        if (account.instagram && account.instagram.trim().length > 0) {
+            tasks.push({ accountId: account.id, platform: "INSTAGRAM", handle: account.instagram.trim() });
         }
-        if (account.tiktok) {
-            tasks.push({ accountId: account.id, platform: "TIKTOK", handle: account.tiktok });
+        if (account.tiktok && account.tiktok.trim().length > 0) {
+            tasks.push({ accountId: account.id, platform: "TIKTOK", handle: account.tiktok.trim() });
         }
-        if (account.twitter) {
-            tasks.push({ accountId: account.id, platform: "TWITTER", handle: account.twitter });
+        if (account.twitter && account.twitter.trim().length > 0) {
+            tasks.push({ accountId: account.id, platform: "TWITTER", handle: account.twitter.trim() });
         }
     }
 
-    const job = await prisma.scrapingJob.create({
-        data: {
-            status: "RUNNING",
-            totalAccounts: accounts.length,
-            startedAt: new Date(),
-            // @ts-ignore - categoryId exists after schema migration
-            categoryId: categoryId || null,
+    // Daily Job Merging Logic:
+    // Check if a completed job exists for today (for this category).
+    // If yes, we reuse it and only scrape active accounts that are MISSING from it.
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const existingJob = await prisma.scrapingJob.findFirst({
+        where: {
+            createdAt: { gte: todayStart },
+            status: "COMPLETED",
+            categoryId: categoryId || null
+            // Note: If categoryId is undefined, we look for global jobs (null).
         },
+        orderBy: { createdAt: "desc" }
     });
 
-    logger.info({ jobId: job.id, totalAccounts: accounts.length, totalTasks: tasks.length }, "Job created");
+    let jobId: string;
+    let jobTasks: ScrapeTask[] = tasks;
+    let initialCompletedCount = 0;
+    let initialFailedCount = 0;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let initialErrors: any[] = [];
+
+    if (existingJob) {
+        logger.info({ existingJobId: existingJob.id }, "Found existing job for today - Checking for missing data");
+
+        // Find which accounts/platforms already have data in this job
+        const existingSnapshots = await prisma.snapshot.findMany({
+            where: { jobId: existingJob.id },
+            select: { accountId: true, platform: true }
+        });
+
+        const existingSet = new Set(
+            existingSnapshots.map(s => `${s.accountId}:${s.platform}`)
+        );
+
+        // Filter tasks to only those MISSING or OUTDATED in the existing job
+        jobTasks = tasks.filter(t => {
+            // 1. Check if Missing
+            const hasData = existingSet.has(`${t.accountId}:${t.platform}`);
+            if (!hasData) return true; // Missing -> Scrape it
+
+            // 2. Check if Outdated (Auto-Detect Update)
+            // specificAcct is efficient because accounts are already fetched in memory
+            const account = accounts.find(a => a.id === t.accountId);
+            if (account) {
+                // precise comparison: active modification time vs job start time
+                // if account was updated AFTER the job was created, we re-scrape
+                if (account.updatedAt > existingJob.createdAt) {
+                    return true; // Outdated -> Scrape again (Smart Update)
+                }
+            }
+
+            return false; // Valid & Up-to-date -> Skip
+        });
+
+        if (jobTasks.length === 0) {
+            logger.info({ jobId: existingJob.id }, "Existing job is already complete for all active accounts. Skipping.");
+            return existingJob.id;
+        }
+
+        logger.info({ jobId: existingJob.id, newTasks: jobTasks.length }, "Resuming existing job to fill missing data");
+
+        // Reuse existing job
+        jobId = existingJob.id;
+        initialCompletedCount = existingJob.completedCount;
+        initialFailedCount = existingJob.failedCount;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        initialErrors = (existingJob.errors as any[]) || [];
+
+        // Update job status to RUNNING and update total accounts
+        // We set totalAccounts to the CURRENT total of active accounts (accounts.length)
+        // because the previous total might have been smaller.
+        await prisma.scrapingJob.update({
+            where: { id: jobId },
+            data: {
+                status: "RUNNING",
+                totalAccounts: accounts.length
+            }
+        });
+
+    } else {
+        // Create NEW Job
+        const job = await prisma.scrapingJob.create({
+            data: {
+                status: "RUNNING",
+                totalAccounts: accounts.length,
+                startedAt: new Date(),
+                categoryId: categoryId || null,
+            },
+        });
+        jobId = job.id;
+        logger.info({ jobId: job.id, totalTasks: jobTasks.length }, "Created new scraping job");
+    }
 
     // Process in background (don't await)
-    processScrapingJob(job.id, accounts, tasks).catch((error) => {
-        logger.error({ jobId: job.id, error }, "Scraping job processing failed");
+    // Pass initial counts for resuming
+    processScrapingJob(jobId, accounts, jobTasks, initialCompletedCount, initialFailedCount, initialErrors).catch((error) => {
+        logger.error({ jobId, error }, "Scraping job processing failed");
     });
 
     // Return job ID immediately
-    return job.id;
+    return jobId;
 }
 
 /**
@@ -120,7 +211,11 @@ export async function runScrapingJob(categoryId?: string): Promise<string> {
 async function processScrapingJob(
     jobId: string,
     accounts: Awaited<ReturnType<typeof prisma.account.findMany>>,
-    tasks: ScrapeTask[]
+    tasks: ScrapeTask[],
+    initialCompletedCount: number = 0,
+    initialFailedCount: number = 0,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    initialErrors: any[] = []
 ): Promise<void> {
     const errors: Array<{
         accountId: string;
@@ -128,9 +223,9 @@ async function processScrapingJob(
         handle: string;
         error: string;
         timestamp: string;
-    }> = [];
-    let completedCount = 0;
-    let failedCount = 0;
+    }> = [...initialErrors];
+    let completedCount = initialCompletedCount;
+    let failedCount = initialFailedCount;
 
     try {
         // Process tasks in batches

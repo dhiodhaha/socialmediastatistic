@@ -25,8 +25,11 @@ export async function getAccounts(page = 1, limit = 10, search = "", categoryId?
             }
             : {};
 
+        // Filter by category via many-to-many join table
         if (categoryId && categoryId !== "ALL") {
-            where.categoryId = categoryId;
+            where.categories = {
+                some: { categoryId: categoryId }
+            };
         }
 
         const [accounts, total] = await Promise.all([
@@ -36,8 +39,9 @@ export async function getAccounts(page = 1, limit = 10, search = "", categoryId?
                 take: limit,
                 orderBy: { createdAt: "desc" },
                 include: {
-                    // @ts-ignore
-                    category: true,
+                    categories: {
+                        include: { category: true }
+                    },
                     snapshots: {
                         orderBy: { scrapedAt: "desc" },
                         take: 2 // We need latest 2 to calculate growth
@@ -104,16 +108,30 @@ export async function createAccount(data: AccountInput) {
             return { success: false, error: "Account with this name already exists" };
         }
 
-        const account = await prisma.account.create({
-            data: {
-                username: validated.username,
-                instagram: validated.instagram || null,
-                tiktok: validated.tiktok || null,
-                twitter: validated.twitter || null,
-                isActive: validated.isActive,
-                // @ts-ignore
-                categoryId: validated.categoryId || null,
-            },
+        // Create account with categories via transaction
+        const account = await prisma.$transaction(async (tx) => {
+            // Create the account first
+            const newAccount = await tx.account.create({
+                data: {
+                    username: validated.username,
+                    instagram: validated.instagram || null,
+                    tiktok: validated.tiktok || null,
+                    twitter: validated.twitter || null,
+                    isActive: validated.isActive,
+                },
+            });
+
+            // Create category associations if any
+            if (validated.categoryIds && validated.categoryIds.length > 0) {
+                await tx.accountCategory.createMany({
+                    data: validated.categoryIds.map(catId => ({
+                        accountId: newAccount.id,
+                        categoryId: catId
+                    }))
+                });
+            }
+
+            return newAccount;
         });
 
         revalidatePath("/accounts");
@@ -129,11 +147,34 @@ export async function createAccount(data: AccountInput) {
 
 export async function updateAccount(id: string, data: Partial<AccountInput>) {
     try {
-        const account = await prisma.account.update({
-            where: { id },
-            data: {
-                ...data,
-            },
+        // Update account with categories via transaction
+        const account = await prisma.$transaction(async (tx) => {
+            // Update the account basic fields
+            const { categoryIds, ...accountData } = data;
+            const updatedAccount = await tx.account.update({
+                where: { id },
+                data: accountData,
+            });
+
+            // If categoryIds is provided, update category associations
+            if (categoryIds !== undefined) {
+                // Delete existing associations
+                await tx.accountCategory.deleteMany({
+                    where: { accountId: id }
+                });
+
+                // Create new associations
+                if (categoryIds.length > 0) {
+                    await tx.accountCategory.createMany({
+                        data: categoryIds.map(catId => ({
+                            accountId: id,
+                            categoryId: catId
+                        }))
+                    });
+                }
+            }
+
+            return updatedAccount;
         });
 
         revalidatePath("/accounts");
@@ -167,17 +208,15 @@ export async function bulkCreateAccounts(accounts: AccountInput[]) {
         const errors: string[] = [];
 
         for (const acc of accounts) {
-            // Handle category auto-creation/lookup if categoryName is provided but categoryId is not
-            if (acc.categoryName && !acc.categoryId) {
+            // Handle category auto-creation/lookup if categoryName is provided but categoryIds is empty
+            if (acc.categoryName && (!acc.categoryIds || acc.categoryIds.length === 0)) {
                 const catName = acc.categoryName.trim();
                 if (catName) {
-                    // @ts-ignore
                     let cat = await prisma.category.findUnique({ where: { name: catName } });
                     if (!cat) {
-                        // @ts-ignore
                         cat = await prisma.category.create({ data: { name: catName } });
                     }
-                    acc.categoryId = cat.id;
+                    acc.categoryIds = [cat.id];
                 }
             }
 
@@ -238,7 +277,11 @@ export async function getAccountsWithErrors() {
         // Fetch account details
         const accounts = await prisma.account.findMany({
             where: { id: { in: accountIds } },
-            include: { category: true }
+            include: {
+                categories: {
+                    include: { category: true }
+                }
+            }
         });
 
         // Merge account info with error details

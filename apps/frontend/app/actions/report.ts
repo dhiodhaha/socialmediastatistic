@@ -26,9 +26,13 @@ export async function getComparisonData(
     includeNA?: boolean
 ): Promise<ComparisonRow[]> {
     // Fetch all accounts to have the base list
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const whereClause: any = { isActive: true };
     if (categoryId) {
-        whereClause.categoryId = categoryId;
+        // Many-to-many: filter via join table
+        whereClause.categories = {
+            some: { categoryId: categoryId }
+        };
     }
 
     const accounts = await prisma.account.findMany({
@@ -254,9 +258,13 @@ export async function getComparisonDataByDate(
     const d2Start = new Date(date2);
     const d2End = new Date(new Date(date2).getTime() + 24 * 60 * 60 * 1000);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const whereClause: any = { isActive: true };
     if (categoryId) {
-        whereClause.categoryId = categoryId;
+        // Many-to-many: filter via join table
+        whereClause.categories = {
+            some: { categoryId: categoryId }
+        };
     }
 
     const accounts = await prisma.account.findMany({

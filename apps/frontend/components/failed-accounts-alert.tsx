@@ -25,7 +25,7 @@ interface AccountWithErrors {
     tiktok: string | null;
     twitter: string | null;
     isActive: boolean;
-    categoryId: string | null;
+    categories?: Array<{ category: { id: string; name: string } }>;
     errors: AccountError[];
 }
 
@@ -52,7 +52,7 @@ export function FailedAccountsAlert() {
                     return;
                 }
                 setAccounts(res.data as AccountWithErrors[]);
-                setJobId(res.jobId);
+                setJobId(res.jobId ?? null);
                 setJobDate(res.jobDate ? new Date(res.jobDate) : null);
             }
         }
@@ -181,7 +181,7 @@ export function FailedAccountsAlert() {
                         tiktok: editingAccount.tiktok || "",
                         twitter: editingAccount.twitter || "",
                         isActive: editingAccount.isActive,
-                        categoryId: editingAccount.categoryId,
+                        categoryIds: editingAccount.categories?.map(c => c.category.id) || [],
                     }}
                 />
             )}
