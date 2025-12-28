@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import Papa from "papaparse";
 import { Upload, Download, AlertCircle, CheckCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/catalyst/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { bulkCreateAccounts } from "@/app/actions/account";
 import { type AccountInput } from "@/lib/schemas";
@@ -119,19 +119,18 @@ export function CsvUpload() {
                     className="hidden"
                 />
                 <Button
-                    variant="outline"
-                    size="sm"
+                    outline
                     onClick={handleDownloadTemplate}
                 >
-                    <Download className="mr-2 h-4 w-4" />
+                    <Download data-slot="icon" />
                     Template
                 </Button>
                 <Button
-                    variant="outline"
+                    outline
                     onClick={() => fileInputRef.current?.click()}
                     disabled={loading}
                 >
-                    <Upload className="mr-2 h-4 w-4" />
+                    <Upload data-slot="icon" />
                     {loading ? "Uploading..." : "Import CSV"}
                 </Button>
             </div>

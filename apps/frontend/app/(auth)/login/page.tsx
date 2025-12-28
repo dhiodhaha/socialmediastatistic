@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/catalyst/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
@@ -107,7 +107,7 @@ export default function LoginPage() {
                     >
                         {isLoading ? (
                             <span className="flex items-center justify-center gap-2">
-                                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" data-slot="icon">
                                     <circle
                                         className="opacity-25"
                                         cx="12"

@@ -1,6 +1,4 @@
-"use client";
-
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select } from "@/components/catalyst/select";
 import { useRouter, useSearchParams } from "next/navigation";
 
 export function CategorySelect({
@@ -13,7 +11,8 @@ export function CategorySelect({
     const router = useRouter();
     const searchParams = useSearchParams();
 
-    const handleValueChange = (value: string) => {
+    const handleValueChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const value = e.target.value;
         const params = new URLSearchParams(searchParams.toString());
         if (value && value !== "ALL") {
             params.set("categoryId", value);
@@ -25,18 +24,15 @@ export function CategorySelect({
     };
 
     return (
-        <Select value={defaultValue} onValueChange={handleValueChange}>
-            <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="All Categories" />
-            </SelectTrigger>
-            <SelectContent>
-                <SelectItem value="ALL">All Categories</SelectItem>
+        <div className="w-[180px]">
+            <Select value={defaultValue} onChange={handleValueChange}>
+                <option value="ALL">All Categories</option>
                 {categories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>
+                    <option key={cat.id} value={cat.id}>
                         {cat.name}
-                    </SelectItem>
+                    </option>
                 ))}
-            </SelectContent>
-        </Select>
+            </Select>
+        </div>
     );
 }

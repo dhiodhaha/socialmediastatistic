@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 import { DataTable } from "@/components/ui/data-table";
 import { columns, type Category } from "./columns";
 import { CategoryDialog } from "@/components/category-dialog";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/catalyst/button";
 import { Plus } from "lucide-react";
 
 export default async function CategoriesPage() {
@@ -27,7 +27,7 @@ export default async function CategoriesPage() {
                 <div className="flex items-center space-x-2">
                     <CategoryDialog trigger={
                         <Button>
-                            <Plus className="mr-2 h-4 w-4" /> Add Category
+                            <Plus className="h-4 w-4" data-slot="icon" /> Add Category
                         </Button>
                     } />
                 </div>

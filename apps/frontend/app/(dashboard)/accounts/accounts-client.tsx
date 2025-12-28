@@ -6,9 +6,10 @@ import { DataTable } from "@/components/ui/data-table";
 import { columns, type Account } from "./columns";
 import { AccountDialog } from "@/components/account-dialog";
 import { CsvUpload } from "@/components/csv-upload";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Plus, Search } from "lucide-react";
+import { Button } from "@/components/catalyst/button";
+import { Input, InputGroup } from "@/components/catalyst/input";
+import { MagnifyingGlassIcon } from "@heroicons/react/16/solid";
+import { Plus } from "lucide-react";
 import { CategorySelect } from "./category-select";
 
 interface AccountsClientProps {
@@ -61,13 +62,15 @@ export function AccountsClient({
             <div className="flex items-center justify-between">
                 <h2 className="text-3xl font-bold tracking-tight">Accounts</h2>
                 <div className="flex items-center gap-2">
-                    <div className="relative">
-                        <Input
-                            placeholder="Search name or @handle..."
-                            value={searchValue}
-                            onChange={(e) => setSearchValue(e.target.value)}
-                            className="pl-9 w-[220px]"
-                        />
+                    <div className="w-[250px]">
+                        <InputGroup>
+                            <MagnifyingGlassIcon data-slot="icon" />
+                            <Input
+                                placeholder="Search name or @handle..."
+                                value={searchValue}
+                                onChange={(e) => setSearchValue(e.target.value)}
+                            />
+                        </InputGroup>
                     </div>
                     <CategorySelect categories={categories} defaultValue={categoryId} />
                     <CsvUpload />
@@ -75,7 +78,7 @@ export function AccountsClient({
                         mode="create"
                         trigger={
                             <Button>
-                                <Plus className="mr-2 h-4 w-4" /> Add Account
+                                <Plus data-slot="icon" /> Add Account
                             </Button>
                         }
                     />

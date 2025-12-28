@@ -1,17 +1,21 @@
 "use client";
 
-import { ColumnDef } from "@tanstack/react-table";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { formatDistanceToNow } from "date-fns";
-import { Trash2 } from "lucide-react";
+import { Badge } from "@/components/catalyst/badge";
+import { Button } from "@/components/catalyst/button";
+import { Text, Strong } from "@/components/catalyst/text";
+import { formatDistance, format, formatDistanceToNow } from "date-fns";
+import { Trash2, MoreHorizontal, CheckCircle, XCircle, AlertCircle, Clock, Play } from "lucide-react";
 import { deleteScrapingJob } from "@/app/actions/history";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import {
+    Dropdown,
+    DropdownButton,
+    DropdownMenu,
+    DropdownItem,
+} from "@/components/catalyst/dropdown";
 
-// We need to define the type based on Prisma model, but for now we can infer or define interface
-// Importing from database package might be tricky client side if not careful with types
-// So let's define a local interface matching the expected data
+// Interface matching the real data structure from Prisma
 interface ScrapingJob {
     id: string;
     status: "PENDING" | "RUNNING" | "COMPLETED" | "FAILED";
@@ -23,7 +27,14 @@ interface ScrapingJob {
     createdAt: Date | string;
 }
 
-function DeleteButton({ jobId }: { jobId: string }) {
+function calculateDuration(start: Date | string | null, end: Date | string | null) {
+    if (!start) return "--";
+    const startTime = new Date(start);
+    const endTime = end ? new Date(end) : new Date();
+    return formatDistance(endTime, startTime);
+}
+
+function ActionMenu({ jobId }: { jobId: string }) {
     const router = useRouter();
 
     const handleDelete = async () => {
@@ -39,94 +50,134 @@ function DeleteButton({ jobId }: { jobId: string }) {
     };
 
     return (
-        <Button variant="ghost" size="icon" onClick={handleDelete} className="h-8 w-8 text-muted-foreground hover:text-destructive">
-            <Trash2 className="h-4 w-4" />
-        </Button>
+        <Dropdown>
+            <DropdownButton plain aria-label="More options">
+                <MoreHorizontal className="w-4 h-4" data-slot="icon" />
+            </DropdownButton>
+            <DropdownMenu>
+                <DropdownItem onClick={handleDelete} className="text-red-600 dark:text-red-500">
+                    <Trash2 className="w-4 h-4 ml-auto" data-slot="icon" />
+                    Delete Job
+                </DropdownItem>
+            </DropdownMenu>
+        </Dropdown>
     );
 }
 
 export const columns: ColumnDef<ScrapingJob>[] = [
     {
         accessorKey: "status",
-        header: "Status",
+        header: "STATUS",
         cell: ({ row }) => {
-            const status = row.getValue("status") as string;
+            const status = row.original.status;
+            const color =
+                status === "COMPLETED" ? "green" :
+                    status === "FAILED" ? "red" :
+                        "amber"; // Running/Pending
+
+            // Map status text to be friendlier if needed, or keep generic
+            const label =
+                status === "COMPLETED" ? "Success" :
+                    status === "FAILED" ? "Failed" :
+                        status === "RUNNING" ? "Running" : "Pending";
+
             return (
-                <Badge
-                    variant={
-                        status === "COMPLETED"
-                            ? "default" // default is primary (black/white)
-                            : status === "FAILED"
-                                ? "destructive"
-                                : status === "RUNNING"
-                                    ? "secondary" // blueish usually or secondary
-                                    : "outline"
-                    }
-                    className={
-                        status === "COMPLETED"
-                            ? "bg-green-500 hover:bg-green-600" // Override for green success
-                            : ""
-                    }
-                >
-                    {status}
+                <Badge color={color}>
+                    {status === "COMPLETED" && <span className="flex items-center gap-1"><CheckCircle className="w-3 h-3" /> {label}</span>}
+                    {status === "FAILED" && <span className="flex items-center gap-1"><XCircle className="w-3 h-3" /> {label}</span>}
+                    {(status === "RUNNING" || status === "PENDING") && <span className="flex items-center gap-1"><Play className="w-3 h-3" /> {label}</span>}
                 </Badge>
             );
         },
     },
     {
-        accessorKey: "createdAt",
-        header: "Triggered",
-        cell: ({ row }) => {
-            const date = new Date(row.getValue("createdAt"));
-            return <span>{formatDistanceToNow(date, { addSuffix: true })}</span>;
-        },
-    },
-    {
-        accessorKey: "startedAt",
-        header: "Started",
-        cell: ({ row }) => {
-            const val = row.getValue("startedAt");
-            if (!val) return <span className="text-muted-foreground">-</span>;
-            return <span suppressHydrationWarning>{new Date(val as string).toLocaleString()}</span>;
-        },
-    },
-    {
-        accessorKey: "completedAt",
-        header: "Completed",
-        cell: ({ row }) => {
-            const val = row.getValue("completedAt");
-            if (!val) return <span className="text-muted-foreground">-</span>;
-            return <span suppressHydrationWarning>{new Date(val as string).toLocaleString()}</span>;
-        },
-    },
-    {
-        accessorKey: "totalAccounts",
-        header: "Total",
-    },
-    {
-        accessorKey: "completedCount",
-        header: "Success",
-        cell: ({ row }) => (
-            <span className="text-green-600 font-medium">
-                {row.getValue("completedCount")}
-            </span>
-        ),
-    },
-    {
-        accessorKey: "failedCount",
-        header: "Failed",
-        cell: ({ row }) => {
-            const count = row.getValue("failedCount") as number;
+        id: "trigger",
+        header: "TRIGGER INFO",
+        cell: () => {
+            // Placeholder as real data for trigger source isn't in ScrapingJob yet
             return (
-                <span className={count > 0 ? "text-destructive font-medium" : "text-muted-foreground"}>
-                    {count}
-                </span>
+                <div className="flex flex-col">
+                    <Strong>Scheduled Job</Strong>
+                    <Text>by System</Text>
+                </div>
+            );
+        },
+    },
+    {
+        id: "timing",
+        header: "TIMING",
+        cell: ({ row }) => {
+            const startVal = row.original.startedAt || row.original.createdAt;
+            const startDate = new Date(startVal);
+            const relative = formatDistanceToNow(startDate, { addSuffix: true });
+            const duration = calculateDuration(row.original.startedAt, row.original.completedAt);
+
+            return (
+                <div className="flex flex-col">
+                    <Strong>{format(startDate, "dd MMM, HH:mm")}</Strong>
+                    <div className="flex items-center gap-2">
+                        <Text>{relative}</Text>
+                        <Text>•</Text>
+                        <Text className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {duration}
+                        </Text>
+                    </div>
+                </div>
+            );
+        },
+    },
+    {
+        id: "metrics",
+        header: "METRICS",
+        cell: ({ row }) => {
+            const { totalAccounts: total, completedCount: success, failedCount: failed, status } = row.original;
+
+            // Avoid division by zero
+            const safeTotal = total || 1;
+            const successPct = (success / safeTotal) * 100;
+            const failedPct = (failed / safeTotal) * 100;
+
+            const isSuccess = status === "COMPLETED" && failed === 0;
+            const isFailed = status === "FAILED";
+
+            return (
+                <div className="w-full max-w-[140px] flex flex-col gap-1.5">
+                    <div className="flex justify-between items-end">
+                        <Text className="text-xs">Total</Text>
+                        <Strong>{total}</Strong>
+                    </div>
+
+                    {/* Progress Bar Container */}
+                    <div className="h-2 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden flex">
+                        {success > 0 && (
+                            <div style={{ width: `${successPct}%` }} className="h-full bg-green-500 shrink-0" />
+                        )}
+                        {failed > 0 && (
+                            <div
+                                style={{ width: `${failedPct}%`, backgroundColor: '#dc2626' }}
+                                className="h-full shrink-0"
+                            />
+                        )}
+                    </div>
+
+                    <div className="flex justify-between items-center text-xs font-medium">
+                        {isSuccess && <span className="text-emerald-600">{success} OK</span>}
+                        {isFailed && <span className="text-red-600">{failed} Err</span>}
+                        {!isSuccess && !isFailed && (
+                            <div className="flex gap-2">
+                                <span className="text-emerald-600">{success} OK</span>
+                                <span className="text-red-600">{failed} Err</span>
+                            </div>
+                        )}
+                    </div>
+                </div>
             );
         },
     },
     {
         id: "actions",
-        header: "",
-        cell: ({ row }) => <DeleteButton jobId={row.original.id} />,
+        header: "ACTIONS",
+        cell: ({ row }) => <ActionMenu jobId={row.original.id} />,
     },
 ];

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/catalyst/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -184,8 +184,8 @@ export function ExportModal({ trigger, defaultCategoryId }: ExportModalProps) {
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
                 {trigger || (
-                    <Button variant="outline">
-                        <Download className="mr-2 h-4 w-4" />
+                    <Button outline>
+                        <Download className="h-4 w-4" data-slot="icon" />
                         Export PDF
                     </Button>
                 )}
@@ -417,17 +417,17 @@ export function ExportModal({ trigger, defaultCategoryId }: ExportModalProps) {
                 {/* Footer with Cancel + Export buttons */}
                 <DialogFooter className="gap-2 sm:gap-0">
                     <DialogClose asChild>
-                        <Button variant="ghost">Cancel</Button>
+                        <Button plain>Cancel</Button>
                     </DialogClose>
                     <Button onClick={handleExport} disabled={isExporting || noneSelected}>
                         {isExporting ? (
                             <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                <Loader2 className="h-4 w-4 animate-spin" data-slot="icon" />
                                 Exporting...
                             </>
                         ) : (
                             <>
-                                <Download className="mr-2 h-4 w-4" />
+                                <Download className="h-4 w-4" data-slot="icon" />
                                 Export PDF
                             </>
                         )}

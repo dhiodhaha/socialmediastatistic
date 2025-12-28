@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/catalyst/button";
 import { Wrench, Loader2 } from "lucide-react";
 import { fixOrphanSnapshots } from "@/app/actions/history";
 import { toast } from "sonner";
@@ -33,9 +33,9 @@ export function FixOrphanButton() {
     };
 
     return (
-        <Button variant="outline" size="sm" onClick={handleFix} disabled={loading}>
-            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wrench className="mr-2 h-4 w-4" />}
-            Fix Old Imports
+        <Button outline onClick={handleFix} disabled={loading}>
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" data-slot="icon" /> : <Wrench className="w-4 h-4" data-slot="icon" />}
+            Fix Imports
         </Button>
     );
 }

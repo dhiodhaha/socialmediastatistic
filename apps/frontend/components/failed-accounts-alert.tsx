@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { getAccountsWithErrors } from "@/app/actions/account";
 import { retryFailedAccounts } from "@/app/actions/scrape";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/catalyst/button";
 import { AlertTriangle, ChevronDown, ChevronUp, Pencil, RefreshCw, Loader2, X } from "lucide-react";
 import { AccountDialog } from "./account-dialog";
 import { format } from "date-fns";
@@ -100,36 +100,31 @@ export function FailedAccountsAlert() {
                     </span>
                     <div className="flex gap-2">
                         <Button
-                            variant="outline"
-                            size="sm"
+                            outline
                             onClick={handleRetry}
                             disabled={retrying}
-                            className="h-6 px-2 bg-white hover:bg-gray-100"
+                            className="bg-white hover:bg-gray-100"
                         >
                             {retrying ? (
-                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                <Loader2 className="h-3 w-3 animate-spin" data-slot="icon" />
                             ) : (
-                                <RefreshCw className="h-3 w-3 mr-1" />
+                                <RefreshCw className="h-3 w-3" data-slot="icon" />
                             )}
                             {retrying ? "Retrying..." : "Retry Failed"}
                         </Button>
                         <Button
-                            variant="ghost"
-                            size="sm"
+                            plain
                             onClick={() => setExpanded(!expanded)}
-                            className="h-6 px-2"
                         >
-                            {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                            {expanded ? <ChevronUp className="h-4 w-4" data-slot="icon" /> : <ChevronDown className="h-4 w-4" data-slot="icon" />}
                             {expanded ? "Sembunyikan" : "Lihat Detail"}
                         </Button>
                         <Button
-                            variant="ghost"
-                            size="sm"
+                            plain
                             onClick={handleDismiss}
-                            className="h-6 px-1"
                             title="Abaikan untuk sementara"
                         >
-                            <X className="h-4 w-4" />
+                            <X className="h-4 w-4" data-slot="icon" />
                         </Button>
                     </div>
                 </AlertTitle>
@@ -152,11 +147,10 @@ export function FailedAccountsAlert() {
                                         </div>
                                     </div>
                                     <Button
-                                        variant="outline"
-                                        size="sm"
+                                        outline
                                         onClick={() => setEditingAccount(acc)}
                                     >
-                                        <Pencil className="h-3 w-3 mr-1" />
+                                        <Pencil className="h-3 w-3" data-slot="icon" />
                                         Edit Handle
                                     </Button>
                                 </div>

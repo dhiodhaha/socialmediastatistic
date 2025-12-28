@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Square } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/catalyst/button";
 import { getJobStatus } from "@/app/actions/job";
 import { stopScrape } from "@/app/actions/scrape";
 import { toast } from "sonner";
@@ -96,15 +96,14 @@ export function ScrapeProgress({ jobId, onComplete }: ScrapeProgressProps) {
                         {stats.completed} / {stats.total} accounts
                     </span>
                     <Button
-                        variant="destructive"
-                        size="sm"
+                        color="red"
                         onClick={handleStop}
                         disabled={stopping}
                     >
                         {stopping ? (
-                            <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                            <Loader2 className="h-3 w-3 animate-spin" data-slot="icon" />
                         ) : (
-                            <Square className="h-3 w-3 mr-1" />
+                            <Square className="h-3 w-3" data-slot="icon" />
                         )}
                         Stop
                     </Button>

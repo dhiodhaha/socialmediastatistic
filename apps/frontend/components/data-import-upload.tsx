@@ -3,16 +3,9 @@
 import { useState, useRef } from "react";
 import Papa from "papaparse";
 import { Upload, Download, AlertCircle, CheckCircle, FileSpreadsheet } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/catalyst/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "@/components/ui/dialog";
+import { Dialog, DialogDescription, DialogTitle } from "@/components/catalyst/dialog";
 import { bulkImportSnapshots, type SnapshotImportInput } from "@/app/actions/data-import";
 
 // Template is generated client-side (free - no server call)
@@ -115,25 +108,22 @@ export function DataImportUpload() {
     };
 
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-                <Button variant="outline">
-                    <FileSpreadsheet className="mr-2 h-4 w-4" />
-                    Import Historical Data
-                </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
-                <DialogHeader>
-                    <DialogTitle>Import Historical Data</DialogTitle>
-                    <DialogDescription>
-                        Upload a CSV file containing snapshot data to import into the system.
-                    </DialogDescription>
-                </DialogHeader>
+        <>
+            <Button outline onClick={() => setOpen(true)}>
+                <Upload className="w-4 h-4" data-slot="icon" />
+                Upload
+            </Button>
 
-                <div className="flex flex-col gap-4 py-4">
+            <Dialog open={open} onClose={setOpen}>
+                <DialogTitle>Import Historical Data</DialogTitle>
+                <DialogDescription>
+                    Upload a CSV file containing snapshot data to import into the system.
+                </DialogDescription>
+
+                <div className="mt-4 flex flex-col gap-4">
                     <div className="flex items-center gap-2">
-                        <Button variant="secondary" size="sm" onClick={handleDownloadTemplate}>
-                            <Download className="mr-2 h-4 w-4" />
+                        <Button outline onClick={handleDownloadTemplate}>
+                            <Download className="w-4 h-4" data-slot="icon" />
                             Download Template
                         </Button>
                         <span className="text-xs text-muted-foreground">
@@ -152,9 +142,9 @@ export function DataImportUpload() {
                         <Button
                             onClick={() => fileInputRef.current?.click()}
                             disabled={loading}
-                            className="w-full"
+                            className="w-full justify-center"
                         >
-                            <Upload className="mr-2 h-4 w-4" />
+                            <Upload className="w-4 h-4" data-slot="icon" />
                             {loading ? "Importing..." : "Select CSV File"}
                         </Button>
                     </div>
@@ -184,7 +174,7 @@ export function DataImportUpload() {
                         <code className="bg-muted p-1 rounded">following, posts, engagement, likes</code>
                     </div>
                 </div>
-            </DialogContent>
-        </Dialog>
+            </Dialog>
+        </>
     );
 }
