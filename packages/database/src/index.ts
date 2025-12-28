@@ -20,12 +20,11 @@ function createPrismaClient(): PrismaClient {
   // Pass connection string directly to PrismaNeon (not a Pool object)
   const adapter = new PrismaNeon({ connectionString });
 
+  const isProduction = process.env.NODE_ENV === "production";
+
   return new PrismaClient({
     adapter,
-    log:
-      process.env.NODE_ENV === "development"
-        ? ["query", "error", "warn"]
-        : ["error"],
+    log: isProduction ? ["error"] : ["query", "error", "warn"],
   });
 }
 
