@@ -12,7 +12,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/catalyst/button";
 import { X } from "lucide-react";
 
 export function HistoryFilters() {
@@ -100,13 +100,12 @@ export function HistoryFilters() {
 
             {hasFilters && (
                 <Button
-                    variant="ghost"
-                    size="icon"
+                    plain
                     onClick={clearFilters}
                     className="mb-0.5"
                     title="Clear filters"
                 >
-                    <X className="h-4 w-4" />
+                    <X className="h-4 w-4" data-slot="icon" />
                 </Button>
             )}
         </div>

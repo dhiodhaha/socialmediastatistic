@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { getSettings, updateCronSchedule } from "@/app/actions/settings";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/catalyst/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Save, Loader2, Clock, Check } from "lucide-react";
@@ -162,7 +162,7 @@ export default function SettingsPage() {
                             </div>
 
                             <Button onClick={handleSave} disabled={loading}>
-                                {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                                {loading ? <Loader2 className="h-4 w-4 animate-spin" data-slot="icon" /> : <Save className="h-4 w-4" data-slot="icon" />}
                                 Save Schedule
                             </Button>
                         </>

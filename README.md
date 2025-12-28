@@ -11,7 +11,7 @@ A specialized analytics dashboard for tracking and visualizing social media perf
 ### Analytics & Tracking
 - **Multi-Platform Analytics**: Unified view for followers, posts, and engagement metrics across Instagram, TikTok, and Twitter.
 - **Growth Reports (Laporan Pertumbuhan)**: Compare data between two dates to track audience growth with percentage calculations.
-- **Historical Data**: Comprehensive history log with date-based filtering and growth visualization.
+- **Historical Data**: Comprehensive history log with "Blended Columns" design (Status, Timing, Metrics) and visual progress bars.
 
 ### Automation & Scraping
 - **Automated Scraping Engine**: Background worker with configurable cron schedule (default: midnight on last day of month).
@@ -32,7 +32,7 @@ A specialized analytics dashboard for tracking and visualizing social media perf
 
 ## 🛠 Tech Stack
 
-- **Frontend**: Next.js 16 (Turbopack), TypeScript, Tailwind CSS, Shadcn UI.
+- **Frontend**: Next.js 16 (Turbopack), TypeScript, Tailwind CSS, Catalyst UI Kit.
 - **Backend**: Server Actions, Prisma 7 ORM, PostgreSQL.
 - **Worker Service**: Node.js, Express, Puppeteer (scraping & PDF generation).
 - **Infrastructure**: Docker, Docker Compose, Turborepo (monorepo).

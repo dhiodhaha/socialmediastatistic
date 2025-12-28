@@ -1,7 +1,7 @@
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/catalyst/button"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { ArrowLeft01Icon, ArrowRight01Icon, MoreHorizontalCircle01Icon } from "@hugeicons/core-free-icons"
 
@@ -39,8 +39,8 @@ function PaginationItem({ ...props }: React.ComponentProps<"li">) {
 
 type PaginationLinkProps = {
   isActive?: boolean
-} & Pick<React.ComponentProps<typeof Button>, "size"> &
-  React.ComponentProps<"a">
+  size?: "default" | "icon" | "sm" | "lg"
+} & React.ComponentProps<"a">
 
 function PaginationLink({
   className,
@@ -50,18 +50,15 @@ function PaginationLink({
 }: PaginationLinkProps) {
   return (
     <Button
-      asChild
-      variant={isActive ? "outline" : "ghost"}
-      size={size}
-      className={cn(className)}
-    >
-      <a
-        aria-current={isActive ? "page" : undefined}
-        data-slot="pagination-link"
-        data-active={isActive}
-        {...props}
-      />
-    </Button>
+      outline={isActive}
+      plain={!isActive}
+      className={cn(
+        size === "icon" && "px-2",
+        size === "default" && "px-4 py-2",
+        className
+      )}
+      {...props}
+    />
   )
 }
 

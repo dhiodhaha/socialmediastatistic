@@ -9,138 +9,136 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
+import { ArrowUp, ArrowDown, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Platform } from "@repo/database";
-import { ArrowDown, ArrowUp, Minus } from "lucide-react";
 
 interface ComparisonTableProps {
     data: ComparisonRow[];
-    job1Date: Date; // Old date
-    job2Date: Date; // New date
-    platform: Platform;
+    job1Date: Date;
+    job2Date: Date;
+    platform: string;
 }
 
 export function ComparisonTable({ data, job1Date, job2Date, platform }: ComparisonTableProps) {
-    const formatDate = (date: Date) => {
-        return date.toLocaleDateString("id-ID", { month: "short", day: "numeric" });
+    const renderDelta = (val: number, pct: number) => {
+        if (val === 0) {
+            return (
+                <div className="flex items-center text-muted-foreground">
+                    <Minus className="h-3 w-3 mr-1" />
+                    <span>0%</span>
+                </div>
+            );
+        }
+
+        const isPositive = val > 0;
+        return (
+            <div className={cn(
+                "flex items-center font-medium",
+                isPositive ? "text-green-600" : "text-red-600"
+            )}>
+                {isPositive ? <ArrowUp className="h-3 w-3 mr-1" /> : <ArrowDown className="h-3 w-3 mr-1" />}
+                <span>{isPositive ? "+" : ""}{val.toLocaleString()} ({pct.toFixed(1)}%)</span>
+            </div>
+        );
     };
 
-    const month1 = formatDate(job1Date);
-    const month2 = formatDate(job2Date);
-
-    // Platform display name
-    const platformName = platform === "INSTAGRAM" ? "Instagram" : platform === "TIKTOK" ? "TikTok" : "Twitter";
+    const isNA = (val: number) => val === -1;
 
     return (
-        <Card className="w-full border shadow-sm">
-            <CardContent className="p-0">
-                <div className="rounded-md border">
-                    <Table>
-                        <TableHeader className="bg-muted/50">
-                            <TableRow className="hover:bg-transparent">
-                                <TableHead className="w-[50px] text-center font-semibold text-xs uppercase tracking-wider">#</TableHead>
-                                <TableHead className="w-[300px] font-semibold text-xs uppercase tracking-wider">Akun</TableHead>
-
-                                {/* Metrics Group: Followers */}
-                                <TableHead className="text-right font-semibold text-xs uppercase tracking-wider border-l">Followers ({month1})</TableHead>
-                                <TableHead className="text-right font-semibold text-xs uppercase tracking-wider">Followers ({month2})</TableHead>
-                                <TableHead className="text-center font-semibold text-xs uppercase tracking-wider bg-muted/60">Limitasi</TableHead>
-                                <TableHead className="text-center font-semibold text-xs uppercase tracking-wider bg-primary/5 text-primary">Pertumbuhan</TableHead>
-
-                                {/* Metrics Group: Posts */}
-                                <TableHead className="text-right font-semibold text-xs uppercase tracking-wider border-l">Posts ({month1})</TableHead>
-                                <TableHead className="text-right font-semibold text-xs uppercase tracking-wider">Posts ({month2})</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {data.map((row, index) => {
-                                const isNA = row.oldStats.followers === -1;
-
-                                return (
-                                    <TableRow
-                                        key={`${row.accountId}-${row.platform}`}
-                                        className={cn(
-                                            "group transition-colors",
-                                            isNA ? "bg-muted/30" : "hover:bg-muted/20"
-                                        )}
-                                    >
-                                        <TableCell className="text-center text-muted-foreground font-mono text-xs">
-                                            {index + 1}
-                                        </TableCell>
-                                        <TableCell>
+        <Card className="overflow-hidden">
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead className="w-[200px]">Akun</TableHead>
+                        <TableHead>Handle</TableHead>
+                        <TableHead className="text-right">
+                            <div className="flex flex-col">
+                                <span>Followers</span>
+                                <span className="text-[10px] font-normal text-muted-foreground">
+                                    {format(job1Date, "dd MMM")} → {format(job2Date, "dd MMM")}
+                                </span>
+                            </div>
+                        </TableHead>
+                        <TableHead className="text-right">Pertumbuhan</TableHead>
+                        <TableHead className="text-right">Posts</TableHead>
+                        {(platform === "INSTAGRAM" || platform === "TIKTOK") && (
+                            <TableHead className="text-right">Likes</TableHead>
+                        )}
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {data.length === 0 ? (
+                        <TableRow>
+                            <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                                Tidak ada data untuk platform ini.
+                            </TableCell>
+                        </TableRow>
+                    ) : (
+                        data.map((row) => (
+                            <TableRow key={row.accountId}>
+                                <TableCell className="font-medium">{row.accountName}</TableCell>
+                                <TableCell>
+                                    <Badge variant="outline" className="font-mono text-[10px]">
+                                        {row.handle}
+                                    </Badge>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                    {isNA(row.oldStats.followers) ? (
+                                        "N/A"
+                                    ) : (
+                                        <div className="flex flex-col">
+                                            <span className="text-muted-foreground text-[10px]">
+                                                {row.oldStats.followers.toLocaleString()}
+                                            </span>
+                                            <span className="font-semibold">
+                                                {row.newStats.followers.toLocaleString()}
+                                            </span>
+                                        </div>
+                                    )}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                    {isNA(row.oldStats.followers) ? "-" : renderDelta(row.delta.followersVal, row.delta.followersPct)}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                    {isNA(row.oldStats.posts) ? (
+                                        "N/A"
+                                    ) : (
+                                        <div className="flex flex-col">
+                                            <span className="text-muted-foreground text-[10px]">
+                                                {row.oldStats.posts.toLocaleString()}
+                                            </span>
+                                            <span className="font-semibold">
+                                                {row.newStats.posts.toLocaleString()}
+                                            </span>
+                                        </div>
+                                    )}
+                                </TableCell>
+                                {(platform === "INSTAGRAM" || platform === "TIKTOK") && (
+                                    <TableCell className="text-right">
+                                        {isNA(row.oldStats.likes || 0) ? (
+                                            "N/A"
+                                        ) : (
                                             <div className="flex flex-col">
-                                                <span className="font-medium text-sm text-foreground group-hover:text-primary transition-colors">
-                                                    {row.accountName}
+                                                <span className="text-muted-foreground text-[10px]">
+                                                    {(row.oldStats.likes || 0).toLocaleString()}
                                                 </span>
-                                                <span className={cn("text-xs font-mono", isNA ? "text-amber-600/70" : "text-muted-foreground")}>
-                                                    {isNA ? "N/A" : `@${row.handle}`}
+                                                <span className="font-semibold">
+                                                    {(row.newStats.likes || 0).toLocaleString()}
                                                 </span>
                                             </div>
-                                        </TableCell>
-
-                                        {/* Followers Data */}
-                                        <TableCell className="text-right font-mono text-sm border-l tabular-nums text-muted-foreground">
-                                            {isNA ? "-" : row.oldStats.followers.toLocaleString("id-ID")}
-                                        </TableCell>
-                                        <TableCell className="text-right font-mono text-sm tabular-nums font-medium">
-                                            {isNA ? "-" : row.newStats.followers.toLocaleString("id-ID")}
-                                        </TableCell>
-
-                                        {/* Placeholder column (Limitasi was in header but data unclear? Replaced with empty check or spacer) */}
-                                        <TableCell className="text-center bg-muted/30">
-                                            {/* Could be used for limit indicators or just spacer, keeping minimal for now */}
-                                            <span className="text-xs text-muted-foreground/30">-</span>
-                                        </TableCell>
-
-                                        {/* GROWTH Badge */}
-                                        <TableCell className="text-center bg-primary/5">
-                                            {isNA ? "-" : <DeltaBadge value={row.delta.followersPct} />}
-                                        </TableCell>
-
-                                        {/* Posts Data */}
-                                        <TableCell className="text-right font-mono text-sm border-l tabular-nums text-muted-foreground">
-                                            {isNA ? "-" : row.oldStats.posts.toLocaleString("id-ID")}
-                                        </TableCell>
-                                        <TableCell className="text-right font-mono text-sm tabular-nums">
-                                            {isNA ? "-" : row.newStats.posts.toLocaleString("id-ID")}
-                                        </TableCell>
-                                    </TableRow>
-                                );
-                            })}
-                            {data.length === 0 && (
-                                <TableRow>
-                                    <TableCell colSpan={8} className="h-32 text-center text-muted-foreground">
-                                        Tidak ada data yang ditemukan.
+                                        )}
                                     </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
-            </CardContent>
+                                )}
+                            </TableRow>
+                        ))
+                    )}
+                </TableBody>
+            </Table>
         </Card>
     );
 }
 
-function DeltaBadge({ value }: { value: number }) {
-    if (value === 0) return <span className="text-muted-foreground text-xs"><Minus className="w-3 h-3 inline opacity-50" /> 0%</span>;
-
-    const isPositive = value > 0;
-    const isNegative = value < 0;
-
-    return (
-        <div className={cn(
-            "inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full border",
-            isPositive
-                ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800"
-                : isNegative
-                    ? "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800"
-                    : "bg-gray-50 text-gray-600 border-gray-200"
-        )}>
-            {isPositive && <ArrowUp className="w-3 h-3" />}
-            {isNegative && <ArrowDown className="w-3 h-3" />}
-            {Math.abs(value).toFixed(2)}%
-        </div>
-    );
-}
+import { Card } from "@/components/ui/card";

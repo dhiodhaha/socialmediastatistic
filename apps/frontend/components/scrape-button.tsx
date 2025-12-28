@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/catalyst/button";
 import { triggerScrape } from "@/app/actions/scrape";
 import { Loader2, Play } from "lucide-react";
 
@@ -31,25 +31,25 @@ export function ScrapeButton() {
         }
     }
 
+    if (status === "success") {
+        return (
+            <Button onClick={handleScrape} disabled outline>
+                <Play className="h-4 w-4" data-slot="icon" />
+                Started!
+            </Button>
+        );
+    }
+
     return (
-        <Button
-            onClick={handleScrape}
-            disabled={isLoading || status === "success"}
-            variant={status === "success" ? "outline" : "default"}
-        >
+        <Button onClick={handleScrape} disabled={isLoading}>
             {isLoading ? (
                 <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="h-4 w-4 animate-spin" data-slot="icon" />
                     Starting...
-                </>
-            ) : status === "success" ? (
-                <>
-                    <Play className="mr-2 h-4 w-4 text-green-500" />
-                    Started!
                 </>
             ) : (
                 <>
-                    <Play className="mr-2 h-4 w-4" />
+                    <Play className="h-4 w-4" data-slot="icon" />
                     Trigger Scrape
                 </>
             )}

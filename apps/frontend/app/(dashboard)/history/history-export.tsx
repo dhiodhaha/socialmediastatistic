@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/catalyst/button";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -104,8 +104,8 @@ export function HistoryExport() {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="outline" disabled={isExporting}>
-                    {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                <Button outline disabled={isExporting}>
+                    {isExporting ? <Loader2 className="h-4 w-4 animate-spin" data-slot="icon" /> : <Download className="h-4 w-4" data-slot="icon" />}
                     Export
                 </Button>
             </DropdownMenuTrigger>

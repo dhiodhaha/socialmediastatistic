@@ -66,17 +66,36 @@ interface ScrapeTask {
  * Main scraping job runner.
  * Creates a job, returns the ID immediately, then processes in background.
  * 
- * Smart deduplication: Skips account+platform combinations already scraped today
- * to avoid wasting API credits when categories overlap.
+ * Global Smart Scraping: 
+ * 1. Checks if a job for this category is already RUNNING.
+ * 2. Deduplicates at the handle level: Skips handle+platform combinations already scraped today
+ *    anywhere in the system to save API credits.
+ * 3. Smart Update: Re-scrapes only if account was modified after today's snapshot.
  */
 export async function runScrapingJob(categoryId?: string): Promise<string> {
-    logger.info({ categoryId }, "Starting scraping job");
+    logger.info({ categoryId }, "Starting scraping job trigger");
 
-    // Fetch active accounts (optionally filtered by category via many-to-many)
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    // 1. Guard: Check if a job with same category (or global) is already RUNNING
+    const runningJob = await prisma.scrapingJob.findFirst({
+        where: {
+            status: "RUNNING",
+            categoryId: categoryId || null
+        },
+        orderBy: { createdAt: "desc" }
+    });
+
+    if (runningJob) {
+        logger.info({ runningJobId: runningJob.id }, "Found already running job for this category. Joining status tracking.");
+        return runningJob.id;
+    }
+
+    // 2. Fetch active accounts (filtered by category if provided)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const whereClause: any = { isActive: true };
     if (categoryId) {
-        // Many-to-many: filter via join table
         whereClause.categories = {
             some: { categoryId: categoryId }
         };
@@ -86,107 +105,107 @@ export async function runScrapingJob(categoryId?: string): Promise<string> {
         where: whereClause,
     });
 
-    // Generate tasks (flatten accounts into platform-specific tasks)
-    const tasks: ScrapeTask[] = [];
-    for (const account of accounts) {
-        if (account.instagram && account.instagram.trim().length > 0) {
-            tasks.push({ accountId: account.id, platform: "INSTAGRAM", handle: account.instagram.trim() });
-        }
-        if (account.tiktok && account.tiktok.trim().length > 0) {
-            tasks.push({ accountId: account.id, platform: "TIKTOK", handle: account.tiktok.trim() });
-        }
-        if (account.twitter && account.twitter.trim().length > 0) {
-            tasks.push({ accountId: account.id, platform: "TWITTER", handle: account.twitter.trim() });
+    if (accounts.length === 0) {
+        throw new Error("No active accounts found to scrape");
+    }
+
+    // 3. Global Deduplication Logic:
+    // Find ALL snapshots created today for ALL relevant accounts
+    const todaysSnapshots = await prisma.snapshot.findMany({
+        where: {
+            scrapedAt: { gte: todayStart },
+            accountId: { in: accounts.map(a => a.id) }
+        },
+        select: { accountId: true, platform: true, scrapedAt: true }
+    });
+
+    // Create a map of accountId:platform -> latest scrapedAt today
+    const snapshotMap = new Map<string, Date>();
+    for (const s of todaysSnapshots) {
+        const key = `${s.accountId}:${s.platform}`;
+        const existing = snapshotMap.get(key);
+        if (!existing || s.scrapedAt > existing) {
+            snapshotMap.set(key, s.scrapedAt);
         }
     }
 
-    // Daily Job Merging Logic:
-    // Check if a completed job exists for today (for this category).
-    // If yes, we reuse it and only scrape active accounts that are MISSING from it.
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
+    // 4. Generate Tasks with Smart Filtering
+    const jobTasks: ScrapeTask[] = [];
+    for (const account of accounts) {
+        const platforms: Array<{ name: Platform; handle: string | null }> = [
+            { name: "INSTAGRAM", handle: account.instagram },
+            { name: "TIKTOK", handle: account.tiktok },
+            { name: "TWITTER", handle: account.twitter },
+        ];
 
-    const existingJob = await prisma.scrapingJob.findFirst({
-        where: {
-            createdAt: { gte: todayStart },
-            status: "COMPLETED",
-            categoryId: categoryId || null
-            // Note: If categoryId is undefined, we look for global jobs (null).
-        },
-        orderBy: { createdAt: "desc" }
-    });
+        for (const p of platforms) {
+            if (!p.handle || p.handle.trim().length === 0) continue;
 
+            const trimmedHandle = p.handle.trim();
+            const snapshotKey = `${account.id}:${p.name}`;
+            const lastScrapedToday = snapshotMap.get(snapshotKey);
+
+            // Logic:
+            // - If Never scraped today -> Scrape
+            // - If Scraped today but account was updated AFTER that snapshot -> Scrape (Smart Update)
+            // - Otherwise -> Skip
+            if (!lastScrapedToday || account.updatedAt > lastScrapedToday) {
+                jobTasks.push({ accountId: account.id, platform: p.name, handle: trimmedHandle });
+            }
+        }
+    }
+
+    if (jobTasks.length === 0) {
+        logger.info("All accounts already up-to-date for today. Skipping job creation.");
+        // Try to return the latest completed job today if exists
+        const latestToday = await prisma.scrapingJob.findFirst({
+            where: {
+                createdAt: { gte: todayStart },
+                status: "COMPLETED",
+                categoryId: categoryId || null
+            },
+            orderBy: { createdAt: "desc" }
+        });
+        return latestToday?.id || "already-synced";
+    }
+
+    // 5. Job Merging: Check if we can reuse an existing job for today
     let jobId: string;
-    let jobTasks: ScrapeTask[] = tasks;
     let initialCompletedCount = 0;
     let initialFailedCount = 0;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let initialErrors: any[] = [];
 
+    const existingJob = await prisma.scrapingJob.findFirst({
+        where: {
+            createdAt: { gte: todayStart },
+            categoryId: categoryId || null
+        },
+        orderBy: { createdAt: "desc" }
+    });
+
     if (existingJob) {
-        logger.info({ existingJobId: existingJob.id }, "Found existing job for today - Checking for missing data");
-
-        // Find which accounts/platforms already have data in this job
-        const existingSnapshots = await prisma.snapshot.findMany({
-            where: { jobId: existingJob.id },
-            select: { accountId: true, platform: true }
-        });
-
-        const existingSet = new Set(
-            existingSnapshots.map(s => `${s.accountId}:${s.platform}`)
-        );
-
-        // Filter tasks to only those MISSING or OUTDATED in the existing job
-        jobTasks = tasks.filter(t => {
-            // 1. Check if Missing
-            const hasData = existingSet.has(`${t.accountId}:${t.platform}`);
-            if (!hasData) return true; // Missing -> Scrape it
-
-            // 2. Check if Outdated (Auto-Detect Update)
-            // specificAcct is efficient because accounts are already fetched in memory
-            const account = accounts.find(a => a.id === t.accountId);
-            if (account) {
-                // precise comparison: active modification time vs job start time
-                // if account was updated AFTER the job was created, we re-scrape
-                if (account.updatedAt > existingJob.createdAt) {
-                    return true; // Outdated -> Scrape again (Smart Update)
-                }
-            }
-
-            return false; // Valid & Up-to-date -> Skip
-        });
-
-        if (jobTasks.length === 0) {
-            logger.info({ jobId: existingJob.id }, "Existing job is already complete for all active accounts. Skipping.");
-            return existingJob.id;
-        }
-
-        logger.info({ jobId: existingJob.id, newTasks: jobTasks.length }, "Resuming existing job to fill missing data");
-
-        // Reuse existing job
+        logger.info({ jobId: existingJob.id, tasksToAdd: jobTasks.length }, "Merging tasks into existing daily job");
         jobId = existingJob.id;
         initialCompletedCount = existingJob.completedCount;
         initialFailedCount = existingJob.failedCount;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         initialErrors = (existingJob.errors as any[]) || [];
 
-        // Update job status to RUNNING and update total accounts
-        // We set totalAccounts to the CURRENT total of active accounts (accounts.length)
-        // because the previous total might have been smaller.
+        // Set status to RUNNING if it was completed
         await prisma.scrapingJob.update({
             where: { id: jobId },
             data: {
                 status: "RUNNING",
-                totalAccounts: accounts.length
+                totalAccounts: { increment: 0 } // Just ensuring we touch it, total might not strictly change if we are just updating
             }
         });
-
     } else {
         // Create NEW Job
         const job = await prisma.scrapingJob.create({
             data: {
                 status: "RUNNING",
-                totalAccounts: accounts.length,
+                totalAccounts: accounts.length, // Total in scope
                 startedAt: new Date(),
                 categoryId: categoryId || null,
             },
@@ -195,13 +214,11 @@ export async function runScrapingJob(categoryId?: string): Promise<string> {
         logger.info({ jobId: job.id, totalTasks: jobTasks.length }, "Created new scraping job");
     }
 
-    // Process in background (don't await)
-    // Pass initial counts for resuming
+    // Process in background
     processScrapingJob(jobId, accounts, jobTasks, initialCompletedCount, initialFailedCount, initialErrors).catch((error) => {
         logger.error({ jobId, error }, "Scraping job processing failed");
     });
 
-    // Return job ID immediately
     return jobId;
 }
 
@@ -250,7 +267,7 @@ async function processScrapingJob(
             // Process batch with concurrency control
             const results = await processBatchWithConcurrency(batch, CONCURRENCY);
 
-            // Save results to database
+            // Save results to database (with Merge/Upsert Logic)
             for (const result of results) {
                 if (result.success && result.data) {
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -264,16 +281,40 @@ async function processScrapingJob(
                         jobId: jobId,
                     };
 
-                    // Only include likes for TikTok to avoid stale Prisma Client errors for other platforms
-                    // and because it's semantically null for others
                     if (result.platform === "TIKTOK") {
                         snapshotData.likes = result.data.likes;
                     }
 
-                    await prisma.snapshot.create({
-                        data: snapshotData,
+                    // CHECK FOR EXISTING SNAPSHOT IN THIS JOB (Merge Logic)
+                    const existingSnapshot = await prisma.snapshot.findFirst({
+                        where: {
+                            jobId: jobId,
+                            accountId: result.accountId!,
+                            platform: result.platform
+                        }
                     });
-                    completedCount++;
+
+                    if (existingSnapshot) {
+                        // Update existing snapshot (replace old data with new)
+                        await prisma.snapshot.update({
+                            where: { id: existingSnapshot.id },
+                            data: {
+                                ...snapshotData,
+                                scrapedAt: new Date() // Update timestamp
+                            }
+                        });
+                        // Don't increment completedCount since it was already counted previously
+                        // But wait, if we are 'fixing' an error, maybe we should?
+                        // If we are updating valid data with new valid data, count remains same.
+                        // Ideally we should track 'updatedCount', but keeping it simple.
+                    } else {
+                        // Create new
+                        await prisma.snapshot.create({
+                            data: snapshotData,
+                        });
+                        completedCount++;
+                    }
+
                 } else {
                     failedCount++;
                     errors.push({

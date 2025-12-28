@@ -11,7 +11,7 @@ import { FixOrphanButton } from "./fix-orphan-button";
 export default async function HistoryPage({
     searchParams,
 }: {
-    searchParams: Promise<{ page?: string; startDate?: string; endDate?: string; status?: string; platform?: string }>;
+    searchParams: Promise<{ page?: string; status?: string; platform?: string }>;
 }) {
     // Await searchParams as required in Next.js 15+ (and likely 16)
     const params = await searchParams;
@@ -19,8 +19,6 @@ export default async function HistoryPage({
 
     // Parse filters
     const filters = {
-        startDate: params?.startDate ? new Date(params.startDate) : null,
-        endDate: params?.endDate ? new Date(params.endDate) : null,
         status: params?.status || null,
         platform: (params?.platform as Platform) || null,
     };
@@ -50,12 +48,12 @@ export default async function HistoryPage({
                 <div>
                     <h1 className="text-2xl font-bold">Scraping History</h1>
                     <p className="text-muted-foreground mt-1">
-                        View logs of past scraping jobs
+                        View and manage your automated extraction logs.
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <FixOrphanButton />
                     <DataImportUpload />
+                    <FixOrphanButton />
                 </div>
             </div>
 

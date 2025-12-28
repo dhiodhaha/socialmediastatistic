@@ -11,7 +11,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/catalyst/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Loader2, ArrowRight, Filter, Play } from "lucide-react";
@@ -180,7 +180,7 @@ export default function ComparisonPage() {
                     {/* Unified Export Button */}
                     <ExportModal
                         trigger={
-                            <Button variant="outline" className="h-9">
+                            <Button outline>
                                 Export PDF
                             </Button>
                         }
@@ -190,43 +190,48 @@ export default function ComparisonPage() {
             </div>
 
             {/* Filter Strip - Sticky/Prominent */}
+            {/* Filter Strip - Sticky/Prominent */}
             <div className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border rounded-lg shadow-sm p-4 sticky top-4 z-10 transition-all">
-                <div className="flex flex-col xl:flex-row xl:items-center gap-4 justify-between">
+                <div className="flex flex-col xl:flex-row xl:items-end gap-4 justify-between">
 
-                    {/* Date Logic */}
-                    <div className="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto">
-                        <div className="flex items-center gap-2 w-full sm:w-auto">
-                            <div className="grid gap-1.5 flex-1 sm:w-[180px]">
-                                <Label className="text-xs text-muted-foreground uppercase font-semibold">Data Lama</Label>
-                                <Select value={job1Id} onValueChange={setJob1Id} disabled={loadingJobs}>
-                                    <SelectTrigger className="h-9">
-                                        <SelectValue placeholder="Pilih..." />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {getJobOptions(job2Id, true, job2Obj?.createdAt)}
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                    {/* Left Controls Group */}
+                    <div className="flex flex-col sm:flex-row items-end gap-2 w-full xl:w-auto">
 
-                            <ArrowRight className="h-4 w-4 text-muted-foreground mt-5" />
-
-                            <div className="grid gap-1.5 flex-1 sm:w-[180px]">
-                                <Label className="text-xs text-muted-foreground uppercase font-semibold">Data Baru</Label>
-                                <Select value={job2Id} onValueChange={setJob2Id} disabled={loadingJobs}>
-                                    <SelectTrigger className="h-9">
-                                        <SelectValue placeholder="Pilih..." />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {getJobOptions(job1Id, false, job1Obj?.createdAt)}
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                        {/* Data Lama */}
+                        <div className="grid gap-1.5 flex-1 sm:w-[160px]">
+                            <Label className="text-xs text-muted-foreground uppercase font-semibold">Data Lama</Label>
+                            <Select value={job1Id} onValueChange={setJob1Id} disabled={loadingJobs}>
+                                <SelectTrigger className="h-9">
+                                    <SelectValue placeholder="Pilih..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {getJobOptions(job2Id, true, job2Obj?.createdAt)}
+                                </SelectContent>
+                            </Select>
                         </div>
 
-                        <Separator orientation="vertical" className="hidden xl:block h-8 mx-2" />
+                        {/* Arrow */}
+                        <div className="flex items-center justify-center h-9 w-6 pb-0.5 text-muted-foreground">
+                            <ArrowRight className="h-4 w-4" />
+                        </div>
+
+                        {/* Data Baru */}
+                        <div className="grid gap-1.5 flex-1 sm:w-[160px]">
+                            <Label className="text-xs text-muted-foreground uppercase font-semibold">Data Baru</Label>
+                            <Select value={job2Id} onValueChange={setJob2Id} disabled={loadingJobs}>
+                                <SelectTrigger className="h-9">
+                                    <SelectValue placeholder="Pilih..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {getJobOptions(job1Id, false, job1Obj?.createdAt)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <Separator orientation="vertical" className="hidden xl:block h-8 mx-2 mb-0.5" />
 
                         {/* Categories */}
-                        <div className="grid gap-1.5 w-full sm:w-[200px]">
+                        <div className="grid gap-1.5 w-full sm:w-[180px]">
                             <Label className="text-xs text-muted-foreground uppercase font-semibold">Kategori</Label>
                             <Select value={categoryId} onValueChange={setCategoryId}>
                                 <SelectTrigger className="h-9">
@@ -244,19 +249,21 @@ export default function ComparisonPage() {
                         </div>
                     </div>
 
-                    {/* Actions */}
-                    <div className="flex items-end gap-3 w-full xl:w-auto">
-                        <div className="flex items-center gap-2 h-9 pb-1">
+                    {/* Right Actions Group */}
+                    <div className="flex items-center gap-4 w-full xl:w-auto justify-end">
+                        <div className="flex items-center gap-2 h-9">
                             <Checkbox
                                 id="includeNA"
                                 checked={includeNA}
                                 onCheckedChange={(c) => setIncludeNA(!!c)}
                             />
-                            <Label htmlFor="includeNA" className="cursor-pointer text-sm">Include N/A</Label>
+                            <Label htmlFor="includeNA" className="cursor-pointer text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 mt-0.5">
+                                Include N/A
+                            </Label>
                         </div>
 
-                        <Button onClick={handleCompare} disabled={loadingData || !job1Id || !job2Id} className="h-9 min-w-[140px] px-6">
-                            {loadingData ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4 fill-current" />}
+                        <Button onClick={handleCompare} disabled={loadingData || !job1Id || !job2Id} className="min-w-[120px] px-6">
+                            {loadingData ? <Loader2 className="h-4 w-4 animate-spin" data-slot="icon" /> : <Play className="h-4 w-4 fill-current" data-slot="icon" />}
                             Bandingkan
                         </Button>
                     </div>

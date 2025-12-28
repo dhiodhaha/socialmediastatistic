@@ -18,7 +18,7 @@ import {
     BookOpen,
     LucideIcon
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/catalyst/button";
 
 interface NavItem {
     href: string;
@@ -160,7 +160,7 @@ export function Sidebar() {
             {/* Footer / Toggle */}
             <div className="p-3 border-t mt-auto">
                 <Button
-                    variant="ghost"
+                    plain
                     className={cn(
                         "w-full flex items-center h-10 transition-all hover:bg-muted/80",
                         isCollapsed ? "justify-center px-0" : "justify-start px-3 gap-3"
@@ -168,10 +168,10 @@ export function Sidebar() {
                     onClick={() => setIsCollapsed(!isCollapsed)}
                 >
                     {isCollapsed ? (
-                        <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                        <ChevronRight className="w-5 h-5 text-muted-foreground" data-slot="icon" />
                     ) : (
                         <>
-                            <ChevronLeft className="w-4 h-4 text-muted-foreground" />
+                            <ChevronLeft className="w-4 h-4 text-muted-foreground" data-slot="icon" />
                             <span className="text-sm font-medium text-muted-foreground animate-in fade-in slide-in-from-left-1 duration-200">
                                 Collapse menu
                             </span>

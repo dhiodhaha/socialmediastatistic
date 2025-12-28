@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/catalyst/button";
 import { toast } from "sonner";
 import { Download, Copy, FileSpreadsheet, Database, Sparkles, Check } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -73,8 +73,8 @@ function CopyButton({ text, label }: { text: string; label: string }) {
     };
 
     return (
-        <Button variant="outline" size="sm" onClick={handleCopy}>
-            {copied ? <Check className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
+        <Button outline onClick={handleCopy}>
+            {copied ? <Check className="h-4 w-4" data-slot="icon" /> : <Copy className="h-4 w-4" data-slot="icon" />}
             {copied ? "Copied!" : "Copy"}
         </Button>
     );
@@ -93,8 +93,8 @@ function DownloadButton({ content, filename, label }: { content: string; filenam
     };
 
     return (
-        <Button variant="default" size="sm" onClick={handleDownload}>
-            <Download className="h-4 w-4 mr-2" />
+        <Button onClick={handleDownload}>
+            <Download className="h-4 w-4" data-slot="icon" />
             Download Template
         </Button>
     );
