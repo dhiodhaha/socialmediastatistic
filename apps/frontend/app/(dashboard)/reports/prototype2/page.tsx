@@ -208,7 +208,7 @@ const TABS = [
     // { id: "YOUTUBE", label: "YouTube", icon: Youtube, color: "hover:text-red-600" },
 ];
 
-export default function ReportsPage() {
+export default function ReportsPrototype2() {
     // --- STATE ---
     const [selectedPlatform, setSelectedPlatform] = useState<Platform>("INSTAGRAM");
     const [includeNA, setIncludeNA] = useState(false);

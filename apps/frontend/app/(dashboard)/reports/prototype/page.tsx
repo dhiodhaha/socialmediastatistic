@@ -458,32 +458,46 @@ export default function ReportsPrototype() {
                 </Button>
             </div>
 
-            {/* Table Section */}
-            <div className="border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-xs">
-                <Table dense className="min-w-full bg-white dark:bg-zinc-900">
-                    <TableHead className="bg-zinc-50/50 dark:bg-zinc-800/30">
-                        <TableRow>
-                            <TableHeader className="text-[11px] font-bold tracking-wider text-zinc-400 dark:text-zinc-500 uppercase py-4 pl-8">
-                                Account Identity
-                            </TableHeader>
-                            <TableHeader className="text-[11px] font-bold tracking-wider text-zinc-400 dark:text-zinc-500 uppercase py-4">
-                                Result (Followers)
-                            </TableHeader>
-                            <TableHeader className="text-[11px] font-bold tracking-wider text-zinc-400 dark:text-zinc-500 uppercase py-4">
-                                Effort (Activity)
-                            </TableHeader>
-                            {selectedPlatform === "TIKTOK" && (
-                                <TableHeader className="text-[11px] font-bold tracking-wider text-zinc-400 dark:text-zinc-500 uppercase py-4 pr-8">
-                                    Engagement (Likes)
+            {/* Results Section */}
+            {!hasViewed ? (
+                // Empty state before clicking "View Report"
+                <div className="flex flex-col items-center justify-center py-20 text-center border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl bg-zinc-50/50 dark:bg-zinc-900/50 min-h-[400px]">
+                    <div className="bg-zinc-100 dark:bg-zinc-800 p-4 rounded-full mb-4">
+                        <Search className="h-8 w-8 text-zinc-400" />
+                    </div>
+                    <Strong className="text-lg text-zinc-900 dark:text-white">Bandingkan Data</Strong>
+                    <Text className="text-zinc-500 max-w-sm mt-2">
+                        Pilih dua periode (snapshot) di panel atas untuk melihat analisis pertumbuhan akun.
+                    </Text>
+                </div>
+            ) : (
+                // Table with data
+                <div className="border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-xs">
+                    <Table dense className="min-w-full bg-white dark:bg-zinc-900">
+                        <TableHead className="bg-zinc-50/50 dark:bg-zinc-800/30">
+                            <TableRow>
+                                <TableHeader className="text-[11px] font-bold tracking-wider text-zinc-400 dark:text-zinc-500 uppercase py-4 pl-8">
+                                    Account Identity
                                 </TableHeader>
-                            )}
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        <TableContent loading={loading || loadingData} hasViewed={hasViewed} data={filteredData} showLikes={selectedPlatform === "TIKTOK"} />
-                    </TableBody>
-                </Table>
-            </div>
+                                <TableHeader className="text-[11px] font-bold tracking-wider text-zinc-400 dark:text-zinc-500 uppercase py-4">
+                                    Result (Followers)
+                                </TableHeader>
+                                <TableHeader className="text-[11px] font-bold tracking-wider text-zinc-400 dark:text-zinc-500 uppercase py-4">
+                                    Effort (Activity)
+                                </TableHeader>
+                                {selectedPlatform === "TIKTOK" && (
+                                    <TableHeader className="text-[11px] font-bold tracking-wider text-zinc-400 dark:text-zinc-500 uppercase py-4 pr-8">
+                                        Engagement (Likes)
+                                    </TableHeader>
+                                )}
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            <TableContent loading={loadingData} hasViewed={hasViewed} data={filteredData} showLikes={selectedPlatform === "TIKTOK"} />
+                        </TableBody>
+                    </Table>
+                </div>
+            )}
         </div>
     );
 }
