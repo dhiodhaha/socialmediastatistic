@@ -10,25 +10,28 @@ A specialized analytics dashboard for tracking and visualizing social media perf
 
 ### Analytics & Tracking
 - **Multi-Platform Analytics**: Unified view for followers, posts, and engagement metrics across Instagram, TikTok, and Twitter.
-- **Growth Reports (Laporan Pertumbuhan)**: Compare data between two dates to track audience growth with percentage calculations.
-- **Historical Data**: Comprehensive history log with "Blended Columns" design (Status, Timing, Metrics) and visual progress bars.
+- **Growth Reports (Laporan Pertumbuhan)**: Advanced comparison between any two dates to track audience growth. Includes automated percentage delta calculations for all key metrics.
+- **Historical Data**: Redesigned history log featuring a "Blended Columns" layout:
+    - **Status**: Visual indicators for Success, Failed, and Running jobs using Catalyst badges.
+    - **Timing**: Consolidates start time, relative time (age), and total execution duration in a single view.
+    - **Metrics**: Visual progress bars showing Success/Failure ratios with real-time counts.
 
 ### Automation & Scraping
-- **Automated Scraping Engine**: Background worker with configurable cron schedule (default: midnight on last day of month).
-- **Manual Trigger**: Instant scrape triggering via dashboard with confirmation modal.
-- **Retry Failed Accounts**: One-click retry for accounts that failed during scraping.
-- **Category-based Scraping**: Scrape all accounts or filter by specific category.
+- **Smart Scraping Engine**: Distributed worker service with intelligent deduplication:
+    - **Daily Job Merging**: Automatically merges multiple triggers within the same day into a single report.
+    - **Global Deduplication**: Prevents redundant scraping of the same handle within a 24-hour window.
+- **Manual & Scheduled Control**: Instant manual triggers with real-time progress tracking, plus configurable crontab schedules (default: monthly).
+- **Robust Error Handling**: Precise tracking of failed accounts with "One-Click Retry" to complete partial jobs without rescraping successful handles.
 
 ### Export & Reporting
-- **Export Modal**: Configurable export with platform selection, category filter, and date range.
-- **Combined PDF Export**: All platforms in a single PDF with main cover page + individual platform sections.
-- **CSV Export**: Quick data export for spreadsheet analysis.
-- **Custom Cover Page**: Optional cover page with custom title for branded reports.
+- **Combined PDF Engine**: Generates professional multi-platform reports in a single document, featuring a dedicated cover page and platform-specific sections using Puppeteer.
+- **Customizable Exports**: Filter by platform, category, and date range. Custom cover page titles supported for branded reports.
+- **Data Portability**: Quick CSV exports for raw data analysis in Excel or Google Sheets.
 
-### Account Management
-- **Bulk Import**: CSV upload for mass-importing accounts.
-- **Category Management**: Organize accounts into categories for targeted reporting.
-- **Account Status**: Active/inactive toggle for each account.
+### Account Management & UI
+- **Bulk Operations**: Mass-import social media handles via CSV upload with client-side validation.
+- **Organized Categorization**: Group accounts into custom categories for granular reporting and targeted scraping.
+- **Premium User Experience**: Built with **Catalyst UI Kit** and **Geist Font**, featuring a high-fidelity sidebar, responsive layouts, and smooth animations.
 
 ## 🛠 Tech Stack
 

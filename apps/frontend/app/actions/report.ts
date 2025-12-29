@@ -6,6 +6,7 @@ export interface ComparisonRow {
     accountId: string;
     accountName: string; // The "Nama Unit" (username in db)
     handle: string; // The specific platform handle
+    category: string; // Display category
     platform: Platform;
     oldStats: { followers: number; posts: number; likes?: number };
     newStats: { followers: number; posts: number; likes?: number };
@@ -31,7 +32,11 @@ export async function getComparisonData(
     if (categoryId) {
         // Many-to-many: filter via join table
         whereClause.categories = {
-            some: { categoryId: categoryId }
+            some: {
+                category: {
+                    id: categoryId
+                }
+            }
         };
     }
 
@@ -43,6 +48,11 @@ export async function getComparisonData(
                     jobId: { in: [jobId1, jobId2] },
                 },
             },
+            categories: {
+                include: {
+                    category: true
+                }
+            }
         },
     });
 
@@ -59,6 +69,10 @@ export async function getComparisonData(
             if (account.tiktok) platformsToCheck.push("TIKTOK");
             if (account.twitter) platformsToCheck.push("TWITTER");
         }
+
+        const categoryName = account.categories.length > 0
+            ? account.categories.map((c: any) => c.category.name).join(", ")
+            : "Official Account";
 
         for (const platform of platformsToCheck) {
             // Check if account has this platform
@@ -89,6 +103,7 @@ export async function getComparisonData(
                     accountId: account.id,
                     accountName: account.username,
                     handle: "N/A",
+                    category: categoryName,
                     platform,
                     oldStats: { followers: -1, posts: -1, likes: -1 }, // -1 indicates N/A
                     newStats: { followers: -1, posts: -1, likes: -1 },
@@ -106,6 +121,7 @@ export async function getComparisonData(
                 accountId: account.id,
                 accountName: account.username,
                 handle,
+                category: categoryName,
                 platform,
                 oldStats: {
                     followers: s1.followers || 0,
