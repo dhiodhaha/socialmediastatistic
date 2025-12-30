@@ -240,3 +240,50 @@ export async function exportComparisonPdf(exportData: ExportData): Promise<strin
     const base64 = Buffer.from(buffer).toString("base64");
     return base64;
 }
+
+interface LatestExportData {
+    sections: Array<{
+        platform: string;
+        data: Array<{
+            accountName: string;
+            handle: string;
+            followers: number;
+            posts: number;
+            likes?: number;
+        }>;
+    }>;
+    month: string;
+    includeCover?: boolean;
+    customTitle?: string;
+}
+
+/**
+ * Export latest report as PDF via worker service.
+ * Returns base64 encoded PDF data.
+ */
+export async function exportLatestPdf(exportData: LatestExportData): Promise<string> {
+    const workerUrl = process.env.WORKER_URL || "http://localhost:4000";
+    const workerSecret = process.env.WORKER_SECRET;
+
+    if (!workerSecret) {
+        throw new Error("WORKER_SECRET not configured");
+    }
+
+    const response = await fetch(`${workerUrl}/export/latest-pdf`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${workerSecret}`,
+        },
+        body: JSON.stringify(exportData),
+    });
+
+    if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`Export failed: ${response.status} - ${text}`);
+    }
+
+    const buffer = await response.arrayBuffer();
+    const base64 = Buffer.from(buffer).toString("base64");
+    return base64;
+}
