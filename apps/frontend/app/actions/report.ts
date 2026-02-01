@@ -20,13 +20,35 @@ export interface ComparisonRow {
     };
 }
 
+import { startOfDay, endOfDay } from "date-fns";
+
 export async function getComparisonData(
     jobId1: string,
     jobId2: string,
     categoryId?: string,
     includeNA?: boolean
 ): Promise<ComparisonRow[]> {
-    // Fetch all accounts to have the base list
+    // 1. Get the reference jobs to know the dates
+    const [job1, job2] = await Promise.all([
+        prisma.scrapingJob.findUnique({ where: { id: jobId1 } }),
+        prisma.scrapingJob.findUnique({ where: { id: jobId2 } })
+    ]);
+
+    if (!job1 || !job2 || !job1.completedAt || !job2.completedAt) {
+        throw new Error("One or both jobs not found or not completed");
+    }
+
+    // Define date ranges for matching (full day of the job)
+    const range1 = {
+        start: startOfDay(job1.completedAt),
+        end: endOfDay(job1.completedAt)
+    };
+    const range2 = {
+        start: startOfDay(job2.completedAt),
+        end: endOfDay(job2.completedAt)
+    };
+
+    // 2. Fetch all accounts 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const whereClause: any = { isActive: true };
     if (categoryId) {
@@ -45,8 +67,22 @@ export async function getComparisonData(
         include: {
             snapshots: {
                 where: {
-                    jobId: { in: [jobId1, jobId2] },
+                    OR: [
+                        {
+                            scrapedAt: {
+                                gte: range1.start,
+                                lte: range1.end
+                            }
+                        },
+                        {
+                            scrapedAt: {
+                                gte: range2.start,
+                                lte: range2.end
+                            }
+                        }
+                    ]
                 },
+                orderBy: { scrapedAt: "desc" }
             },
             categories: {
                 include: {
@@ -93,9 +129,19 @@ export async function getComparisonData(
             // Skip if not including N/A and account doesn't have this platform
             if (!includeNA && !hasThisPlatform) continue;
 
-            // Find snapshots for this platform and the two jobs
-            const snapshot1 = account.snapshots.find(s => s.jobId === jobId1 && s.platform === platform);
-            const snapshot2 = account.snapshots.find(s => s.jobId === jobId2 && s.platform === platform);
+            // Find snapshots for this platform and the two date ranges
+            // We use date matching instead of strict Job ID matching to handle shared entities
+            const snapshot1 = account.snapshots.find(s => 
+                s.platform === platform && 
+                s.scrapedAt >= range1.start && 
+                s.scrapedAt <= range1.end
+            );
+
+            const snapshot2 = account.snapshots.find(s => 
+                s.platform === platform && 
+                s.scrapedAt >= range2.start && 
+                s.scrapedAt <= range2.end
+            );
 
             // If account doesn't have this platform, show as N/A
             if (!hasThisPlatform) {
@@ -112,7 +158,7 @@ export async function getComparisonData(
                 continue;
             }
 
-            // Use 0 if snapshot missing (e.g. account didn't exist then or failed)
+            // Use 0 if snapshot missing
             const s1 = snapshot1 || { followers: 0, posts: 0, likes: 0 };
             const s2 = snapshot2 || { followers: 0, posts: 0, likes: 0 };
 

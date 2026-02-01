@@ -196,14 +196,8 @@ export async function deleteAccount(id: string) {
     }
 }
 
-export async function bulkCreateAccounts(accounts: AccountInput[]) {
+    export async function bulkCreateAccounts(accounts: AccountInput[]) {
     try {
-        // If categories are provided in input but not created, we currently don't auto-create them 
-        // because we need IDs. 
-        // Assumption: The AccountInput for bulk create might come with 'categoryName' from CSV, 
-        // so we might need to look them up.
-        // For now, let's assume we stick to the basic AccountInput and handle resolution in the CSV component.
-
         let successCount = 0;
         const errors: string[] = [];
 
@@ -220,11 +214,52 @@ export async function bulkCreateAccounts(accounts: AccountInput[]) {
                 }
             }
 
-            const result = await createAccount(acc);
-            if (result.success) {
-                successCount++;
-            } else {
-                errors.push(`${acc.username}: ${result.error}`);
+            try {
+                // Try to create the account directly first
+                const result = await createAccount(acc);
+                if (result.success) {
+                    successCount++;
+                    continue;
+                }
+
+                // If creation failed specifically because account exists, we try to merge the category
+                if (result.error === "Account with this name already exists") {
+                    // Find the existing account
+                    const existingAccount = await prisma.account.findUnique({
+                        where: { username: acc.username }
+                    });
+
+                    if (existingAccount && acc.categoryIds && acc.categoryIds.length > 0) {
+                        // Check if connection already exists, if not create it
+                        for (const catId of acc.categoryIds) {
+                            const existingLink = await prisma.accountCategory.findUnique({
+                                where: {
+                                    accountId_categoryId: {
+                                        accountId: existingAccount.id,
+                                        categoryId: catId
+                                    }
+                                }
+                            });
+
+                            if (!existingLink) {
+                                await prisma.accountCategory.create({
+                                    data: {
+                                        accountId: existingAccount.id,
+                                        categoryId: catId
+                                    }
+                                });
+                            }
+                        }
+                        successCount++; // Count as success since we successfully "imported" (updated) it
+                    } else {
+                        // If no category to add or account not found (unlikely), treat as original error
+                        errors.push(`${acc.username}: ${result.error}`);
+                    }
+                } else {
+                    errors.push(`${acc.username}: ${result.error}`);
+                }
+            } catch (err: any) {
+                errors.push(`${acc.username}: ${err.message || "Unknown error"}`);
             }
         }
 
