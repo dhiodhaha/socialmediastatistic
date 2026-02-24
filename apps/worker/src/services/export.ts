@@ -114,4 +114,51 @@ export class ExportService {
             await browser.close();
         }
     }
+    static async generateLatestPdf(exportData: {
+        sections: Array<{
+            platform: string;
+            data: Array<{
+                accountName: string;
+                handle: string;
+                followers: number;
+                posts: number;
+                likes?: number;
+            }>;
+        }>;
+        month: string;
+        includeCover?: boolean;
+        customTitle?: string;
+    }): Promise<Buffer> {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const { generateLatestReportHtml } = require("./latest-template");
+
+        const html = generateLatestReportHtml({
+            sections: exportData.sections,
+            month: exportData.month,
+            generatedAt: new Date().toLocaleString("id-ID"),
+            includeCover: exportData.includeCover,
+            customTitle: exportData.customTitle,
+        });
+
+        const browser = await puppeteer.launch({
+            headless: true,
+            args: ["--no-sandbox", "--disable-setuid-sandbox"],
+        });
+
+        try {
+            const page = await browser.newPage();
+            await page.setContent(html, { waitUntil: "networkidle0" });
+
+            const pdfBuffer = await page.pdf({
+                width: "1920px",
+                height: "1080px",
+                printBackground: true,
+                margin: { top: "0", right: "0", bottom: "0", left: "0" }, // Full bleed for 1920x1080 design
+            });
+
+            return Buffer.from(pdfBuffer);
+        } finally {
+            await browser.close();
+        }
+    }
 }

@@ -49,4 +49,26 @@ router.post("/comparison-pdf", async (req, res) => {
     }
 });
 
+/**
+ * Generate Latest PDF Export
+ * POST /export/latest-pdf
+ * Body: { platform, month, data }
+ */
+router.post("/latest-pdf", async (req, res) => {
+    try {
+        const exportData = req.body;
+        logger.info({ dataCount: exportData.sections?.length }, "Latest PDF export requested");
+
+        const pdfBuffer = await ExportService.generateLatestPdf(exportData);
+
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader("Content-Disposition", `attachment; filename=latest-${Date.now()}.pdf`);
+        res.send(pdfBuffer);
+
+    } catch (error) {
+        logger.error({ error }, "Failed to generate latest PDF");
+        res.status(500).json({ success: false, error: "Failed to generate latest PDF report" });
+    }
+});
+
 export default router;

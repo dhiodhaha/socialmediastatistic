@@ -59,7 +59,7 @@ export function generateComparisonReportHtml(config: ReportConfig): string {
 
             const handleDisplay = isNA
                 ? '<span style="color: #d97706; font-weight: bold;">N/A</span>'
-                : `@${row.handle}`;
+                : row.handle.startsWith('@') ? row.handle : `@${row.handle}`;
 
             const rowBg = isNA ? 'background-color: #fef3c7;' : '';
 
@@ -91,9 +91,12 @@ export function generateComparisonReportHtml(config: ReportConfig): string {
         <title>Laporan Pertumbuhan ${platform}</title>
         <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
+            @page {
+                margin: 0;
+            }
             body { 
                 font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
-                padding: 30px; 
+                padding: 30px 30px 0 30px;
                 color: #333;
                 font-size: 12px;
             }
@@ -137,13 +140,23 @@ export function generateComparisonReportHtml(config: ReportConfig): string {
                 font-size: 11px;
             }
             tr:nth-child(even) { background-color: #f9fafb; }
+            .header {
+                /* Removed header */
+                display: none;
+            }
             .footer { 
-                margin-top: 30px; 
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                padding: 15px 30px;
                 font-size: 10px; 
                 color: #999; 
-                text-align: center;
+                text-align: left;
+                background-color: white;
                 border-top: 1px solid #eee;
-                padding-top: 15px;
+                z-index: 500;
+                height: 40px;
             }
             /* Cover page styles */
             .cover-page {
@@ -157,6 +170,8 @@ export function generateComparisonReportHtml(config: ReportConfig): string {
                 color: white;
                 margin: -30px;
                 padding: 80px;
+                position: relative;
+                z-index: 9999;
             }
             .cover-title {
                 font-size: 72px;
@@ -188,13 +203,7 @@ export function generateComparisonReportHtml(config: ReportConfig): string {
         </div>
         ` : ''}
 
-        <!-- Report Content -->
-        <div class="header">
-            <h1>Laporan Pertumbuhan - ${platform}</h1>
-            <div class="meta">
-                Periode: ${month1} vs ${month2} | Digenerate: ${generatedAt}
-            </div>
-        </div>
+        <!-- Header Removed -->
 
         <table>
             <thead>
@@ -213,10 +222,15 @@ export function generateComparisonReportHtml(config: ReportConfig): string {
             <tbody>
                 ${rows}
             </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="10" style="height: 50px; border: none;">&nbsp;</td>
+                </tr>
+            </tfoot>
         </table>
 
         <div class="footer">
-            Social Media Statistic Dashboard &copy; ${new Date().getFullYear()} | Total: ${data.length} akun
+            Laporan ${platform} | Periode ${month1} vs ${month2} | Data oleh Tim Analisis dan Strategi
         </div>
     </body>
     </html>
@@ -276,7 +290,7 @@ export function generateCombinedReportHtml(config: CombinedReportConfig): string
 
             const handleDisplay = isNA
                 ? '<span style="color: #d97706; font-weight: bold;">N/A</span>'
-                : `@${row.handle}`;
+                : row.handle.startsWith('@') ? row.handle : `@${row.handle}`;
 
             const rowBg = isNA ? 'background-color: #fef3c7;' : '';
 
@@ -305,14 +319,7 @@ export function generateCombinedReportHtml(config: CombinedReportConfig): string
             <div class="platform-subtitle">Laporan Pertumbuhan</div>
         </div>
 
-        <!-- Platform Data -->
-        <div class="section">
-            <div class="header">
-                <h1>${platformNames[platform] || platform}</h1>
-                <div class="meta">
-                    Periode: ${month1} vs ${month2} | Total: ${data.length} akun
-                </div>
-            </div>
+            <!-- Header Removed -->
 
             <table>
                 <thead>
@@ -331,6 +338,11 @@ export function generateCombinedReportHtml(config: CombinedReportConfig): string
                 <tbody>
                     ${rows}
                 </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="10" style="height: 50px; border: none;">&nbsp;</td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
         `;
@@ -346,10 +358,14 @@ export function generateCombinedReportHtml(config: CombinedReportConfig): string
         <title>Laporan Social Media</title>
         <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
+            @page {
+                margin: 0;
+            }
             body { 
                 font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
                 color: #333;
                 font-size: 12px;
+                padding: 0;
             }
             .section {
                 padding: 30px;
@@ -403,6 +419,12 @@ export function generateCombinedReportHtml(config: CombinedReportConfig): string
                 background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
                 color: white;
                 text-align: center;
+                position: relative;
+                z-index: 9999;
+                page-break-before: always;
+                break-before: page;
+                page-break-inside: avoid;
+                break-inside: avoid;
             }
             .main-title {
                 font-size: 56px;
@@ -436,6 +458,12 @@ export function generateCombinedReportHtml(config: CombinedReportConfig): string
                 background: linear-gradient(135deg, #3B5BDB 0%, #1E3A8A 100%);
                 color: white;
                 padding: 80px;
+                position: relative;
+                z-index: 9999;
+                page-break-before: always;
+                break-before: page;
+                page-break-inside: avoid;
+                break-inside: avoid;
             }
             .platform-title {
                 font-size: 72px;
@@ -449,19 +477,27 @@ export function generateCombinedReportHtml(config: CombinedReportConfig): string
             }
 
             .footer { 
-                margin-top: 30px; 
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                padding: 15px 30px;
                 font-size: 10px; 
                 color: #999; 
-                text-align: center;
+                text-align: left;
+                background-color: white;
                 border-top: 1px solid #eee;
-                padding-top: 15px;
+                z-index: 500;
+                height: 40px;
             }
 
             @media print {
                 tr { page-break-inside: avoid; break-inside: avoid; }
                 thead { display: table-header-group; }
-                .main-cover, .platform-cover { page-break-after: always; }
-                .section { page-break-after: always; }
+                .main-cover, .platform-cover, .section { 
+                    page-break-after: always; 
+                    page-break-inside: avoid;
+                }
             }
         </style>
     </head>
@@ -470,16 +506,15 @@ export function generateCombinedReportHtml(config: CombinedReportConfig): string
         <!-- Main Cover Page -->
         <div class="main-cover">
             <div class="main-title">${customTitle || "Laporan<br/>Social Media"}</div>
-            <div class="main-subtitle">Pertumbuhan Data</div>
-            <div class="main-platforms">${platformList}</div>
-            <div class="main-date">${month1} — ${month2}</div>
+            <div class="main-subtitle">Edisi ${month2}</div>
+            <div class="main-platforms">Platform: ${platformList}</div>
         </div>
         ` : ''}
 
         ${sectionsHtml}
 
         <div class="footer">
-            Social Media Statistic Dashboard &copy; ${new Date().getFullYear()} | Generated: ${generatedAt}
+            Laporan Social Media | Periode ${month1} vs ${month2} | Data oleh Tim Analisis dan Strategi
         </div>
     </body>
     </html>
