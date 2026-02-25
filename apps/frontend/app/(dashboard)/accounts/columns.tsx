@@ -2,7 +2,7 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import { MoreHorizontal, ExternalLink } from "lucide-react";
-import { Button } from "@/components/catalyst/button";
+import { Button } from "@/shared/components/catalyst/button";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -10,11 +10,11 @@ import {
     DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
-import { deleteAccount } from "@/app/actions/account";
+} from "@/shared/components/ui/dropdown-menu";
+import { Badge } from "@/shared/components/ui/badge";
+import { deleteAccount } from "@/modules/accounts/actions/account.actions";
 import { useState } from "react";
-import { AccountDialog } from "@/components/account-dialog";
+import { AccountDialog } from "@/modules/accounts/components/account-dialog";
 
 // Define the shape of our data (must match Prisma Account model with join table)
 export type Account = {

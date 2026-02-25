@@ -7,15 +7,15 @@ import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 
 // --- ACTIONS & TYPES ---
-import { getComparisonData, getScrapingJobsForReport, exportComparisonPdf, exportLatestPdf, type ComparisonRow } from "@/app/actions/report";
-import { getCategories } from "@/app/actions/category";
+import { getComparisonData, getScrapingJobsForReport, exportComparisonPdf, exportLatestPdf, type ComparisonRow } from "@/modules/analytics/actions/report.actions";
+import { getCategories } from "@/modules/categories/actions/category.actions";
 
 // --- COMPONENTS ---
-import { ReportHeader } from "@/components/reports/report-header";
-import { ReportsControls, Platform } from "@/components/reports/reports-controls";
-import { ReportsTable } from "@/components/reports/reports-table";
-import { SelectOption } from "@/components/reports/filter-listbox";
-import { DisplayRow } from "@/components/reports/columns";
+import { ReportHeader } from "@/modules/analytics/components/reports/report-header";
+import { ReportsControls, Platform } from "@/modules/analytics/components/reports/reports-controls";
+import { ReportsTable } from "@/modules/analytics/components/reports/reports-table";
+import { SelectOption } from "@/modules/analytics/components/reports/filter-listbox";
+import { DisplayRow } from "@/modules/analytics/components/reports/columns";
 
 export default function ReportsPage() {
     // --- STATE ---

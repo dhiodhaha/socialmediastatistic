@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { DataTable } from "@/components/ui/data-table";
+import { DataTable } from "@/shared/components/ui/data-table";
 import { columns } from "./columns";
 
 interface HistoryDataTableProps {

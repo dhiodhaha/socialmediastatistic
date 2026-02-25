@@ -1,10 +1,10 @@
-import { getCategories } from "@/app/actions/category";
+import { getCategories } from "@/modules/categories/actions/category.actions";
 
 export const dynamic = "force-dynamic";
-import { DataTable } from "@/components/ui/data-table";
+import { DataTable } from "@/shared/components/ui/data-table";
 import { columns, type Category } from "./columns";
-import { CategoryDialog } from "@/components/category-dialog";
-import { Button } from "@/components/catalyst/button";
+import { CategoryDialog } from "@/modules/categories/components/category-dialog";
+import { Button } from "@/shared/components/catalyst/button";
 import { Plus } from "lucide-react";
 
 export default async function CategoriesPage() {

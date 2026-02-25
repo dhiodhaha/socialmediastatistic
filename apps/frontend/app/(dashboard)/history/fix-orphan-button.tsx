@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/catalyst/button";
+import { Button } from "@/shared/components/catalyst/button";
 import { Wrench, Loader2 } from "lucide-react";
-import { fixOrphanSnapshots } from "@/app/actions/history";
+import { fixOrphanSnapshots } from "@/modules/analytics/actions/history.actions";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 

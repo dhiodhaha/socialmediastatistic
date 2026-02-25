@@ -1,8 +1,8 @@
 import { prisma } from "@repo/database";
-import { StatsCards } from "@/components/stats-cards";
-import { RecentActivity } from "@/components/recent-activity";
-import { ScrapeButton } from "@/components/scrape-button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { StatsCards } from "@/modules/analytics/components/stats-cards";
+import { RecentActivity } from "@/modules/analytics/components/recent-activity";
+import { ScrapeButton } from "@/modules/scraping/components/scrape-button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 
 async function getStats() {
     const [

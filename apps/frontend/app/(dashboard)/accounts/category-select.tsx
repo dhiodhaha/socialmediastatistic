@@ -1,4 +1,4 @@
-import { Select } from "@/components/catalyst/select";
+import { Select } from "@/shared/components/catalyst/select";
 import { useRouter, useSearchParams } from "next/navigation";
 
 export function CategorySelect({

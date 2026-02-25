@@ -2,12 +2,12 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
-import { DataTable } from "@/components/ui/data-table";
+import { DataTable } from "@/shared/components/ui/data-table";
 import { columns, type Account } from "./columns";
-import { AccountDialog } from "@/components/account-dialog";
-import { CsvUpload } from "@/components/csv-upload";
-import { Button } from "@/components/catalyst/button";
-import { Input, InputGroup } from "@/components/catalyst/input";
+import { AccountDialog } from "@/modules/accounts/components/account-dialog";
+import { CsvUpload } from "@/modules/scraping/components/csv-upload";
+import { Button } from "@/shared/components/catalyst/button";
+import { Input, InputGroup } from "@/shared/components/catalyst/input";
 import { MagnifyingGlassIcon } from "@heroicons/react/16/solid";
 import { Plus } from "lucide-react";
 import { CategorySelect } from "./category-select";

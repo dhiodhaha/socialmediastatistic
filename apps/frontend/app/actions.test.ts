@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { bulkCreateAccounts } from './actions/account';
-import { getAllScrapingHistory } from './actions/history';
+import { bulkCreateAccounts } from '@/modules/accounts/actions/account.actions';
+import { getAllScrapingHistory } from '@/modules/analytics/actions/history.actions';
 // triggerScrape is dynamically imported in tests below
 import { Account, ScrapingJob } from '@repo/database';
 import { prismaMock, resetMocks } from '../test/utils';
@@ -19,8 +19,8 @@ describe('Server Actions', () => {
     describe('bulkCreateAccounts', () => {
         it('should successfully create accounts and ignore duplicates', async () => {
             const inputAccounts = [
-                { username: 'validUser', instagram: 'foo', isActive: true },
-                { username: 'duplicateUser', tiktok: 'bar', isActive: true },
+                { username: 'validUser', instagram: 'foo', isActive: true, categoryIds: [] },
+                { username: 'duplicateUser', tiktok: 'bar', isActive: true, categoryIds: [] },
             ];
 
             // Mock findUnique to simulate 'duplicateUser' exists
@@ -80,7 +80,7 @@ describe('Server Actions', () => {
 
     describe('triggerScrape', () => {
         it('should call worker URL with correct headers', async () => {
-            const { triggerScrape } = await import('./actions/scrape'); // Dynamic import to ensure mocks are applied if needed, or just import at top
+            const { triggerScrape } = await import('@/modules/scraping/actions/scrape.actions'); // Dynamic import to ensure mocks are applied if needed, or just import at top
 
             // Mock fetch
             const mockFetch = vi.fn().mockResolvedValue({
@@ -105,7 +105,7 @@ describe('Server Actions', () => {
         });
 
         it('should retry on server error', async () => {
-            const { triggerScrape } = await import('./actions/scrape');
+            const { triggerScrape } = await import('@/modules/scraping/actions/scrape.actions');
             const mockFetch = vi.fn()
                 .mockRejectedValueOnce(new Error('Network error'))
                 .mockResolvedValueOnce({

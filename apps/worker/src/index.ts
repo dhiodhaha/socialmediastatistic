@@ -1,12 +1,12 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
-import { logger } from "./lib/logger";
-import { authMiddleware } from "./middleware/auth";
-import healthRouter from "./routes/health";
-import scrapeRouter from "./routes/scrape";
-import exportRouter from "./routes/export";
-import { initCronJobs } from "./lib/cron";
+import { logger } from "./shared/lib/logger";
+import { authMiddleware } from "./shared/middleware/auth";
+import healthRouter from "./modules/health/routes/health.routes";
+import scrapeRouter from "./modules/scraping/routes/scrape.routes";
+import exportRouter from "./modules/export/routes/export.routes";
+import { initCronJobs } from "./shared/lib/cron";
 
 const app: express.Application = express();
 const PORT = process.env.PORT || 4000;

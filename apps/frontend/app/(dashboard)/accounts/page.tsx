@@ -1,5 +1,5 @@
-import { getAccounts } from "@/app/actions/account";
-import { getCategories } from "@/app/actions/category";
+import { getAccounts } from "@/modules/accounts/actions/account.actions";
+import { getCategories } from "@/modules/categories/actions/category.actions";
 import { AccountsClient } from "./accounts-client";
 import { type Account } from "./columns";
 

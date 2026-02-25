@@ -2,7 +2,7 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import { MoreHorizontal, Pencil, Trash } from "lucide-react";
-import { Button } from "@/components/catalyst/button";
+import { Button } from "@/shared/components/catalyst/button";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -10,10 +10,10 @@ import {
     DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/shared/components/ui/dropdown-menu";
 import { useState } from "react";
-import { deleteCategory } from "@/app/actions/category";
-import { CategoryDialog } from "@/components/category-dialog";
+import { deleteCategory } from "@/modules/categories/actions/category.actions";
+import { CategoryDialog } from "@/modules/categories/components/category-dialog";
 import { toast } from "sonner";
 
 export type Category = {

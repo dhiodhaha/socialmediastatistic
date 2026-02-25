@@ -1,11 +1,11 @@
-import { getScrapingHistory } from "@/app/actions/history";
+import { getScrapingHistory } from "@/modules/analytics/actions/history.actions";
 import { columns } from "./columns";
-import { HistoryToolbar } from "@/components/history-toolbar";
+import { HistoryToolbar } from "@/modules/analytics/components/history-toolbar";
 import { HistoryDataTable } from "./history-data-table";
-import { FailedAccountsAlert } from "@/components/failed-accounts-alert";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FailedAccountsAlert } from "@/modules/accounts/components/failed-accounts-alert";
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Platform, prisma } from "@repo/database";
-import { DataImportUpload } from "@/components/data-import-upload";
+import { DataImportUpload } from "@/modules/scraping/components/data-import-upload";
 import { FixOrphanButton } from "./fix-orphan-button";
 
 export default async function HistoryPage({

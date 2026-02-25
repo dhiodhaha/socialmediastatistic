@@ -2,8 +2,8 @@
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useState } from "react";
-import { Label } from "@/components/ui/label";
-import { DatePickerWithRange } from "@/components/ui/date-range-picker";
+import { Label } from "@/shared/components/ui/label";
+import { DatePickerWithRange } from "@/shared/components/ui/date-range-picker";
 import { DateRange } from "react-day-picker";
 import {
     Select,
@@ -11,8 +11,8 @@ import {
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "@/components/ui/select";
-import { Button } from "@/components/catalyst/button";
+} from "@/shared/components/ui/select";
+import { Button } from "@/shared/components/catalyst/button";
 import { X } from "lucide-react";
 
 export function HistoryFilters() {

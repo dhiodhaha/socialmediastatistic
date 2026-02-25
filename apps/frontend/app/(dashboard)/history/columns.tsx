@@ -1,11 +1,12 @@
 "use client";
+import { ColumnDef } from "@tanstack/react-table";
 
-import { Badge } from "@/components/catalyst/badge";
-import { Button } from "@/components/catalyst/button";
-import { Text, Strong } from "@/components/catalyst/text";
+import { Badge } from "@/shared/components/catalyst/badge";
+import { Button } from "@/shared/components/catalyst/button";
+import { Text, Strong } from "@/shared/components/catalyst/text";
 import { formatDistance, format, formatDistanceToNow } from "date-fns";
 import { Trash2, MoreHorizontal, CheckCircle, XCircle, AlertCircle, Clock, Play } from "lucide-react";
-import { deleteScrapingJob } from "@/app/actions/history";
+import { deleteScrapingJob } from "@/modules/analytics/actions/history.actions";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import {
@@ -13,7 +14,7 @@ import {
     DropdownButton,
     DropdownMenu,
     DropdownItem,
-} from "@/components/catalyst/dropdown";
+} from "@/shared/components/catalyst/dropdown";
 
 // Interface matching the real data structure from Prisma
 interface ScrapingJob {

@@ -2,15 +2,15 @@
 
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Button } from "@/components/catalyst/button";
+import { Button } from "@/shared/components/catalyst/button";
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/shared/components/ui/dropdown-menu";
 import { Download, FileJson, FileText, Loader2 } from "lucide-react";
-import { getAllScrapingHistory, exportHistoryPdf, type HistoryFilters } from "@/app/actions/history";
+import { getAllScrapingHistory, exportHistoryPdf, type HistoryFilters } from "@/modules/analytics/actions/history.actions";
 import Papa from "papaparse";
 
 export function HistoryExport() {
