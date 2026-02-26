@@ -1,7 +1,7 @@
-import { prisma, type Platform } from "@repo/database";
+import { type Platform, prisma } from "@repo/database";
 import type { ScrapeResult } from "@repo/types";
-import { logger } from "../../../shared/lib/logger";
 import { sendDiscordNotification } from "../../../shared/lib/discord";
+import { logger } from "../../../shared/lib/logger";
 
 // Configuration
 const BATCH_SIZE = 50;
@@ -21,24 +21,28 @@ export async function cancelJob(jobId: string): Promise<void> {
     try {
         const job = await prisma.scrapingJob.findUnique({
             where: { id: jobId },
-            select: { errors: true }
+            select: { errors: true },
         });
 
-        const currentErrors = (job?.errors as { accountId: string; platform: string; error: string }[]) || [];
+        const currentErrors =
+            (job?.errors as { accountId: string; platform: string; error: string }[]) || [];
 
         await prisma.scrapingJob.update({
             where: { id: jobId },
             data: {
                 status: "FAILED",
                 completedAt: new Date(),
-                errors: [...currentErrors, {
-                    accountId: "system",
-                    platform: "SYSTEM",
-                    handle: "",
-                    error: "Stopped by user",
-                    timestamp: new Date().toISOString()
-                }]
-            }
+                errors: [
+                    ...currentErrors,
+                    {
+                        accountId: "system",
+                        platform: "SYSTEM",
+                        handle: "",
+                        error: "Stopped by user",
+                        timestamp: new Date().toISOString(),
+                    },
+                ],
+            },
         });
     } catch (error) {
         logger.error({ jobId, error }, "Failed to force update cancelled job status");
@@ -48,7 +52,6 @@ export async function cancelJob(jobId: string): Promise<void> {
 export function isJobCancelled(jobId: string): boolean {
     return cancelledJobs.has(jobId);
 }
-
 
 function clearCancellation(jobId: string): void {
     cancelledJobs.delete(jobId);
@@ -65,8 +68,8 @@ interface ScrapeTask {
 /**
  * Main scraping job runner.
  * Creates a job, returns the ID immediately, then processes in background.
- * 
- * Global Smart Scraping: 
+ *
+ * Global Smart Scraping:
  * 1. Checks if a job for this category is already RUNNING.
  * 2. Deduplicates at the handle level: Skips handle+platform combinations already scraped today
  *    anywhere in the system to save API credits.
@@ -82,13 +85,16 @@ export async function runScrapingJob(categoryId?: string): Promise<string> {
     const runningJob = await prisma.scrapingJob.findFirst({
         where: {
             status: "RUNNING",
-            categoryId: categoryId || null
+            categoryId: categoryId || null,
         },
-        orderBy: { createdAt: "desc" }
+        orderBy: { createdAt: "desc" },
     });
 
     if (runningJob) {
-        logger.info({ runningJobId: runningJob.id }, "Found already running job for this category. Joining status tracking.");
+        logger.info(
+            { runningJobId: runningJob.id },
+            "Found already running job for this category. Joining status tracking.",
+        );
         return runningJob.id;
     }
 
@@ -97,7 +103,7 @@ export async function runScrapingJob(categoryId?: string): Promise<string> {
     const whereClause: any = { isActive: true };
     if (categoryId) {
         whereClause.categories = {
-            some: { categoryId: categoryId }
+            some: { categoryId: categoryId },
         };
     }
 
@@ -114,9 +120,9 @@ export async function runScrapingJob(categoryId?: string): Promise<string> {
     const todaysSnapshots = await prisma.snapshot.findMany({
         where: {
             scrapedAt: { gte: todayStart },
-            accountId: { in: accounts.map(a => a.id) }
+            accountId: { in: accounts.map((a) => a.id) },
         },
-        select: { accountId: true, platform: true, scrapedAt: true }
+        select: { accountId: true, platform: true, scrapedAt: true },
     });
 
     // Create a map of accountId:platform -> latest scrapedAt today
@@ -162,9 +168,9 @@ export async function runScrapingJob(categoryId?: string): Promise<string> {
             where: {
                 createdAt: { gte: todayStart },
                 status: "COMPLETED",
-                categoryId: categoryId || null
+                categoryId: categoryId || null,
             },
-            orderBy: { createdAt: "desc" }
+            orderBy: { createdAt: "desc" },
         });
         return latestToday?.id || "already-synced";
     }
@@ -179,13 +185,16 @@ export async function runScrapingJob(categoryId?: string): Promise<string> {
     const existingJob = await prisma.scrapingJob.findFirst({
         where: {
             createdAt: { gte: todayStart },
-            categoryId: categoryId || null
+            categoryId: categoryId || null,
         },
-        orderBy: { createdAt: "desc" }
+        orderBy: { createdAt: "desc" },
     });
 
     if (existingJob) {
-        logger.info({ jobId: existingJob.id, tasksToAdd: jobTasks.length }, "Merging tasks into existing daily job");
+        logger.info(
+            { jobId: existingJob.id, tasksToAdd: jobTasks.length },
+            "Merging tasks into existing daily job",
+        );
         jobId = existingJob.id;
         initialCompletedCount = existingJob.completedCount;
         initialFailedCount = existingJob.failedCount;
@@ -197,8 +206,8 @@ export async function runScrapingJob(categoryId?: string): Promise<string> {
             where: { id: jobId },
             data: {
                 status: "RUNNING",
-                totalAccounts: { increment: 0 } // Just ensuring we touch it, total might not strictly change if we are just updating
-            }
+                totalAccounts: { increment: 0 }, // Just ensuring we touch it, total might not strictly change if we are just updating
+            },
         });
     } else {
         // Create NEW Job
@@ -215,7 +224,14 @@ export async function runScrapingJob(categoryId?: string): Promise<string> {
     }
 
     // Process in background
-    processScrapingJob(jobId, accounts, jobTasks, initialCompletedCount, initialFailedCount, initialErrors).catch((error) => {
+    processScrapingJob(
+        jobId,
+        accounts,
+        jobTasks,
+        initialCompletedCount,
+        initialFailedCount,
+        initialErrors,
+    ).catch((error) => {
         logger.error({ jobId, error }, "Scraping job processing failed");
     });
 
@@ -232,7 +248,7 @@ async function processScrapingJob(
     initialCompletedCount: number = 0,
     initialFailedCount: number = 0,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    initialErrors: any[] = []
+    initialErrors: any[] = [],
 ): Promise<void> {
     const errors: Array<{
         accountId: string;
@@ -252,17 +268,27 @@ async function processScrapingJob(
                 logger.info({ jobId }, "Job cancelled by user");
                 await prisma.scrapingJob.update({
                     where: { id: jobId },
-                    data: { status: "FAILED", completedAt: new Date(), errors: [...errors, { accountId: "system", platform: "SYSTEM", handle: "", error: "Cancelled by user", timestamp: new Date().toISOString() }] },
+                    data: {
+                        status: "FAILED",
+                        completedAt: new Date(),
+                        errors: [
+                            ...errors,
+                            {
+                                accountId: "system",
+                                platform: "SYSTEM",
+                                handle: "",
+                                error: "Cancelled by user",
+                                timestamp: new Date().toISOString(),
+                            },
+                        ],
+                    },
                 });
                 clearCancellation(jobId);
                 return;
             }
 
             const batch = tasks.slice(i, i + BATCH_SIZE);
-            logger.info(
-                { batchStart: i, batchSize: batch.length },
-                "Processing batch"
-            );
+            logger.info({ batchStart: i, batchSize: batch.length }, "Processing batch");
 
             // Process batch with concurrency control
             const results = await processBatchWithConcurrency(batch, CONCURRENCY);
@@ -290,8 +316,8 @@ async function processScrapingJob(
                         where: {
                             jobId: jobId,
                             accountId: result.accountId!,
-                            platform: result.platform
-                        }
+                            platform: result.platform,
+                        },
                     });
 
                     if (existingSnapshot) {
@@ -300,8 +326,8 @@ async function processScrapingJob(
                             where: { id: existingSnapshot.id },
                             data: {
                                 ...snapshotData,
-                                scrapedAt: new Date() // Update timestamp
-                            }
+                                scrapedAt: new Date(), // Update timestamp
+                            },
                         });
                         // Don't increment completedCount since it was already counted previously
                         // But wait, if we are 'fixing' an error, maybe we should?
@@ -314,7 +340,6 @@ async function processScrapingJob(
                         });
                         completedCount++;
                     }
-
                 } else {
                     failedCount++;
                     errors.push({
@@ -352,7 +377,7 @@ async function processScrapingJob(
 
         logger.info(
             { jobId, completedCount, failedCount, status: finalStatus },
-            "Scraping job finished"
+            "Scraping job finished",
         );
 
         // Send Discord notification
@@ -379,13 +404,16 @@ async function processScrapingJob(
                     completedAt: new Date(),
                     completedCount,
                     failedCount,
-                    errors: [...errors, {
-                        accountId: "system",
-                        platform: "SYSTEM",
-                        handle: "",
-                        error: error instanceof Error ? error.message : "Unknown error",
-                        timestamp: new Date().toISOString(),
-                    }],
+                    errors: [
+                        ...errors,
+                        {
+                            accountId: "system",
+                            platform: "SYSTEM",
+                            handle: "",
+                            error: error instanceof Error ? error.message : "Unknown error",
+                            timestamp: new Date().toISOString(),
+                        },
+                    ],
                 },
             });
         } catch (dbError) {
@@ -401,7 +429,7 @@ async function processScrapingJob(
  */
 async function processBatchWithConcurrency(
     tasks: ScrapeTask[],
-    concurrency: number
+    concurrency: number,
 ): Promise<Array<ScrapeResult & { accountId: string }>> {
     const results: Array<ScrapeResult & { accountId: string }> = [];
     const executing: Promise<void>[] = [];
@@ -448,7 +476,7 @@ async function processBatchWithConcurrency(
 async function scrapeWithRetry(
     platform: Platform,
     handle: string,
-    accountId?: string
+    accountId?: string,
 ): Promise<ScrapeResult> {
     let lastError: Error | null = null;
 
@@ -461,12 +489,12 @@ async function scrapeWithRetry(
             lastError = error as Error;
             logger.warn(
                 { platform, handle, attempt, error: lastError.message },
-                "Scrape attempt failed"
+                "Scrape attempt failed",
             );
 
             if (attempt < MAX_RETRIES) {
                 // Exponential backoff: 1s, 2s, 4s
-                await sleep(Math.pow(2, attempt - 1) * 1000);
+                await sleep(2 ** (attempt - 1) * 1000);
             }
         }
     }
@@ -480,10 +508,7 @@ async function scrapeWithRetry(
     };
 }
 
-async function scrapeAccount(
-    platform: Platform,
-    handle: string
-): Promise<ScrapeResult> {
+async function scrapeAccount(platform: Platform, handle: string): Promise<ScrapeResult> {
     const apiKey = process.env.SCRAPECREATORS_API_KEY;
 
     if (!apiKey) {
@@ -514,8 +539,13 @@ async function scrapeAccount(
 
         if (!response.ok) {
             const text = await response.text();
-            logger.error({ platform, handle, status: response.status, body: text }, "Scrape API Error");
-            throw new Error(`API error: ${response.status} ${response.statusText} - ${text.substring(0, 100)}`);
+            logger.error(
+                { platform, handle, status: response.status, body: text },
+                "Scrape API Error",
+            );
+            throw new Error(
+                `API error: ${response.status} ${response.statusText} - ${text.substring(0, 100)}`,
+            );
         }
 
         // Use generic unknown for initial parse, then delegate
@@ -534,7 +564,6 @@ async function scrapeAccount(
             handle,
             data: stats,
         };
-
     } catch (e) {
         // Enhance error catching to log if it wasn't caught above
         if (e instanceof Error) {
@@ -567,7 +596,7 @@ export async function retryFailedAccounts(): Promise<{
     const latestJob = await prisma.scrapingJob.findFirst({
         where: {
             status: "COMPLETED",
-            failedCount: { gt: 0 }
+            failedCount: { gt: 0 },
         },
         orderBy: { completedAt: "desc" },
         select: {
@@ -575,8 +604,8 @@ export async function retryFailedAccounts(): Promise<{
             errors: true,
             completedCount: true,
             failedCount: true,
-            totalAccounts: true
-        }
+            totalAccounts: true,
+        },
     });
 
     if (!latestJob || !latestJob.errors) {
@@ -592,7 +621,9 @@ export async function retryFailedAccounts(): Promise<{
     }>;
 
     // Get unique account IDs from errors (exclude "system" errors)
-    const failedAccountIds = [...new Set(errors.map(e => e.accountId).filter(id => id !== "system"))];
+    const failedAccountIds = [
+        ...new Set(errors.map((e) => e.accountId).filter((id) => id !== "system")),
+    ];
 
     if (failedAccountIds.length === 0) {
         return { success: false, error: "No valid failed accounts to retry" };
@@ -602,8 +633,8 @@ export async function retryFailedAccounts(): Promise<{
     const accounts = await prisma.account.findMany({
         where: {
             id: { in: failedAccountIds },
-            isActive: true
-        }
+            isActive: true,
+        },
     });
 
     if (accounts.length === 0) {
@@ -614,18 +645,30 @@ export async function retryFailedAccounts(): Promise<{
     const tasks: ScrapeTask[] = [];
     for (const account of accounts) {
         // Check which platforms failed for this account
-        const accountErrors = errors.filter(e => e.accountId === account.id);
-        const failedPlatforms = new Set(accountErrors.map(e => e.platform));
+        const accountErrors = errors.filter((e) => e.accountId === account.id);
+        const failedPlatforms = new Set(accountErrors.map((e) => e.platform));
 
         // Only retry platforms that failed
         if (failedPlatforms.has("INSTAGRAM") && account.instagram) {
-            tasks.push({ accountId: account.id, platform: "INSTAGRAM" as Platform, handle: account.instagram });
+            tasks.push({
+                accountId: account.id,
+                platform: "INSTAGRAM" as Platform,
+                handle: account.instagram,
+            });
         }
         if (failedPlatforms.has("TIKTOK") && account.tiktok) {
-            tasks.push({ accountId: account.id, platform: "TIKTOK" as Platform, handle: account.tiktok });
+            tasks.push({
+                accountId: account.id,
+                platform: "TIKTOK" as Platform,
+                handle: account.tiktok,
+            });
         }
         if (failedPlatforms.has("TWITTER") && account.twitter) {
-            tasks.push({ accountId: account.id, platform: "TWITTER" as Platform, handle: account.twitter });
+            tasks.push({
+                accountId: account.id,
+                platform: "TWITTER" as Platform,
+                handle: account.twitter,
+            });
         }
     }
 
@@ -636,20 +679,29 @@ export async function retryFailedAccounts(): Promise<{
     // Set the original job back to RUNNING so it shows in job logs
     await prisma.scrapingJob.update({
         where: { id: originalJobId },
-        data: { status: "RUNNING" }
+        data: { status: "RUNNING" },
     });
 
-    logger.info({ jobId: originalJobId, totalTasks: tasks.length }, "Retrying failed accounts for original job");
+    logger.info(
+        { jobId: originalJobId, totalTasks: tasks.length },
+        "Retrying failed accounts for original job",
+    );
 
     // Process retry in background, saving to the ORIGINAL job
-    processRetryJob(originalJobId, accounts, tasks, latestJob.completedCount, latestJob.failedCount).catch((error) => {
+    processRetryJob(
+        originalJobId,
+        accounts,
+        tasks,
+        latestJob.completedCount,
+        latestJob.failedCount,
+    ).catch((error) => {
         logger.error({ jobId: originalJobId, error }, "Retry processing failed");
     });
 
     return {
         success: true,
         jobId: originalJobId,
-        failedCount: tasks.length
+        failedCount: tasks.length,
     };
 }
 
@@ -658,10 +710,10 @@ export async function retryFailedAccounts(): Promise<{
  */
 async function processRetryJob(
     jobId: string,
-    accounts: Awaited<ReturnType<typeof prisma.account.findMany>>,
+    _accounts: Awaited<ReturnType<typeof prisma.account.findMany>>,
     tasks: ScrapeTask[],
     originalCompletedCount: number,
-    originalFailedCount: number
+    originalFailedCount: number,
 ): Promise<void> {
     let completedCount = originalCompletedCount;
     let failedCount = originalFailedCount;
@@ -679,9 +731,7 @@ async function processRetryJob(
 
         // Scrape batch with concurrency
         const results = await Promise.all(
-            batch.map((task) =>
-                scrapeWithRetry(task.platform, task.handle, task.accountId)
-            )
+            batch.map((task) => scrapeWithRetry(task.platform, task.handle, task.accountId)),
         );
 
         // Process results
@@ -737,8 +787,11 @@ async function processRetryJob(
     // Set job back to COMPLETED
     await prisma.scrapingJob.update({
         where: { id: jobId },
-        data: { status: "COMPLETED", completedAt: new Date() }
+        data: { status: "COMPLETED", completedAt: new Date() },
     });
 
-    logger.info({ jobId, completedCount, failedCount, retriedTasks: tasks.length }, "Retry job completed");
+    logger.info(
+        { jobId, completedCount, failedCount, retriedTasks: tasks.length },
+        "Retry job completed",
+    );
 }

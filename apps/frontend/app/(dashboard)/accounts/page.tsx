@@ -1,7 +1,7 @@
 import { getAccounts } from "@/modules/accounts/actions/account.actions";
 import { getCategories } from "@/modules/categories/actions/category.actions";
 import { AccountsClient } from "./accounts-client";
-import { type Account } from "./columns";
+import type { Account } from "./columns";
 
 export const dynamic = "force-dynamic";
 

@@ -1,7 +1,11 @@
 "use client";
 
-import { ColumnDef } from "@tanstack/react-table";
+import type { ColumnDef } from "@tanstack/react-table";
 import { MoreHorizontal, Pencil, Trash } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { deleteCategory } from "@/modules/categories/actions/category.actions";
+import { CategoryDialog } from "@/modules/categories/components/category-dialog";
 import { Button } from "@/shared/components/catalyst/button";
 import {
     DropdownMenu,
@@ -11,10 +15,6 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
-import { useState } from "react";
-import { deleteCategory } from "@/modules/categories/actions/category.actions";
-import { CategoryDialog } from "@/modules/categories/components/category-dialog";
-import { toast } from "sonner";
 
 export type Category = {
     id: string;
@@ -35,7 +35,7 @@ export const columns: ColumnDef<Category>[] = [
         header: "Accounts",
         cell: ({ row }) => {
             return <span>{row.original._count.accounts}</span>;
-        }
+        },
     },
     {
         accessorKey: "createdAt",

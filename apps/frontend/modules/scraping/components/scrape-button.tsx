@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { Button } from "@/shared/components/catalyst/button";
-import { triggerScrape } from "@/modules/scraping/actions/scrape.actions";
 import { Loader2, Play } from "lucide-react";
+import { useState } from "react";
+import { triggerScrape } from "@/modules/scraping/actions/scrape.actions";
+import { Button } from "@/shared/components/catalyst/button";
 
 export function ScrapeButton() {
     const [isLoading, setIsLoading] = useState(false);

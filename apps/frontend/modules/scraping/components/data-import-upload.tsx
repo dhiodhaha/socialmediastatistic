@@ -1,12 +1,15 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { AlertCircle, CheckCircle, Download, Upload } from "lucide-react";
 import Papa from "papaparse";
-import { Upload, Download, AlertCircle, CheckCircle, FileSpreadsheet } from "lucide-react";
+import { useRef, useState } from "react";
+import {
+    bulkImportSnapshots,
+    type SnapshotImportInput,
+} from "@/modules/scraping/actions/data-import.actions";
 import { Button } from "@/shared/components/catalyst/button";
-import { Alert, AlertDescription, AlertTitle } from "@/shared/components/ui/alert";
 import { Dialog, DialogDescription, DialogTitle } from "@/shared/components/catalyst/dialog";
-import { bulkImportSnapshots, type SnapshotImportInput } from "@/modules/scraping/actions/data-import.actions";
+import { Alert, AlertDescription, AlertTitle } from "@/shared/components/ui/alert";
 
 // Template is generated client-side (free - no server call)
 const IMPORT_TEMPLATE = `account_username,platform,scraped_at,followers,following,posts,engagement,likes
@@ -17,7 +20,11 @@ export function DataImportUpload() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [open, setOpen] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [status, setStatus] = useState<{ type: 'success' | 'error', message: string, details?: string[] } | null>(null);
+    const [status, setStatus] = useState<{
+        type: "success" | "error";
+        message: string;
+        details?: string[];
+    } | null>(null);
 
     const handleDownloadTemplate = () => {
         // Pure client-side - no server cost
@@ -57,13 +64,18 @@ export function DataImportUpload() {
                     }
 
                     for (const row of results.data as CsvRow[]) {
-                        if (!row.account_username || !row.platform || !row.scraped_at || row.followers === undefined) {
+                        if (
+                            !row.account_username ||
+                            !row.platform ||
+                            !row.scraped_at ||
+                            row.followers === undefined
+                        ) {
                             continue;
                         }
 
                         snapshots.push({
                             // Remove @ from username if present
-                            account_username: String(row.account_username).replace(/^@/, ''),
+                            account_username: String(row.account_username).replace(/^@/, ""),
                             platform: String(row.platform),
                             scraped_at: String(row.scraped_at),
                             followers: Number(row.followers),
@@ -75,7 +87,11 @@ export function DataImportUpload() {
                     }
 
                     if (snapshots.length === 0) {
-                        setStatus({ type: 'error', message: "No valid rows found. Ensure required headers: account_username, platform, scraped_at, followers" });
+                        setStatus({
+                            type: "error",
+                            message:
+                                "No valid rows found. Ensure required headers: account_username, platform, scraped_at, followers",
+                        });
                         setLoading(false);
                         return;
                     }
@@ -84,26 +100,25 @@ export function DataImportUpload() {
 
                     if (result.success) {
                         setStatus({
-                            type: result.imported > 0 ? 'success' : 'error',
+                            type: result.imported > 0 ? "success" : "error",
                             message: `Imported ${result.imported} snapshots. Skipped ${result.skipped}.`,
-                            details: result.errors
+                            details: result.errors,
                         });
                         if (fileInputRef.current) fileInputRef.current.value = "";
                     } else {
-                        setStatus({ type: 'error', message: "Import failed" });
+                        setStatus({ type: "error", message: "Import failed" });
                     }
-
                 } catch (error) {
                     console.error(error);
-                    setStatus({ type: 'error', message: "Failed to parse or upload CSV." });
+                    setStatus({ type: "error", message: "Failed to parse or upload CSV." });
                 } finally {
                     setLoading(false);
                 }
             },
             error: (error) => {
-                setStatus({ type: 'error', message: "CSV Parsing Error: " + error.message });
+                setStatus({ type: "error", message: `CSV Parsing Error: ${error.message}` });
                 setLoading(false);
-            }
+            },
         });
     };
 
@@ -150,9 +165,22 @@ export function DataImportUpload() {
                     </div>
 
                     {status && (
-                        <Alert variant={status.type === 'success' ? 'default' : 'destructive'} className={status.type === 'success' ? 'border-green-500/50 text-green-600 dark:text-green-500 [&>svg]:text-green-600' : ''}>
-                            {status.type === 'success' ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
-                            <AlertTitle>{status.type === 'success' ? "Success" : "Error"}</AlertTitle>
+                        <Alert
+                            variant={status.type === "success" ? "default" : "destructive"}
+                            className={
+                                status.type === "success"
+                                    ? "border-green-500/50 text-green-600 dark:text-green-500 [&>svg]:text-green-600"
+                                    : ""
+                            }
+                        >
+                            {status.type === "success" ? (
+                                <CheckCircle className="h-4 w-4" />
+                            ) : (
+                                <AlertCircle className="h-4 w-4" />
+                            )}
+                            <AlertTitle>
+                                {status.type === "success" ? "Success" : "Error"}
+                            </AlertTitle>
                             <AlertDescription>
                                 {status.message}
                                 {status.details && status.details.length > 0 && (
@@ -160,7 +188,9 @@ export function DataImportUpload() {
                                         {status.details.slice(0, 10).map((err, i) => (
                                             <li key={i}>{err}</li>
                                         ))}
-                                        {status.details.length > 10 && <li>...and {status.details.length - 10} more</li>}
+                                        {status.details.length > 10 && (
+                                            <li>...and {status.details.length - 10} more</li>
+                                        )}
                                     </ul>
                                 )}
                             </AlertDescription>
@@ -169,9 +199,13 @@ export function DataImportUpload() {
 
                     <div className="text-xs text-muted-foreground border-t pt-4">
                         <p className="font-medium mb-1">Required columns:</p>
-                        <code className="bg-muted p-1 rounded">account_username, platform, scraped_at, followers</code>
+                        <code className="bg-muted p-1 rounded">
+                            account_username, platform, scraped_at, followers
+                        </code>
                         <p className="font-medium mt-2 mb-1">Optional columns:</p>
-                        <code className="bg-muted p-1 rounded">following, posts, engagement, likes</code>
+                        <code className="bg-muted p-1 rounded">
+                            following, posts, engagement, likes
+                        </code>
                     </div>
                 </div>
             </Dialog>

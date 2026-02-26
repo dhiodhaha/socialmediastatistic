@@ -1,11 +1,16 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { auth } from "@/shared/lib/auth";
 import { logger } from "@/shared/lib/logger";
 
 const MAX_RETRIES = 3;
 
-async function fetchWithRetry(url: string, options: RequestInit, retries = MAX_RETRIES): Promise<Response> {
+async function fetchWithRetry(
+    url: string,
+    options: RequestInit,
+    retries = MAX_RETRIES,
+): Promise<Response> {
     try {
         const res = await fetch(url, options);
         if (!res.ok && res.status >= 500 && retries > 0) {
@@ -14,7 +19,7 @@ async function fetchWithRetry(url: string, options: RequestInit, retries = MAX_R
         return res;
     } catch (error) {
         if (retries > 0) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise((resolve) => setTimeout(resolve, 1000));
             return fetchWithRetry(url, options, retries - 1);
         }
         throw error;
@@ -23,6 +28,11 @@ async function fetchWithRetry(url: string, options: RequestInit, retries = MAX_R
 
 export async function triggerScrape(categoryId?: string) {
     try {
+        const session = await auth();
+        if (!session) {
+            return { success: false, error: "Unauthorized" };
+        }
+
         const workerUrl = process.env.WORKER_URL;
         const workerSecret = process.env.WORKER_SECRET;
 
@@ -33,7 +43,7 @@ export async function triggerScrape(categoryId?: string) {
         const res = await fetchWithRetry(`${workerUrl}/scrape`, {
             method: "POST",
             headers: {
-                "Authorization": `Bearer ${workerSecret}`,
+                Authorization: `Bearer ${workerSecret}`,
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({ categoryId }),
@@ -57,6 +67,11 @@ export async function triggerScrape(categoryId?: string) {
 
 export async function stopScrape(jobId: string) {
     try {
+        const session = await auth();
+        if (!session) {
+            return { success: false, error: "Unauthorized" };
+        }
+
         const workerUrl = process.env.WORKER_URL;
         const workerSecret = process.env.WORKER_SECRET;
 
@@ -67,7 +82,7 @@ export async function stopScrape(jobId: string) {
         const res = await fetch(`${workerUrl}/scrape/stop/${jobId}`, {
             method: "POST",
             headers: {
-                "Authorization": `Bearer ${workerSecret}`,
+                Authorization: `Bearer ${workerSecret}`,
             },
         });
 
@@ -86,6 +101,11 @@ export async function stopScrape(jobId: string) {
 
 export async function retryFailedAccounts() {
     try {
+        const session = await auth();
+        if (!session) {
+            return { success: false, error: "Unauthorized" };
+        }
+
         const workerUrl = process.env.WORKER_URL;
         const workerSecret = process.env.WORKER_SECRET;
 
@@ -96,7 +116,7 @@ export async function retryFailedAccounts() {
         const res = await fetch(`${workerUrl}/scrape/retry-failed`, {
             method: "POST",
             headers: {
-                "Authorization": `Bearer ${workerSecret}`,
+                Authorization: `Bearer ${workerSecret}`,
             },
         });
 
@@ -109,7 +129,10 @@ export async function retryFailedAccounts() {
                 // JSON parse failed, use status text
                 errorMsg = res.statusText || errorMsg;
             }
-            logger.error({ status: res.status, error: errorMsg }, "Worker retry-failed endpoint error");
+            logger.error(
+                { status: res.status, error: errorMsg },
+                "Worker retry-failed endpoint error",
+            );
             return { success: false, error: errorMsg };
         }
 

@@ -1,16 +1,16 @@
 "use client";
 
-import * as React from "react";
 import {
-    ColumnDef,
+    type ColumnDef,
     flexRender,
     getCoreRowModel,
-    useReactTable,
     getPaginationRowModel,
-    SortingState,
     getSortedRowModel,
+    type SortingState,
+    useReactTable,
 } from "@tanstack/react-table";
-
+import * as React from "react";
+import { Button } from "@/shared/components/catalyst/button";
 import {
     Table,
     TableBody,
@@ -19,7 +19,6 @@ import {
     TableHeader,
     TableRow,
 } from "@/shared/components/ui/table";
-import { Button } from "@/shared/components/catalyst/button";
 
 interface DataTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[];
@@ -65,7 +64,7 @@ export function DataTable<TData, TValue>({
         manualPagination: !!pageCount, // Enable manual pagination if pageCount is provided
         onPaginationChange: (updater) => {
             if (onPaginationChange) {
-                if (typeof updater === 'function') {
+                if (typeof updater === "function") {
                     onPaginationChange(updater(statePagination));
                 } else {
                     onPaginationChange(updater);
@@ -73,7 +72,7 @@ export function DataTable<TData, TValue>({
             } else {
                 setInternalPagination(updater);
             }
-        }
+        },
     });
 
     return (
@@ -89,9 +88,9 @@ export function DataTable<TData, TValue>({
                                             {header.isPlaceholder
                                                 ? null
                                                 : flexRender(
-                                                    header.column.columnDef.header,
-                                                    header.getContext()
-                                                )}
+                                                      header.column.columnDef.header,
+                                                      header.getContext(),
+                                                  )}
                                         </TableHead>
                                     );
                                 })}
@@ -109,7 +108,7 @@ export function DataTable<TData, TValue>({
                                         <TableCell key={cell.id}>
                                             {flexRender(
                                                 cell.column.columnDef.cell,
-                                                cell.getContext()
+                                                cell.getContext(),
                                             )}
                                         </TableCell>
                                     ))}
@@ -117,10 +116,7 @@ export function DataTable<TData, TValue>({
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell
-                                    colSpan={columns.length}
-                                    className="h-24 text-center"
-                                >
+                                <TableCell colSpan={columns.length} className="h-24 text-center">
                                     No results.
                                 </TableCell>
                             </TableRow>
@@ -137,11 +133,7 @@ export function DataTable<TData, TValue>({
                 >
                     Previous
                 </Button>
-                <Button
-                    outline
-                    onClick={() => table.nextPage()}
-                    disabled={!table.getCanNextPage()}
-                >
+                <Button outline onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
                     Next
                 </Button>
             </div>

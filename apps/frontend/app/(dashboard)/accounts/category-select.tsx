@@ -1,12 +1,12 @@
-import { Select } from "@/shared/components/catalyst/select";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Select } from "@/shared/components/catalyst/select";
 
 export function CategorySelect({
     categories,
-    defaultValue = "ALL"
+    defaultValue = "ALL",
 }: {
-    categories: { id: string; name: string }[],
-    defaultValue?: string
+    categories: { id: string; name: string }[];
+    defaultValue?: string;
 }) {
     const router = useRouter();
     const searchParams = useSearchParams();

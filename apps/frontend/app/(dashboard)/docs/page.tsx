@@ -1,10 +1,16 @@
 "use client";
 
+import { Check, Copy, Database, Download, FileSpreadsheet, Sparkles } from "lucide-react";
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/components/ui/card";
-import { Button } from "@/shared/components/catalyst/button";
 import { toast } from "sonner";
-import { Download, Copy, FileSpreadsheet, Database, Sparkles, Check } from "lucide-react";
+import { Button } from "@/shared/components/catalyst/button";
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from "@/shared/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 
 // Templates
@@ -74,13 +80,25 @@ function CopyButton({ text, label }: { text: string; label: string }) {
 
     return (
         <Button outline onClick={handleCopy}>
-            {copied ? <Check className="h-4 w-4" data-slot="icon" /> : <Copy className="h-4 w-4" data-slot="icon" />}
+            {copied ? (
+                <Check className="h-4 w-4" data-slot="icon" />
+            ) : (
+                <Copy className="h-4 w-4" data-slot="icon" />
+            )}
             {copied ? "Copied!" : "Copy"}
         </Button>
     );
 }
 
-function DownloadButton({ content, filename, label }: { content: string; filename: string; label: string }) {
+function DownloadButton({
+    content,
+    filename,
+    label,
+}: {
+    content: string;
+    filename: string;
+    label: string;
+}) {
     const handleDownload = () => {
         const blob = new Blob([content], { type: "text/csv" });
         const url = URL.createObjectURL(blob);
@@ -147,11 +165,23 @@ export default function DocsPage() {
                             <div className="border-t pt-4 mt-4">
                                 <h4 className="font-medium mb-2">Column Descriptions:</h4>
                                 <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                                    <li><strong>name</strong> - Display name of the account (required)</li>
-                                    <li><strong>instagram</strong> - Instagram username without @</li>
-                                    <li><strong>tiktok</strong> - TikTok username without @</li>
-                                    <li><strong>x</strong> - X/Twitter username without @</li>
-                                    <li><strong>category</strong> - Group name for organizing accounts</li>
+                                    <li>
+                                        <strong>name</strong> - Display name of the account
+                                        (required)
+                                    </li>
+                                    <li>
+                                        <strong>instagram</strong> - Instagram username without @
+                                    </li>
+                                    <li>
+                                        <strong>tiktok</strong> - TikTok username without @
+                                    </li>
+                                    <li>
+                                        <strong>x</strong> - X/Twitter username without @
+                                    </li>
+                                    <li>
+                                        <strong>category</strong> - Group name for organizing
+                                        accounts
+                                    </li>
                                 </ul>
                             </div>
                         </CardContent>
@@ -164,7 +194,8 @@ export default function DocsPage() {
                                 AI Conversion Prompt
                             </CardTitle>
                             <CardDescription>
-                                Copy this prompt and paste it to ChatGPT/Claude with your data to convert it to our format
+                                Copy this prompt and paste it to ChatGPT/Claude with your data to
+                                convert it to our format
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -182,7 +213,8 @@ export default function DocsPage() {
                         <CardHeader>
                             <CardTitle>Historical Data Import Template</CardTitle>
                             <CardDescription>
-                                Use this template to import past statistics (snapshots) for existing accounts
+                                Use this template to import past statistics (snapshots) for existing
+                                accounts
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -201,20 +233,43 @@ export default function DocsPage() {
                             <div className="border-t pt-4 mt-4">
                                 <h4 className="font-medium mb-2">Column Descriptions:</h4>
                                 <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                                    <li><strong>account_username</strong> - Must match an existing account name exactly (required)</li>
-                                    <li><strong>platform</strong> - INSTAGRAM, TIKTOK, or TWITTER (required)</li>
-                                    <li><strong>scraped_at</strong> - Date in YYYY-MM-DD format (required)</li>
-                                    <li><strong>followers</strong> - Number of followers (required)</li>
-                                    <li><strong>following</strong> - Number following (optional)</li>
-                                    <li><strong>posts</strong> - Number of posts/videos (optional)</li>
-                                    <li><strong>engagement</strong> - Engagement rate as decimal (optional)</li>
-                                    <li><strong>likes</strong> - Total likes, mainly for TikTok (optional)</li>
+                                    <li>
+                                        <strong>account_username</strong> - Must match an existing
+                                        account name exactly (required)
+                                    </li>
+                                    <li>
+                                        <strong>platform</strong> - INSTAGRAM, TIKTOK, or TWITTER
+                                        (required)
+                                    </li>
+                                    <li>
+                                        <strong>scraped_at</strong> - Date in YYYY-MM-DD format
+                                        (required)
+                                    </li>
+                                    <li>
+                                        <strong>followers</strong> - Number of followers (required)
+                                    </li>
+                                    <li>
+                                        <strong>following</strong> - Number following (optional)
+                                    </li>
+                                    <li>
+                                        <strong>posts</strong> - Number of posts/videos (optional)
+                                    </li>
+                                    <li>
+                                        <strong>engagement</strong> - Engagement rate as decimal
+                                        (optional)
+                                    </li>
+                                    <li>
+                                        <strong>likes</strong> - Total likes, mainly for TikTok
+                                        (optional)
+                                    </li>
                                 </ul>
                             </div>
 
                             <div className="border-t pt-4 mt-4 p-3 bg-amber-500/10 rounded-md border-amber-500/30">
                                 <p className="text-sm text-amber-700 dark:text-amber-400">
-                                    <strong>⚠️ Important:</strong> The <code>account_username</code> must exactly match an account that already exists in the system. Import accounts first, then import historical data.
+                                    <strong>⚠️ Important:</strong> The <code>account_username</code>{" "}
+                                    must exactly match an account that already exists in the system.
+                                    Import accounts first, then import historical data.
                                 </p>
                             </div>
                         </CardContent>
@@ -227,7 +282,8 @@ export default function DocsPage() {
                                 AI Conversion Prompt
                             </CardTitle>
                             <CardDescription>
-                                Copy this prompt and paste it to ChatGPT/Claude with your data to convert it to our format
+                                Copy this prompt and paste it to ChatGPT/Claude with your data to
+                                convert it to our format
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -261,11 +317,15 @@ export default function DocsPage() {
                             <ul className="text-sm space-y-2">
                                 <li>
                                     <strong>Claude 3.5 Sonnet</strong>
-                                    <span className="text-muted-foreground block text-xs">Excellent at understanding data structures and formatting</span>
+                                    <span className="text-muted-foreground block text-xs">
+                                        Excellent at understanding data structures and formatting
+                                    </span>
                                 </li>
                                 <li>
                                     <strong>GPT-4o</strong>
-                                    <span className="text-muted-foreground block text-xs">Great accuracy with tabular data conversion</span>
+                                    <span className="text-muted-foreground block text-xs">
+                                        Great accuracy with tabular data conversion
+                                    </span>
                                 </li>
                             </ul>
                         </div>
@@ -277,22 +337,30 @@ export default function DocsPage() {
                             <ul className="text-sm space-y-2">
                                 <li>
                                     <strong>ChatGPT Free (GPT-4o mini)</strong>
-                                    <span className="text-muted-foreground block text-xs">Good for small datasets (&lt;100 rows)</span>
+                                    <span className="text-muted-foreground block text-xs">
+                                        Good for small datasets (&lt;100 rows)
+                                    </span>
                                 </li>
                                 <li>
                                     <strong>Claude.ai Free</strong>
-                                    <span className="text-muted-foreground block text-xs">Limited daily messages but high quality</span>
+                                    <span className="text-muted-foreground block text-xs">
+                                        Limited daily messages but high quality
+                                    </span>
                                 </li>
                                 <li>
                                     <strong>Google Gemini</strong>
-                                    <span className="text-muted-foreground block text-xs">Free tier available at gemini.google.com</span>
+                                    <span className="text-muted-foreground block text-xs">
+                                        Free tier available at gemini.google.com
+                                    </span>
                                 </li>
                             </ul>
                         </div>
                     </div>
                     <div className="mt-4 p-3 bg-muted rounded-md">
                         <p className="text-sm text-muted-foreground">
-                            <strong>💡 Tip:</strong> For large datasets (100+ rows), consider splitting your data into smaller chunks and running the prompt multiple times. Paste each result into the same CSV file before importing.
+                            <strong>💡 Tip:</strong> For large datasets (100+ rows), consider
+                            splitting your data into smaller chunks and running the prompt multiple
+                            times. Paste each result into the same CSV file before importing.
                         </p>
                     </div>
                 </CardContent>
@@ -306,19 +374,24 @@ export default function DocsPage() {
                 <CardContent>
                     <ol className="list-decimal list-inside space-y-3 text-sm">
                         <li>
-                            <strong>Create Categories</strong> - Go to <code>/categories</code> and create your category groups
+                            <strong>Create Categories</strong> - Go to <code>/categories</code> and
+                            create your category groups
                         </li>
                         <li>
-                            <strong>Import Accounts</strong> - Download the account template, fill it with your data, and upload at <code>/accounts</code>
+                            <strong>Import Accounts</strong> - Download the account template, fill
+                            it with your data, and upload at <code>/accounts</code>
                         </li>
                         <li>
-                            <strong>Import Historical Data</strong> (Optional) - If you have past statistics, use the historical data template at <code>/history</code>
+                            <strong>Import Historical Data</strong> (Optional) - If you have past
+                            statistics, use the historical data template at <code>/history</code>
                         </li>
                         <li>
-                            <strong>Start Scraping</strong> - Go to <code>/history</code> and click "Scrape All Accounts" to fetch current data
+                            <strong>Start Scraping</strong> - Go to <code>/history</code> and click
+                            &quot;Scrape All Accounts&quot; to fetch current data
                         </li>
                         <li>
-                            <strong>View Reports</strong> - Navigate to <code>/reports</code> to see comparisons and export PDFs
+                            <strong>View Reports</strong> - Navigate to <code>/reports</code> to see
+                            comparisons and export PDFs
                         </li>
                     </ol>
                 </CardContent>

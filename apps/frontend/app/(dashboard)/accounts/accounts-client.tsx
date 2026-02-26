@@ -1,16 +1,16 @@
 "use client";
 
+import { MagnifyingGlassIcon } from "@heroicons/react/16/solid";
+import { Plus } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useEffect } from "react";
-import { DataTable } from "@/shared/components/ui/data-table";
-import { columns, type Account } from "./columns";
+import { useEffect, useState } from "react";
 import { AccountDialog } from "@/modules/accounts/components/account-dialog";
 import { CsvUpload } from "@/modules/scraping/components/csv-upload";
 import { Button } from "@/shared/components/catalyst/button";
 import { Input, InputGroup } from "@/shared/components/catalyst/input";
-import { MagnifyingGlassIcon } from "@heroicons/react/16/solid";
-import { Plus } from "lucide-react";
+import { DataTable } from "@/shared/components/ui/data-table";
 import { CategorySelect } from "./category-select";
+import { type Account, columns } from "./columns";
 
 interface AccountsClientProps {
     data: Account[];

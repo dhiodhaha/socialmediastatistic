@@ -2,16 +2,21 @@
 
 import { prisma } from "@repo/database";
 import { revalidatePath } from "next/cache";
+import { auth } from "@/shared/lib/auth";
 
 export async function getCategories() {
     try {
+        const session = await auth();
+        if (!session) {
+            return { success: false, error: "Unauthorized" };
+        }
         const categories = await prisma.category.findMany({
             orderBy: { name: "asc" },
             include: {
                 _count: {
-                    select: { accounts: true }
-                }
-            }
+                    select: { accounts: true },
+                },
+            },
         });
         return { success: true, data: categories };
     } catch (e) {
@@ -22,8 +27,13 @@ export async function getCategories() {
 
 export async function createCategory(name: string) {
     try {
+        const session = await auth();
+        if (!session) {
+            return { success: false, error: "Unauthorized" };
+        }
+
         const existing = await prisma.category.findUnique({
-            where: { name }
+            where: { name },
         });
 
         if (existing) {
@@ -31,7 +41,7 @@ export async function createCategory(name: string) {
         }
 
         const category = await prisma.category.create({
-            data: { name }
+            data: { name },
         });
 
         revalidatePath("/categories");
@@ -44,9 +54,14 @@ export async function createCategory(name: string) {
 
 export async function updateCategory(id: string, name: string) {
     try {
+        const session = await auth();
+        if (!session) {
+            return { success: false, error: "Unauthorized" };
+        }
+
         const category = await prisma.category.update({
             where: { id },
-            data: { name }
+            data: { name },
         });
 
         revalidatePath("/categories");
@@ -59,8 +74,13 @@ export async function updateCategory(id: string, name: string) {
 
 export async function deleteCategory(id: string) {
     try {
+        const session = await auth();
+        if (!session) {
+            return { success: false, error: "Unauthorized" };
+        }
+
         await prisma.category.delete({
-            where: { id }
+            where: { id },
         });
 
         revalidatePath("/categories");
@@ -70,4 +90,3 @@ export async function deleteCategory(id: string) {
         return { success: false, error: "Failed to delete category" };
     }
 }
-

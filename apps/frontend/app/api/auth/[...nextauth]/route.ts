@@ -1,7 +1,7 @@
+import { prisma } from "@repo/database";
+import { compare } from "bcryptjs";
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import { compare } from "bcryptjs";
-import { prisma } from "@repo/database";
 
 // Full auth configuration with database access
 // Used by API routes (runs in Node.js, not Edge)
@@ -29,7 +29,7 @@ const handler = NextAuth({
 
                 const isPasswordValid = await compare(
                     credentials.password as string,
-                    user.password
+                    user.password,
                 );
 
                 if (!isPasswordValid) {

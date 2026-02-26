@@ -20,7 +20,6 @@ router.post("/pdf", async (req, res) => {
         res.setHeader("Content-Type", "application/pdf");
         res.setHeader("Content-Disposition", `attachment; filename=report-${Date.now()}.pdf`);
         res.send(pdfBuffer);
-
     } catch (error) {
         logger.error({ error }, "Failed to generate PDF");
         res.status(500).json({ success: false, error: "Failed to generate PDF report" });
@@ -35,14 +34,19 @@ router.post("/pdf", async (req, res) => {
 router.post("/comparison-pdf", async (req, res) => {
     try {
         const exportData = req.body;
-        logger.info({ platform: exportData.platform, dataCount: exportData.data?.length }, "Comparison PDF export requested");
+        logger.info(
+            { platform: exportData.platform, dataCount: exportData.data?.length },
+            "Comparison PDF export requested",
+        );
 
         const pdfBuffer = await ExportService.generateComparisonPdf(exportData);
 
         res.setHeader("Content-Type", "application/pdf");
-        res.setHeader("Content-Disposition", `attachment; filename=comparison-${exportData.platform}-${Date.now()}.pdf`);
+        res.setHeader(
+            "Content-Disposition",
+            `attachment; filename=comparison-${exportData.platform}-${Date.now()}.pdf`,
+        );
         res.send(pdfBuffer);
-
     } catch (error) {
         logger.error({ error }, "Failed to generate comparison PDF");
         res.status(500).json({ success: false, error: "Failed to generate comparison PDF report" });
@@ -64,7 +68,6 @@ router.post("/latest-pdf", async (req, res) => {
         res.setHeader("Content-Type", "application/pdf");
         res.setHeader("Content-Disposition", `attachment; filename=latest-${Date.now()}.pdf`);
         res.send(pdfBuffer);
-
     } catch (error) {
         logger.error({ error }, "Failed to generate latest PDF");
         res.status(500).json({ success: false, error: "Failed to generate latest PDF report" });

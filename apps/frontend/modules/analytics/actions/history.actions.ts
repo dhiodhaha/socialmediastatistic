@@ -1,6 +1,7 @@
 "use server";
 
-import { prisma, Prisma, JobStatus, Platform } from "@repo/database";
+import { type JobStatus, type Platform, type Prisma, prisma } from "@repo/database";
+import { auth } from "@/shared/lib/auth";
 import { logger } from "@/shared/lib/logger";
 
 // ... console.error("Failed to fetch scraping history:", error); -> logger.error({ error }, "Failed to fetch scraping history");
@@ -17,6 +18,11 @@ export interface HistoryFilters {
 
 export async function getScrapingHistory(page = 1, limit = 10, filters?: HistoryFilters) {
     try {
+        const session = await auth();
+        if (!session) {
+            return { success: false, error: "Unauthorized" };
+        }
+
         const skip = (page - 1) * limit;
 
         const where: Prisma.ScrapingJobWhereInput = {};
@@ -57,6 +63,11 @@ export async function getScrapingHistory(page = 1, limit = 10, filters?: History
 
 export async function getAllScrapingHistory(filters?: HistoryFilters) {
     try {
+        const session = await auth();
+        if (!session) {
+            return { success: false, error: "Unauthorized" };
+        }
+
         const where: Prisma.ScrapingJobWhereInput = {};
         if (filters?.status && filters.status !== "ALL") {
             where.status = filters.status as JobStatus;
@@ -81,6 +92,11 @@ export async function getAllScrapingHistory(filters?: HistoryFilters) {
 
 export async function exportHistoryPdf(filters: HistoryFilters) {
     try {
+        const session = await auth();
+        if (!session) {
+            return { success: false, error: "Unauthorized" };
+        }
+
         const workerUrl = process.env.WORKER_URL;
         const workerSecret = process.env.WORKER_SECRET;
 
@@ -91,13 +107,13 @@ export async function exportHistoryPdf(filters: HistoryFilters) {
         const res = await fetch(`${workerUrl}/export/pdf`, {
             method: "POST",
             headers: {
-                "Authorization": `Bearer ${workerSecret}`,
+                Authorization: `Bearer ${workerSecret}`,
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({
                 startDate: filters.startDate,
                 endDate: filters.endDate,
-                status: filters.status
+                status: filters.status,
             }),
         });
 
@@ -109,7 +125,7 @@ export async function exportHistoryPdf(filters: HistoryFilters) {
         // We return the buffer as base64 so client can download it
         const blob = await res.blob();
         const arrayBuffer = await blob.arrayBuffer();
-        const base64 = Buffer.from(arrayBuffer).toString('base64');
+        const base64 = Buffer.from(arrayBuffer).toString("base64");
 
         return { success: true, data: base64 };
     } catch (error) {
@@ -120,6 +136,11 @@ export async function exportHistoryPdf(filters: HistoryFilters) {
 
 export async function exportHistoryCsv(filters: HistoryFilters) {
     try {
+        const session = await auth();
+        if (!session) {
+            return { success: false, error: "Unauthorized" };
+        }
+
         const where: Prisma.ScrapingJobWhereInput = {};
         if (filters?.status && filters.status !== "ALL") {
             where.status = filters.status as JobStatus;
@@ -144,21 +165,18 @@ export async function exportHistoryCsv(filters: HistoryFilters) {
 
         // Generate CSV content
         const headers = ["Job ID", "Date", "Status", "Total Accounts", "Completed", "Failed"];
-        const rows = jobs.map(job => [
+        const rows = jobs.map((job) => [
             job.id,
             job.createdAt.toISOString(),
             job.status,
             job.totalAccounts,
             job.completedCount,
-            job.failedCount
+            job.failedCount,
         ]);
 
-        const csvContent = [
-            headers.join(","),
-            ...rows.map(row => row.join(","))
-        ].join("\n");
+        const csvContent = [headers.join(","), ...rows.map((row) => row.join(","))].join("\n");
 
-        const base64 = Buffer.from(csvContent).toString('base64');
+        const base64 = Buffer.from(csvContent).toString("base64");
         return { success: true, data: base64 };
     } catch (error) {
         logger.error({ error }, "Export CSV failed");
@@ -171,14 +189,19 @@ export async function exportHistoryCsv(filters: HistoryFilters) {
  */
 export async function deleteScrapingJob(jobId: string) {
     try {
+        const session = await auth();
+        if (!session) {
+            return { success: false, error: "Unauthorized" };
+        }
+
         // Delete associated snapshots first
         await prisma.snapshot.deleteMany({
-            where: { jobId }
+            where: { jobId },
         });
 
         // Then delete the job
         await prisma.scrapingJob.delete({
-            where: { id: jobId }
+            where: { id: jobId },
         });
 
         return { success: true };
@@ -194,10 +217,15 @@ export async function deleteScrapingJob(jobId: string) {
  */
 export async function fixOrphanSnapshots() {
     try {
+        const session = await auth();
+        if (!session) {
+            return { success: false, error: "Unauthorized" };
+        }
+
         // Find all snapshots without a jobId
         const orphanSnapshots = await prisma.snapshot.findMany({
             where: { jobId: null },
-            select: { id: true, accountId: true, scrapedAt: true }
+            select: { id: true, accountId: true, scrapedAt: true },
         });
 
         if (orphanSnapshots.length === 0) {
@@ -208,12 +236,12 @@ export async function fixOrphanSnapshots() {
         const dateGroups = new Map<string, { snapshotIds: string[]; accountIds: Set<string> }>();
 
         for (const snapshot of orphanSnapshots) {
-            const dateKey = snapshot.scrapedAt.toISOString().split('T')[0];
+            const dateKey = snapshot.scrapedAt.toISOString().split("T")[0];
             if (!dateGroups.has(dateKey)) {
                 dateGroups.set(dateKey, { snapshotIds: [], accountIds: new Set() });
             }
-            dateGroups.get(dateKey)!.snapshotIds.push(snapshot.id);
-            dateGroups.get(dateKey)!.accountIds.add(snapshot.accountId);
+            dateGroups.get(dateKey)?.snapshotIds.push(snapshot.id);
+            dateGroups.get(dateKey)?.accountIds.add(snapshot.accountId);
         }
 
         let fixed = 0;
@@ -229,13 +257,13 @@ export async function fixOrphanSnapshots() {
                     completedCount: group.accountIds.size,
                     createdAt: jobDate,
                     completedAt: jobDate,
-                }
+                },
             });
 
             // Update all snapshots in this group with the new jobId
             await prisma.snapshot.updateMany({
                 where: { id: { in: group.snapshotIds } },
-                data: { jobId: job.id }
+                data: { jobId: job.id },
             });
 
             fixed += group.snapshotIds.length;
@@ -245,7 +273,7 @@ export async function fixOrphanSnapshots() {
             success: true,
             fixed,
             jobsCreated: dateGroups.size,
-            message: `Fixed ${fixed} snapshots across ${dateGroups.size} jobs`
+            message: `Fixed ${fixed} snapshots across ${dateGroups.size} jobs`,
         };
     } catch (error) {
         logger.error({ error }, "Failed to fix orphan snapshots");

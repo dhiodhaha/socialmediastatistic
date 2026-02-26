@@ -1,15 +1,11 @@
-import type { Request, Response, NextFunction } from "express";
+import type { NextFunction, Request, Response } from "express";
 import { logger } from "../lib/logger";
 
 /**
  * Bearer token authentication middleware.
  * Validates requests against the WORKER_SECRET environment variable.
  */
-export function authMiddleware(
-    req: Request,
-    res: Response,
-    next: NextFunction
-): void {
+export function authMiddleware(req: Request, res: Response, next: NextFunction): void {
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {

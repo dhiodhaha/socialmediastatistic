@@ -1,6 +1,6 @@
 import { prisma } from "@repo/database";
-import { StatsCards } from "@/modules/analytics/components/stats-cards";
 import { RecentActivity } from "@/modules/analytics/components/recent-activity";
+import { StatsCards } from "@/modules/analytics/components/stats-cards";
 import { ScrapeButton } from "@/modules/scraping/components/scrape-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 
@@ -30,7 +30,7 @@ async function getStats() {
         { platform: "INSTAGRAM", count: instagramCount },
         { platform: "TIKTOK", count: tiktokCount },
         { platform: "TWITTER", count: twitterCount },
-    ].filter(p => p.count > 0);
+    ].filter((p) => p.count > 0);
 
     return {
         totalAccounts,
@@ -59,10 +59,7 @@ async function getRecentSnapshots() {
 }
 
 export default async function DashboardPage() {
-    const [stats, recentSnapshots] = await Promise.all([
-        getStats(),
-        getRecentSnapshots(),
-    ]);
+    const [stats, recentSnapshots] = await Promise.all([getStats(), getRecentSnapshots()]);
 
     return (
         <div className="space-y-6">
@@ -103,12 +100,13 @@ export default async function DashboardPage() {
                                             </div>
                                             <div className="h-2 bg-muted rounded-full overflow-hidden">
                                                 <div
-                                                    className={`h-full rounded-full ${{
-                                                        INSTAGRAM: "bg-pink-500",
-                                                        TIKTOK: "bg-slate-900 dark:bg-slate-50",
-                                                        TWITTER: "bg-blue-500"
-                                                    }[item.platform] || "bg-primary"
-                                                        }`}
+                                                    className={`h-full rounded-full ${
+                                                        {
+                                                            INSTAGRAM: "bg-pink-500",
+                                                            TIKTOK: "bg-slate-900 dark:bg-slate-50",
+                                                            TWITTER: "bg-blue-500",
+                                                        }[item.platform] || "bg-primary"
+                                                    }`}
                                                     style={{
                                                         width: `${(item.count / stats.totalAccounts) * 100}%`,
                                                     }}

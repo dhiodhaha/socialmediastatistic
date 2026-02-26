@@ -1,6 +1,9 @@
 "use client";
 
-import { ComparisonRow } from "@/modules/analytics/actions/report.actions";
+import { format } from "date-fns";
+import { ArrowDown, ArrowUp, Minus } from "lucide-react";
+import type { ComparisonRow } from "@/modules/analytics/actions/report.actions";
+import { Badge } from "@/shared/components/ui/badge";
 import {
     Table,
     TableBody,
@@ -9,10 +12,6 @@ import {
     TableHeader,
     TableRow,
 } from "@/shared/components/ui/table";
-import { Badge } from "@/shared/components/ui/badge";
-import { format } from "date-fns";
-import { id } from "date-fns/locale";
-import { ArrowUp, ArrowDown, Minus } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
 
 interface ComparisonTableProps {
@@ -35,12 +34,21 @@ export function ComparisonTable({ data, job1Date, job2Date, platform }: Comparis
 
         const isPositive = val > 0;
         return (
-            <div className={cn(
-                "flex items-center font-medium",
-                isPositive ? "text-green-600" : "text-red-600"
-            )}>
-                {isPositive ? <ArrowUp className="h-3 w-3 mr-1" /> : <ArrowDown className="h-3 w-3 mr-1" />}
-                <span>{isPositive ? "+" : ""}{val.toLocaleString()} ({pct.toFixed(1)}%)</span>
+            <div
+                className={cn(
+                    "flex items-center font-medium",
+                    isPositive ? "text-green-600" : "text-red-600",
+                )}
+            >
+                {isPositive ? (
+                    <ArrowUp className="h-3 w-3 mr-1" />
+                ) : (
+                    <ArrowDown className="h-3 w-3 mr-1" />
+                )}
+                <span>
+                    {isPositive ? "+" : ""}
+                    {val.toLocaleString()} ({pct.toFixed(1)}%)
+                </span>
             </div>
         );
     };
@@ -72,7 +80,10 @@ export function ComparisonTable({ data, job1Date, job2Date, platform }: Comparis
                 <TableBody>
                     {data.length === 0 ? (
                         <TableRow>
-                            <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                            <TableCell
+                                colSpan={6}
+                                className="h-24 text-center text-muted-foreground"
+                            >
                                 Tidak ada data untuk platform ini.
                             </TableCell>
                         </TableRow>
@@ -100,7 +111,12 @@ export function ComparisonTable({ data, job1Date, job2Date, platform }: Comparis
                                     )}
                                 </TableCell>
                                 <TableCell className="text-right">
-                                    {isNA(row.oldStats.followers) ? "-" : renderDelta(row.delta.followersVal, row.delta.followersPct)}
+                                    {isNA(row.oldStats.followers)
+                                        ? "-"
+                                        : renderDelta(
+                                              row.delta.followersVal,
+                                              row.delta.followersPct,
+                                          )}
                                 </TableCell>
                                 <TableCell className="text-right">
                                     {isNA(row.oldStats.posts) ? (

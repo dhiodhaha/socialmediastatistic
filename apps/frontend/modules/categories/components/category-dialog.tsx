@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import * as z from "zod";
 import { createCategory, updateCategory } from "@/modules/categories/actions/category.actions";
-
+import { Button } from "@/shared/components/catalyst/button";
 import {
     Dialog,
     DialogContent,
@@ -15,10 +16,8 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/shared/components/ui/dialog";
-import { Button } from "@/shared/components/catalyst/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
-import { toast } from "sonner";
 
 const categorySchema = z.object({
     name: z.string().min(1, "Name is required"),
@@ -47,7 +46,13 @@ export function CategoryDialog({
     const setIsOpen = isControlled ? onOpenChange : setInternalOpen;
     const [loading, setLoading] = useState(false);
 
-    const { register, handleSubmit, formState: { errors }, reset, setValue } = useForm<CategoryInput>({
+    const {
+        register,
+        handleSubmit,
+        formState: { errors },
+        reset,
+        setValue,
+    } = useForm<CategoryInput>({
         resolver: standardSchemaResolver(categorySchema),
         defaultValues: {
             name: defaultValues?.name || "",
@@ -66,7 +71,7 @@ export function CategoryDialog({
         setLoading(true);
 
         try {
-            let result;
+            let result: { success: boolean; data?: any; error?: string } | undefined;
             if (mode === "create") {
                 result = await createCategory(data.name);
             } else if (mode === "edit" && defaultValues?.id) {
@@ -92,7 +97,9 @@ export function CategoryDialog({
             {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                    <DialogTitle>{mode === "create" ? "Add Category" : "Edit Category"}</DialogTitle>
+                    <DialogTitle>
+                        {mode === "create" ? "Add Category" : "Edit Category"}
+                    </DialogTitle>
                     <DialogDescription>
                         {mode === "create"
                             ? "Create a new category for grouping accounts."
@@ -107,12 +114,18 @@ export function CategoryDialog({
                         </Label>
                         <div className="col-span-3">
                             <Input id="name" {...register("name")} placeholder="Gov Accounts" />
-                            {errors.name && <p className="text-sm text-destructive mt-1">{errors.name.message}</p>}
+                            {errors.name && (
+                                <p className="text-sm text-destructive mt-1">
+                                    {errors.name.message}
+                                </p>
+                            )}
                         </div>
                     </div>
 
                     <DialogFooter>
-                        <Button type="submit" disabled={loading}>{loading ? "Saving..." : "Save changes"}</Button>
+                        <Button type="submit" disabled={loading}>
+                            {loading ? "Saving..." : "Save changes"}
+                        </Button>
                     </DialogFooter>
                 </form>
             </DialogContent>

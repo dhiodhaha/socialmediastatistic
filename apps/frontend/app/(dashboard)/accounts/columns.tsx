@@ -1,7 +1,10 @@
 "use client";
 
-import { ColumnDef } from "@tanstack/react-table";
-import { MoreHorizontal, ExternalLink } from "lucide-react";
+import type { ColumnDef } from "@tanstack/react-table";
+import { ExternalLink, MoreHorizontal } from "lucide-react";
+import { useState } from "react";
+import { deleteAccount } from "@/modules/accounts/actions/account.actions";
+import { AccountDialog } from "@/modules/accounts/components/account-dialog";
 import { Button } from "@/shared/components/catalyst/button";
 import {
     DropdownMenu,
@@ -11,10 +14,6 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
-import { Badge } from "@/shared/components/ui/badge";
-import { deleteAccount } from "@/modules/accounts/actions/account.actions";
-import { useState } from "react";
-import { AccountDialog } from "@/modules/accounts/components/account-dialog";
 
 // Define the shape of our data (must match Prisma Account model with join table)
 export type Account = {
@@ -30,10 +29,15 @@ export type Account = {
     categories?: Array<{ category: { id: string; name: string } }>;
 };
 
-const HandleLink = ({ handle, urlPrefix }: { handle: string | null, urlPrefix: string }) => {
+const HandleLink = ({ handle, urlPrefix }: { handle: string | null; urlPrefix: string }) => {
     if (!handle) return <span className="text-muted-foreground text-xs">N/A</span>;
     return (
-        <a href={`${urlPrefix}${handle}`} target="_blank" rel="noopener noreferrer" className="flex items-center hover:underline text-sm">
+        <a
+            href={`${urlPrefix}${handle}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center hover:underline text-sm"
+        >
             {handle}
             <ExternalLink className="ml-1 h-3 w-3 opacity-50" />
         </a>
@@ -45,7 +49,10 @@ export const columns: ColumnDef<Account>[] = [
         accessorKey: "username",
         header: "Name",
         cell: ({ row }) => (
-            <span className="font-medium max-w-[150px] truncate block" title={row.getValue("username")}>
+            <span
+                className="font-medium max-w-[150px] truncate block"
+                title={row.getValue("username")}
+            >
                 {row.getValue("username")}
             </span>
         ),
@@ -55,32 +62,42 @@ export const columns: ColumnDef<Account>[] = [
         header: "Growth",
         cell: ({ row }) => {
             const growth = row.original.growth;
-            if (growth === null || growth === undefined) return <span className="text-muted-foreground text-xs">-</span>;
+            if (growth === null || growth === undefined)
+                return <span className="text-muted-foreground text-xs">-</span>;
 
             const isPositive = growth > 0;
             const isNegative = growth < 0;
 
             return (
-                <span className={`text-xs font-semibold ${isPositive ? "text-green-600" : isNegative ? "text-red-500" : "text-gray-500"}`}>
-                    {isPositive ? "+" : ""}{growth.toFixed(1)}%
+                <span
+                    className={`text-xs font-semibold ${isPositive ? "text-green-600" : isNegative ? "text-red-500" : "text-gray-500"}`}
+                >
+                    {isPositive ? "+" : ""}
+                    {growth.toFixed(1)}%
                 </span>
             );
-        }
+        },
     },
     {
         accessorKey: "instagram",
         header: "Instagram",
-        cell: ({ row }) => <HandleLink handle={row.getValue("instagram")} urlPrefix="https://instagram.com/" />,
+        cell: ({ row }) => (
+            <HandleLink handle={row.getValue("instagram")} urlPrefix="https://instagram.com/" />
+        ),
     },
     {
         accessorKey: "tiktok",
         header: "TikTok",
-        cell: ({ row }) => <HandleLink handle={row.getValue("tiktok")} urlPrefix="https://tiktok.com/@" />,
+        cell: ({ row }) => (
+            <HandleLink handle={row.getValue("tiktok")} urlPrefix="https://tiktok.com/@" />
+        ),
     },
     {
         accessorKey: "twitter",
         header: "X / Twitter",
-        cell: ({ row }) => <HandleLink handle={row.getValue("twitter")} urlPrefix="https://x.com/" />,
+        cell: ({ row }) => (
+            <HandleLink handle={row.getValue("twitter")} urlPrefix="https://x.com/" />
+        ),
     },
     {
         id: "actions",
@@ -110,7 +127,7 @@ function AccountActionsCell({ account }: { account: Account }) {
                     tiktok: account.tiktok || "",
                     twitter: account.twitter || "",
                     isActive: account.isActive,
-                    categoryIds: account.categories?.map(c => c.category.id) || []
+                    categoryIds: account.categories?.map((c) => c.category.id) || [],
                 }}
                 accountId={account.id}
             />
@@ -125,8 +142,13 @@ function AccountActionsCell({ account }: { account: Account }) {
                 <DropdownMenuContent align="end">
                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => setIsEditOpen(true)}>Edit Details</DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleDelete} className="text-red-600 focus:text-red-600">
+                    <DropdownMenuItem onClick={() => setIsEditOpen(true)}>
+                        Edit Details
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                        onClick={handleDelete}
+                        className="text-red-600 focus:text-red-600"
+                    >
                         Delete Account
                     </DropdownMenuItem>
                 </DropdownMenuContent>

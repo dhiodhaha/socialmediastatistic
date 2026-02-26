@@ -1,5 +1,5 @@
+import { resolve } from "node:path";
 import dotenv from "dotenv";
-import { resolve } from "path";
 
 // Load .env BEFORE importing prisma
 dotenv.config({ path: resolve(process.cwd(), ".env") });

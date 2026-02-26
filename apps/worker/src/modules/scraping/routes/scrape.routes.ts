@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { logger } from "../../../shared/lib/logger";
-import { runScrapingJob, cancelJob, retryFailedAccounts } from "../services/scraper";
+import { cancelJob, retryFailedAccounts, runScrapingJob } from "../services/scraper";
 
 const router: Router = Router();
 

@@ -1,7 +1,7 @@
+import { Clock, Download, FileText, Layers, Share2 } from "lucide-react";
 import { Button } from "@/shared/components/catalyst/button";
 import { Text } from "@/shared/components/catalyst/text";
-import { Download, Share2, FileText, Clock, Layers } from "lucide-react";
-import { FilterListbox, SelectOption } from "./filter-listbox";
+import { FilterListbox, type SelectOption } from "./filter-listbox";
 
 interface ReportHeaderProps {
     exporting: boolean;
@@ -13,7 +13,15 @@ interface ReportHeaderProps {
     onExportLatest: () => void;
 }
 
-export function ReportHeader({ exporting, exportingAll, exportingLatest, hasViewed, onExport, onExportAll, onExportLatest }: ReportHeaderProps) {
+export function ReportHeader({
+    exporting,
+    exportingAll,
+    exportingLatest,
+    hasViewed,
+    onExport,
+    onExportAll,
+    onExportLatest,
+}: ReportHeaderProps) {
     const isExporting = exporting || exportingAll || exportingLatest;
 
     const exportOptions: SelectOption[] = [
@@ -22,22 +30,22 @@ export function ReportHeader({ exporting, exportingAll, exportingLatest, hasView
             label: "Export this Data",
             desc: "Current view",
             icon: FileText,
-            group: "Single Files"
+            group: "Single Files",
         },
         {
             id: "latest",
             label: "Export Standard Data",
             desc: "Overview Standard Data",
             icon: Clock,
-            group: "Single Files"
+            group: "Single Files",
         },
         {
             id: "full",
             label: "Export Full Data",
             desc: "Full Data with Comparison",
             icon: Layers,
-            group: "Comprehensive"
-        }
+            group: "Comprehensive",
+        },
     ];
 
     const handleExportChange = (option: SelectOption) => {
@@ -54,7 +62,9 @@ export function ReportHeader({ exporting, exportingAll, exportingLatest, hasView
                     <span className="text-zinc-300">/</span>
                     <span>Growth Report</span>
                 </div>
-                <h1 className="text-3xl font-bold text-zinc-900 dark:text-white tracking-tight">Laporan Bulanan</h1>
+                <h1 className="text-3xl font-bold text-zinc-900 dark:text-white tracking-tight">
+                    Laporan Bulanan
+                </h1>
                 <Text className="mt-2 max-w-2xl">
                     Monitoring performa akun resmi pemerintahan. Data diambil setiap akhir bulan.
                 </Text>

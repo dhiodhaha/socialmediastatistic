@@ -1,6 +1,6 @@
 import cron from "node-cron";
-import { logger } from "./logger";
 import { runScrapingJob } from "../../modules/scraping/services/scraper";
+import { logger } from "./logger";
 
 export const initCronJobs = () => {
     logger.info("Initializing cron jobs...");

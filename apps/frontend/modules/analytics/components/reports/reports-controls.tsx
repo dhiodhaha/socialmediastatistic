@@ -1,7 +1,7 @@
+import { Calendar, Check, Instagram, Layers, Loader2, Search, Twitter, Video } from "lucide-react";
 import { Button } from "@/shared/components/catalyst/button";
-import { Check, Search, Calendar, Layers, Loader2, Video, Instagram, Twitter } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
-import { FilterListbox, SelectOption } from "./filter-listbox";
+import { FilterListbox, type SelectOption } from "./filter-listbox";
 
 // --- TYPES & CONSTANTS ---
 export type Platform = "INSTAGRAM" | "TIKTOK" | "TWITTER";
@@ -41,29 +41,37 @@ interface ReportsControlsProps {
 }
 
 export function ReportsControls({
-    selectedPlatform, setSelectedPlatform,
-    selectedCategory, setSelectedCategory,
-    selectedPeriod, setSelectedPeriod,
-    selectedComparison, setSelectedComparison,
-    includeNA, setIncludeNA,
-    categories, jobs, comparisonOptions,
-    loading, loadingData,
-    onViewReport
+    selectedPlatform,
+    setSelectedPlatform,
+    selectedCategory,
+    setSelectedCategory,
+    selectedPeriod,
+    setSelectedPeriod,
+    selectedComparison,
+    setSelectedComparison,
+    includeNA,
+    setIncludeNA,
+    categories,
+    jobs,
+    comparisonOptions,
+    loading,
+    loadingData,
+    onViewReport,
 }: ReportsControlsProps) {
     return (
         <div className="space-y-4">
-
             {/* 1. PLATFORM TABS */}
             <div className="flex items-center gap-2 overflow-x-auto pb-2">
                 {TABS.map((tab) => (
                     <button
+                        type="button"
                         key={tab.id}
                         onClick={() => setSelectedPlatform(tab.id as Platform)}
                         className={cn(
                             "flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium transition-all shadow-sm",
                             selectedPlatform === tab.id
                                 ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 shadow-md ring-2 ring-zinc-200 dark:ring-zinc-700 ring-offset-2"
-                                : "bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 hover:border-zinc-300"
+                                : "bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 hover:border-zinc-300",
                         )}
                     >
                         <tab.icon size={16} />
@@ -74,7 +82,6 @@ export function ReportsControls({
 
             {/* 2. FILTER BAR */}
             <div className="bg-white dark:bg-zinc-900 p-2 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-wrap gap-2 items-center">
-
                 {/* Category Filter */}
                 <div className="relative z-30">
                     <FilterListbox
@@ -115,12 +122,14 @@ export function ReportsControls({
                 {/* Include N/A Toggle */}
                 <div className="h-6 w-px bg-zinc-200 dark:bg-zinc-700 mx-1 hidden md:block" />
                 <label className="flex items-center gap-2 text-xs font-medium text-zinc-600 dark:text-zinc-400 cursor-pointer hover:text-zinc-900 dark:hover:text-white select-none px-2 py-1 rounded hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">
-                    <div className={cn(
-                        "w-4 h-4 rounded border flex items-center justify-center transition-colors",
-                        includeNA
-                            ? "bg-blue-600 border-blue-600"
-                            : "bg-white dark:bg-zinc-800 border-zinc-300 dark:border-zinc-600 hover:border-zinc-400"
-                    )}>
+                    <div
+                        className={cn(
+                            "w-4 h-4 rounded border flex items-center justify-center transition-colors",
+                            includeNA
+                                ? "bg-blue-600 border-blue-600"
+                                : "bg-white dark:bg-zinc-800 border-zinc-300 dark:border-zinc-600 hover:border-zinc-400",
+                        )}
+                    >
                         {includeNA && <Check size={10} className="text-white stroke-[3px]" />}
                     </div>
                     <input
@@ -139,10 +148,13 @@ export function ReportsControls({
                     disabled={loading || loadingData || !selectedPeriod || !selectedComparison}
                     className="ml-2 !py-2 !px-4 !text-xs !h-9"
                 >
-                    {loadingData ? <Loader2 className="animate-spin w-3 h-3" /> : <Search className="w-3 h-3" />}
+                    {loadingData ? (
+                        <Loader2 className="animate-spin w-3 h-3" />
+                    ) : (
+                        <Search className="w-3 h-3" />
+                    )}
                     View Report
                 </Button>
-
             </div>
         </div>
     );

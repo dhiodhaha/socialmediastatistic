@@ -1,10 +1,16 @@
 "use server";
 
 import { prisma } from "@repo/database";
+import { auth } from "@/shared/lib/auth";
 import { logger } from "@/shared/lib/logger";
 
 export async function getJobStatus(jobId: string) {
     try {
+        const session = await auth();
+        if (!session) {
+            return { success: false, error: "Unauthorized" };
+        }
+
         const job = await prisma.scrapingJob.findUnique({
             where: { id: jobId },
             select: {

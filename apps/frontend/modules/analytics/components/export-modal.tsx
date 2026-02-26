@@ -1,19 +1,38 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/shared/components/ui/dialog";
-import { Button } from "@/shared/components/catalyst/button";
-import { Label } from "@/shared/components/ui/label";
-import { Input } from "@/shared/components/ui/input";
-import { Checkbox } from "@/shared/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
-import { Download, Loader2, ArrowRight } from "lucide-react";
-import { toast } from "sonner";
-import { getCategories } from "@/modules/categories/actions/category.actions";
-import { getScrapingJobsForReport, getComparisonData, exportComparisonPdf, ComparisonRow } from "@/modules/analytics/actions/report.actions";
+import type { Platform } from "@repo/database";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
-import { Platform } from "@repo/database";
+import { ArrowRight, Download, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import {
+    type ComparisonRow,
+    exportComparisonPdf,
+    getComparisonData,
+    getScrapingJobsForReport,
+} from "@/modules/analytics/actions/report.actions";
+import { getCategories } from "@/modules/categories/actions/category.actions";
+import { Button } from "@/shared/components/catalyst/button";
+import { Checkbox } from "@/shared/components/ui/checkbox";
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/shared/components/ui/dialog";
+import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/shared/components/ui/select";
 
 interface ExportModalProps {
     trigger?: React.ReactNode;
@@ -37,7 +56,9 @@ export function ExportModal({ trigger, defaultCategoryId }: ExportModalProps) {
     // Filters
     const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
     const [categoryId, setCategoryId] = useState<string>(defaultCategoryId || "ALL");
-    const [jobs, setJobs] = useState<{ id: string; createdAt: Date; completedAt: Date | null; totalAccounts: number }[]>([]);
+    const [jobs, setJobs] = useState<
+        { id: string; createdAt: Date; completedAt: Date | null; totalAccounts: number }[]
+    >([]);
     const [job1, setJob1] = useState<string>("");
     const [job2, setJob2] = useState<string>("");
 
@@ -130,8 +151,12 @@ export function ExportModal({ trigger, defaultCategoryId }: ExportModalProps) {
             // Get job dates for labels
             const job1Data = jobs.find((j) => j.id === job1);
             const job2Data = jobs.find((j) => j.id === job2);
-            const month1 = job1Data ? format(new Date(job1Data.createdAt), "MMMM yyyy", { locale: id }) : "Data Lama";
-            const month2 = job2Data ? format(new Date(job2Data.createdAt), "MMMM yyyy", { locale: id }) : "Data Baru";
+            const month1 = job1Data
+                ? format(new Date(job1Data.createdAt), "MMMM yyyy", { locale: id })
+                : "Data Lama";
+            const month2 = job2Data
+                ? format(new Date(job2Data.createdAt), "MMMM yyyy", { locale: id })
+                : "Data Baru";
 
             // Build sections for each platform
             const sections = Object.entries(groupedByPlatform).map(([platform, platformRows]) => ({
@@ -199,20 +224,29 @@ export function ExportModal({ trigger, defaultCategoryId }: ExportModalProps) {
                     {/* ===== SECTION 1: KONFIGURASI DATA ===== */}
                     <div className="space-y-4">
                         <div className="flex items-center gap-2">
-                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground">1</span>
-                            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Konfigurasi Data</h3>
+                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground">
+                                1
+                            </span>
+                            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                                Konfigurasi Data
+                            </h3>
                         </div>
 
                         <div className="rounded-lg border bg-muted/30 p-4 space-y-4">
                             {/* Mode Export */}
                             <div className="space-y-2">
                                 <Label className="text-xs text-muted-foreground">Mode Export</Label>
-                                <Select value={mode} onValueChange={(v) => setMode(v as "single" | "comparison")}>
+                                <Select
+                                    value={mode}
+                                    onValueChange={(v) => setMode(v as "single" | "comparison")}
+                                >
                                     <SelectTrigger>
                                         <SelectValue placeholder="Pilih mode" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="comparison">Pertumbuhan (2 tanggal)</SelectItem>
+                                        <SelectItem value="comparison">
+                                            Pertumbuhan (2 tanggal)
+                                        </SelectItem>
                                         <SelectItem value="single">Snapshot tunggal</SelectItem>
                                     </SelectContent>
                                 </Select>
@@ -221,10 +255,14 @@ export function ExportModal({ trigger, defaultCategoryId }: ExportModalProps) {
                             {/* Periode Perbandingan with Arrow */}
                             {mode === "comparison" && (
                                 <div className="space-y-2">
-                                    <Label className="text-xs text-muted-foreground">Periode Perbandingan</Label>
+                                    <Label className="text-xs text-muted-foreground">
+                                        Periode Perbandingan
+                                    </Label>
                                     <div className="flex items-center gap-3">
                                         <div className="flex-1 space-y-1">
-                                            <span className="text-xs text-muted-foreground">Awal (Data Lama)</span>
+                                            <span className="text-xs text-muted-foreground">
+                                                Awal (Data Lama)
+                                            </span>
                                             <Select value={job1} onValueChange={setJob1}>
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="Pilih tanggal" />
@@ -240,7 +278,9 @@ export function ExportModal({ trigger, defaultCategoryId }: ExportModalProps) {
                                         </div>
                                         <ArrowRight className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-5" />
                                         <div className="flex-1 space-y-1">
-                                            <span className="text-xs text-muted-foreground">Akhir (Data Baru)</span>
+                                            <span className="text-xs text-muted-foreground">
+                                                Akhir (Data Baru)
+                                            </span>
                                             <Select value={job2} onValueChange={setJob2}>
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="Pilih tanggal" />
@@ -261,7 +301,9 @@ export function ExportModal({ trigger, defaultCategoryId }: ExportModalProps) {
                             {/* Single mode date picker */}
                             {mode === "single" && (
                                 <div className="space-y-2">
-                                    <Label className="text-xs text-muted-foreground">Tanggal Snapshot</Label>
+                                    <Label className="text-xs text-muted-foreground">
+                                        Tanggal Snapshot
+                                    </Label>
                                     <Select value={job1} onValueChange={setJob1}>
                                         <SelectTrigger>
                                             <SelectValue placeholder="Pilih tanggal" />
@@ -282,8 +324,12 @@ export function ExportModal({ trigger, defaultCategoryId }: ExportModalProps) {
                     {/* ===== SECTION 2: FILTER & CAKUPAN ===== */}
                     <div className="space-y-4">
                         <div className="flex items-center gap-2">
-                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground">2</span>
-                            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Filter & Cakupan</h3>
+                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground">
+                                2
+                            </span>
+                            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                                Filter & Cakupan
+                            </h3>
                         </div>
 
                         <div className="space-y-4">
@@ -316,7 +362,10 @@ export function ExportModal({ trigger, defaultCategoryId }: ExportModalProps) {
                                         checked={allSelected}
                                         onCheckedChange={(checked) => handleSelectAll(!!checked)}
                                     />
-                                    <Label htmlFor="all" className="text-sm font-normal cursor-pointer">
+                                    <Label
+                                        htmlFor="all"
+                                        className="text-sm font-normal cursor-pointer"
+                                    >
                                         Pilih Semua
                                     </Label>
                                 </div>
@@ -325,28 +374,34 @@ export function ExportModal({ trigger, defaultCategoryId }: ExportModalProps) {
                                 <div className="flex items-center gap-2">
                                     <label
                                         htmlFor="instagram"
-                                        className={`flex items-center justify-center gap-2 rounded-lg border p-3 cursor-pointer transition-colors ${platforms.INSTAGRAM
-                                            ? "border-primary bg-primary/5"
-                                            : "border-border hover:bg-muted/50"
-                                            }`}
+                                        className={`flex items-center justify-center gap-2 rounded-lg border p-3 cursor-pointer transition-colors ${
+                                            platforms.INSTAGRAM
+                                                ? "border-primary bg-primary/5"
+                                                : "border-border hover:bg-muted/50"
+                                        }`}
                                     >
                                         <Checkbox
                                             id="instagram"
                                             checked={platforms.INSTAGRAM}
-                                            onCheckedChange={() => handlePlatformToggle("INSTAGRAM")}
+                                            onCheckedChange={() =>
+                                                handlePlatformToggle("INSTAGRAM")
+                                            }
                                             className="sr-only"
                                         />
-                                        <span className={`text-sm font-medium ${platforms.INSTAGRAM ? "text-primary" : ""}`}>
+                                        <span
+                                            className={`text-sm font-medium ${platforms.INSTAGRAM ? "text-primary" : ""}`}
+                                        >
                                             Instagram
                                         </span>
                                     </label>
 
                                     <label
                                         htmlFor="tiktok"
-                                        className={`flex items-center justify-center gap-2 rounded-lg border p-3 cursor-pointer transition-colors ${platforms.TIKTOK
-                                            ? "border-primary bg-primary/5"
-                                            : "border-border hover:bg-muted/50"
-                                            }`}
+                                        className={`flex items-center justify-center gap-2 rounded-lg border p-3 cursor-pointer transition-colors ${
+                                            platforms.TIKTOK
+                                                ? "border-primary bg-primary/5"
+                                                : "border-border hover:bg-muted/50"
+                                        }`}
                                     >
                                         <Checkbox
                                             id="tiktok"
@@ -354,17 +409,20 @@ export function ExportModal({ trigger, defaultCategoryId }: ExportModalProps) {
                                             onCheckedChange={() => handlePlatformToggle("TIKTOK")}
                                             className="sr-only"
                                         />
-                                        <span className={`text-sm font-medium ${platforms.TIKTOK ? "text-primary" : ""}`}>
+                                        <span
+                                            className={`text-sm font-medium ${platforms.TIKTOK ? "text-primary" : ""}`}
+                                        >
                                             TikTok
                                         </span>
                                     </label>
 
                                     <label
                                         htmlFor="twitter"
-                                        className={`flex items-center justify-center gap-2 rounded-lg border p-3 cursor-pointer transition-colors ${platforms.TWITTER
-                                            ? "border-primary bg-primary/5"
-                                            : "border-border hover:bg-muted/50"
-                                            }`}
+                                        className={`flex items-center justify-center gap-2 rounded-lg border p-3 cursor-pointer transition-colors ${
+                                            platforms.TWITTER
+                                                ? "border-primary bg-primary/5"
+                                                : "border-border hover:bg-muted/50"
+                                        }`}
                                     >
                                         <Checkbox
                                             id="twitter"
@@ -372,7 +430,9 @@ export function ExportModal({ trigger, defaultCategoryId }: ExportModalProps) {
                                             onCheckedChange={() => handlePlatformToggle("TWITTER")}
                                             className="sr-only"
                                         />
-                                        <span className={`text-sm font-medium ${platforms.TWITTER ? "text-primary" : ""}`}>
+                                        <span
+                                            className={`text-sm font-medium ${platforms.TWITTER ? "text-primary" : ""}`}
+                                        >
                                             Twitter/X
                                         </span>
                                     </label>
@@ -384,14 +444,20 @@ export function ExportModal({ trigger, defaultCategoryId }: ExportModalProps) {
                     {/* ===== SECTION 3: PREFERENSI FILE ===== */}
                     <div className="space-y-4">
                         <div className="flex items-center gap-2">
-                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground">3</span>
-                            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Preferensi File</h3>
+                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground">
+                                3
+                            </span>
+                            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                                Preferensi File
+                            </h3>
                         </div>
 
                         <div className="space-y-4">
                             {/* Custom Title */}
                             <div className="space-y-2">
-                                <Label className="text-xs text-muted-foreground">Judul Laporan (Opsional)</Label>
+                                <Label className="text-xs text-muted-foreground">
+                                    Judul Laporan (Opsional)
+                                </Label>
                                 <Input
                                     placeholder="Masukkan judul custom..."
                                     value={customTitle}
@@ -406,7 +472,10 @@ export function ExportModal({ trigger, defaultCategoryId }: ExportModalProps) {
                                     checked={includeCover}
                                     onCheckedChange={(checked) => setIncludeCover(!!checked)}
                                 />
-                                <Label htmlFor="cover" className="text-sm font-normal cursor-pointer">
+                                <Label
+                                    htmlFor="cover"
+                                    className="text-sm font-normal cursor-pointer"
+                                >
                                     Sertakan Halaman Cover
                                 </Label>
                             </div>

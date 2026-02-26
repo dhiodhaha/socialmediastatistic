@@ -1,11 +1,12 @@
 import { getCategories } from "@/modules/categories/actions/category.actions";
 
 export const dynamic = "force-dynamic";
-import { DataTable } from "@/shared/components/ui/data-table";
-import { columns, type Category } from "./columns";
+
+import { Plus } from "lucide-react";
 import { CategoryDialog } from "@/modules/categories/components/category-dialog";
 import { Button } from "@/shared/components/catalyst/button";
-import { Plus } from "lucide-react";
+import { DataTable } from "@/shared/components/ui/data-table";
+import { type Category, columns } from "./columns";
 
 export default async function CategoriesPage() {
     let data: Category[] = [];
@@ -25,11 +26,13 @@ export default async function CategoriesPage() {
             <div className="flex items-center justify-between space-y-2">
                 <h2 className="text-3xl font-bold tracking-tight">Categories</h2>
                 <div className="flex items-center space-x-2">
-                    <CategoryDialog trigger={
-                        <Button>
-                            <Plus className="h-4 w-4" data-slot="icon" /> Add Category
-                        </Button>
-                    } />
+                    <CategoryDialog
+                        trigger={
+                            <Button>
+                                <Plus className="h-4 w-4" data-slot="icon" /> Add Category
+                            </Button>
+                        }
+                    />
                 </div>
             </div>
             <div className="hidden h-full flex-1 flex-col space-y-8 md:flex">

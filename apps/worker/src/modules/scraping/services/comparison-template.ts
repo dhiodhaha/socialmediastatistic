@@ -27,7 +27,15 @@ interface ReportConfig {
 }
 
 export function generateComparisonReportHtml(config: ReportConfig): string {
-    const { platform, month1, month2, generatedAt, data, includeCover = true, customTitle } = config;
+    const {
+        platform,
+        month1,
+        month2,
+        generatedAt,
+        data,
+        includeCover = true,
+        customTitle,
+    } = config;
 
     const isTikTok = platform.toUpperCase() === "TIKTOK";
 
@@ -59,9 +67,11 @@ export function generateComparisonReportHtml(config: ReportConfig): string {
 
             const handleDisplay = isNA
                 ? '<span style="color: #d97706; font-weight: bold;">N/A</span>'
-                : row.handle.startsWith('@') ? row.handle : `@${row.handle}`;
+                : row.handle.startsWith("@")
+                  ? row.handle
+                  : `@${row.handle}`;
 
-            const rowBg = isNA ? 'background-color: #fef3c7;' : '';
+            const rowBg = isNA ? "background-color: #fef3c7;" : "";
 
             return `
             <tr style="${rowBg}">
@@ -81,7 +91,6 @@ export function generateComparisonReportHtml(config: ReportConfig): string {
         `;
         })
         .join("");
-
 
     return `
     <!DOCTYPE html>
@@ -195,13 +204,17 @@ export function generateComparisonReportHtml(config: ReportConfig): string {
     </head>
     <body>
         <!-- Cover Page -->
-        ${includeCover ? `
+        ${
+            includeCover
+                ? `
         <div class="cover-page">
             <div class="cover-title">
                 ${customTitle || `Laporan<br/>Audiens<br/>${platform}`}
             </div>
         </div>
-        ` : ''}
+        `
+                : ""
+        }
 
         <!-- Header Removed -->
 
@@ -270,31 +283,35 @@ export function generateCombinedReportHtml(config: CombinedReportConfig): string
     const platformNames: Record<string, string> = {
         INSTAGRAM: "Instagram",
         TIKTOK: "TikTok",
-        TWITTER: "Twitter / X"
+        TWITTER: "Twitter / X",
     };
 
     // Generate section HTML for each platform
-    const sectionsHtml = sections.map(({ platform, data }) => {
-        const isTikTok = platform.toUpperCase() === "TIKTOK";
-        const likesHeaders = isTikTok
-            ? `<th>Likes<br/>${month1}</th><th>Likes<br/>${month2}</th><th>Peningkatan<br/>Likes</th>`
-            : "";
-
-        const rows = data.map((row, idx) => {
-            const isNA = row.oldFollowers === -1;
-            const likesColumns = isTikTok
-                ? `<td>${isNA ? formatNumber(-1) : formatNumber(row.oldLikes || 0)}</td>
-                   <td>${isNA ? formatNumber(-1) : formatNumber(row.newLikes || 0)}</td>
-                   <td>${formatPct(row.likesPct || 0, isNA)}</td>`
+    const sectionsHtml = sections
+        .map(({ platform, data }) => {
+            const isTikTok = platform.toUpperCase() === "TIKTOK";
+            const likesHeaders = isTikTok
+                ? `<th>Likes<br/>${month1}</th><th>Likes<br/>${month2}</th><th>Peningkatan<br/>Likes</th>`
                 : "";
 
-            const handleDisplay = isNA
-                ? '<span style="color: #d97706; font-weight: bold;">N/A</span>'
-                : row.handle.startsWith('@') ? row.handle : `@${row.handle}`;
+            const rows = data
+                .map((row, idx) => {
+                    const isNA = row.oldFollowers === -1;
+                    const likesColumns = isTikTok
+                        ? `<td>${isNA ? formatNumber(-1) : formatNumber(row.oldLikes || 0)}</td>
+                   <td>${isNA ? formatNumber(-1) : formatNumber(row.newLikes || 0)}</td>
+                   <td>${formatPct(row.likesPct || 0, isNA)}</td>`
+                        : "";
 
-            const rowBg = isNA ? 'background-color: #fef3c7;' : '';
+                    const handleDisplay = isNA
+                        ? '<span style="color: #d97706; font-weight: bold;">N/A</span>'
+                        : row.handle.startsWith("@")
+                          ? row.handle
+                          : `@${row.handle}`;
 
-            return `
+                    const rowBg = isNA ? "background-color: #fef3c7;" : "";
+
+                    return `
             <tr style="${rowBg}">
                 <td style="text-align: center;">${idx + 1}</td>
                 <td>
@@ -310,9 +327,10 @@ export function generateCombinedReportHtml(config: CombinedReportConfig): string
                 ${likesColumns}
             </tr>
         `;
-        }).join("");
+                })
+                .join("");
 
-        return `
+            return `
         <!-- Platform Cover Page -->
         <div class="platform-cover">
             <div class="platform-title">${platformNames[platform] || platform}</div>
@@ -346,9 +364,10 @@ export function generateCombinedReportHtml(config: CombinedReportConfig): string
             </table>
         </div>
         `;
-    }).join("");
+        })
+        .join("");
 
-    const platformList = sections.map(s => platformNames[s.platform] || s.platform).join(", ");
+    const platformList = sections.map((s) => platformNames[s.platform] || s.platform).join(", ");
 
     return `
     <!DOCTYPE html>
@@ -502,14 +521,18 @@ export function generateCombinedReportHtml(config: CombinedReportConfig): string
         </style>
     </head>
     <body>
-        ${includeCover ? `
+        ${
+            includeCover
+                ? `
         <!-- Main Cover Page -->
         <div class="main-cover">
             <div class="main-title">${customTitle || "Laporan<br/>Social Media"}</div>
             <div class="main-subtitle">Edisi ${month2}</div>
             <div class="main-platforms">Platform: ${platformList}</div>
         </div>
-        ` : ''}
+        `
+                : ""
+        }
 
         ${sectionsHtml}
 

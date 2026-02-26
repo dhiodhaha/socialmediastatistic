@@ -2,6 +2,7 @@
 
 import { prisma } from "@repo/database";
 import { revalidatePath } from "next/cache";
+import { auth } from "@/shared/lib/auth";
 
 export interface SnapshotImportInput {
     account_username: string;
@@ -24,13 +25,18 @@ export interface ImportResult {
 const VALID_PLATFORMS = ["INSTAGRAM", "TIKTOK", "TWITTER"];
 
 export async function bulkImportSnapshots(data: SnapshotImportInput[]): Promise<ImportResult> {
+    const session = await auth();
+    if (!session) {
+        return { success: false, imported: 0, skipped: 0, errors: ["Unauthorized"] };
+    }
+
     const errors: string[] = [];
     let imported = 0;
     let skipped = 0;
 
     // Pre-fetch all accounts
     const accounts = await prisma.account.findMany({
-        select: { id: true, username: true, instagram: true, tiktok: true, twitter: true }
+        select: { id: true, username: true, instagram: true, tiktok: true, twitter: true },
     });
 
     // Build lookup maps for each platform (handle -> accountId)
@@ -66,7 +72,9 @@ export async function bulkImportSnapshots(data: SnapshotImportInput[]): Promise<
         // Validate platform first
         const platform = row.platform.toUpperCase();
         if (!VALID_PLATFORMS.includes(platform)) {
-            errors.push(`Row ${rowNum}: Invalid platform "${row.platform}". Must be INSTAGRAM, TIKTOK, or TWITTER.`);
+            errors.push(
+                `Row ${rowNum}: Invalid platform "${row.platform}". Must be INSTAGRAM, TIKTOK, or TWITTER.`,
+            );
             skipped++;
             continue;
         }
@@ -89,14 +97,16 @@ export async function bulkImportSnapshots(data: SnapshotImportInput[]): Promise<
         }
 
         if (!accountId) {
-            errors.push(`Row ${rowNum}: No account found with handle "${row.account_username}" for ${platform}.`);
+            errors.push(
+                `Row ${rowNum}: No account found with handle "${row.account_username}" for ${platform}.`,
+            );
             skipped++;
             continue;
         }
 
         // Parse date
         const scrapedAt = new Date(row.scraped_at);
-        if (isNaN(scrapedAt.getTime())) {
+        if (Number.isNaN(scrapedAt.getTime())) {
             errors.push(`Row ${rowNum}: Invalid date "${row.scraped_at}".`);
             skipped++;
             continue;
@@ -109,14 +119,14 @@ export async function bulkImportSnapshots(data: SnapshotImportInput[]): Promise<
             continue;
         }
 
-        const dateKey = scrapedAt.toISOString().split('T')[0];
+        const dateKey = scrapedAt.toISOString().split("T")[0];
         validatedRows.push({ row, rowNum, accountId, platform, scrapedAt, dateKey });
 
         // Group by date for job creation
         if (!dateGroups.has(dateKey)) {
             dateGroups.set(dateKey, { accountIds: new Set(), rows: [] });
         }
-        dateGroups.get(dateKey)!.accountIds.add(accountId);
+        dateGroups.get(dateKey)?.accountIds.add(accountId);
     }
 
     // Create a ScrapingJob for each unique date
@@ -130,7 +140,7 @@ export async function bulkImportSnapshots(data: SnapshotImportInput[]): Promise<
                 completedCount: group.accountIds.size,
                 createdAt: jobDate,
                 completedAt: jobDate,
-            }
+            },
         });
         dateJobMap.set(dateKey, job.id);
     }
@@ -145,13 +155,17 @@ export async function bulkImportSnapshots(data: SnapshotImportInput[]): Promise<
                     platform: platform as "INSTAGRAM" | "TIKTOK" | "TWITTER",
                     scrapedAt: {
                         gte: new Date(scrapedAt.toDateString()),
-                        lt: new Date(new Date(scrapedAt.toDateString()).getTime() + 24 * 60 * 60 * 1000)
-                    }
-                }
+                        lt: new Date(
+                            new Date(scrapedAt.toDateString()).getTime() + 24 * 60 * 60 * 1000,
+                        ),
+                    },
+                },
             });
 
             if (existingSnapshot) {
-                errors.push(`Row ${rowNum}: Duplicate snapshot for "${row.account_username}" on ${row.scraped_at} (${platform}).`);
+                errors.push(
+                    `Row ${rowNum}: Duplicate snapshot for "${row.account_username}" on ${row.scraped_at} (${platform}).`,
+                );
                 skipped++;
                 continue;
             }
@@ -167,7 +181,7 @@ export async function bulkImportSnapshots(data: SnapshotImportInput[]): Promise<
                     posts: row.posts ?? null,
                     engagement: row.engagement ?? null,
                     likes: row.likes ?? null,
-                }
+                },
             });
             imported++;
         } catch (e) {
@@ -188,6 +202,11 @@ export async function bulkImportSnapshots(data: SnapshotImportInput[]): Promise<
  * Generates a CSV template for data import.
  */
 export async function getImportTemplate(): Promise<string> {
+    const session = await auth();
+    if (!session) {
+        throw new Error("Unauthorized");
+    }
+
     const headers = [
         "account_username",
         "platform",
@@ -196,7 +215,7 @@ export async function getImportTemplate(): Promise<string> {
         "following",
         "posts",
         "engagement",
-        "likes"
+        "likes",
     ];
 
     const exampleRow = [
@@ -207,7 +226,7 @@ export async function getImportTemplate(): Promise<string> {
         "100",
         "2500",
         "1.5",
-        ""
+        "",
     ];
 
     return [headers.join(","), exampleRow.join(",")].join("\n");

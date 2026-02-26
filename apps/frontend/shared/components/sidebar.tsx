@@ -1,24 +1,24 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { cn } from "@/shared/lib/utils";
 import {
-    LayoutDashboard,
-    Users,
-    History,
-    Settings,
     BarChart2,
+    BookOpen,
+    ChevronDown,
     ChevronLeft,
     ChevronRight,
-    ChevronDown,
-    LineChart,
     FolderTree,
-    BookOpen,
-    LucideIcon
+    History,
+    LayoutDashboard,
+    LineChart,
+    type LucideIcon,
+    Settings,
+    Users,
 } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useState } from "react";
 import { Button } from "@/shared/components/catalyst/button";
+import { cn } from "@/shared/lib/utils";
 
 interface NavItem {
     href: string;
@@ -65,7 +65,7 @@ export function Sidebar() {
         setExpandedGroups((prev) =>
             prev.includes(groupLabel)
                 ? prev.filter((g) => g !== groupLabel)
-                : [...prev, groupLabel]
+                : [...prev, groupLabel],
         );
     };
 
@@ -73,14 +73,16 @@ export function Sidebar() {
         <aside
             className={cn(
                 "border-r bg-card flex flex-col transition-all duration-300 ease-in-out",
-                isCollapsed ? "w-[70px]" : "w-64"
+                isCollapsed ? "w-[70px]" : "w-64",
             )}
         >
             {/* Logo */}
-            <div className={cn(
-                "border-b transition-all duration-300 flex items-center h-16",
-                isCollapsed ? "justify-center px-2" : "px-6 gap-3"
-            )}>
+            <div
+                className={cn(
+                    "border-b transition-all duration-300 flex items-center h-16",
+                    isCollapsed ? "justify-center px-2" : "px-6 gap-3",
+                )}
+            >
                 <div className="w-8 h-8 min-w-[2rem] rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                     <LineChart className="w-5 h-5 text-primary" />
                 </div>
@@ -107,7 +109,7 @@ export function Sidebar() {
                                     <ChevronDown
                                         className={cn(
                                             "h-3 w-3 transition-transform",
-                                            isExpanded ? "" : "-rotate-90"
+                                            isExpanded ? "" : "-rotate-90",
                                         )}
                                     />
                                 </button>
@@ -131,10 +133,17 @@ export function Sidebar() {
                                                     isActive
                                                         ? "bg-primary/10 text-primary hover:bg-primary/20"
                                                         : "text-muted-foreground hover:bg-muted/80 hover:text-foreground",
-                                                    isCollapsed ? "justify-center px-0" : "px-3 gap-3"
+                                                    isCollapsed
+                                                        ? "justify-center px-0"
+                                                        : "px-3 gap-3",
                                                 )}
                                             >
-                                                <Icon className={cn("shrink-0 transition-all", isCollapsed ? "w-5 h-5" : "w-4 h-4")} />
+                                                <Icon
+                                                    className={cn(
+                                                        "shrink-0 transition-all",
+                                                        isCollapsed ? "w-5 h-5" : "w-4 h-4",
+                                                    )}
+                                                />
                                                 {!isCollapsed && (
                                                     <span className="animate-in fade-in slide-in-from-left-1 duration-200">
                                                         {item.label}
@@ -163,7 +172,7 @@ export function Sidebar() {
                     plain
                     className={cn(
                         "w-full flex items-center h-10 transition-all hover:bg-muted/80",
-                        isCollapsed ? "justify-center px-0" : "justify-start px-3 gap-3"
+                        isCollapsed ? "justify-center px-0" : "justify-start px-3 gap-3",
                     )}
                     onClick={() => setIsCollapsed(!isCollapsed)}
                 >
@@ -171,7 +180,10 @@ export function Sidebar() {
                         <ChevronRight className="w-5 h-5 text-muted-foreground" data-slot="icon" />
                     ) : (
                         <>
-                            <ChevronLeft className="w-4 h-4 text-muted-foreground" data-slot="icon" />
+                            <ChevronLeft
+                                className="w-4 h-4 text-muted-foreground"
+                                data-slot="icon"
+                            />
                             <span className="text-sm font-medium text-muted-foreground animate-in fade-in slide-in-from-left-1 duration-200">
                                 Collapse menu
                             </span>

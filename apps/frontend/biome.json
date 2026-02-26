@@ -1,0 +1,14 @@
+{
+    "root": false,
+    "extends": ["../../biome.json"],
+    "linter": {
+        "rules": {
+            "a11y": {
+                "useValidAnchor": "warn",
+                "useButtonType": "warn",
+                "useAltText": "warn",
+                "noSvgWithoutTitle": "off"
+            }
+        }
+    }
+}
