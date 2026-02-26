@@ -5,6 +5,7 @@ import { DataTable } from "@/shared/components/ui/data-table";
 import { columns } from "./columns";
 
 interface HistoryDataTableProps {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     data: any[];
     pageCount: number;
     currentPage: number;

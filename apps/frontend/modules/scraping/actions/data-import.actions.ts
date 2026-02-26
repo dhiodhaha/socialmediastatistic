@@ -2,6 +2,7 @@
 
 import { prisma } from "@repo/database";
 import { revalidatePath } from "next/cache";
+import { auth } from "@/shared/lib/auth";
 
 export interface SnapshotImportInput {
     account_username: string;
@@ -24,6 +25,11 @@ export interface ImportResult {
 const VALID_PLATFORMS = ["INSTAGRAM", "TIKTOK", "TWITTER"];
 
 export async function bulkImportSnapshots(data: SnapshotImportInput[]): Promise<ImportResult> {
+    const session = await auth();
+    if (!session) {
+        return { success: false, imported: 0, skipped: 0, errors: ["Unauthorized"] };
+    }
+
     const errors: string[] = [];
     let imported = 0;
     let skipped = 0;
@@ -188,6 +194,11 @@ export async function bulkImportSnapshots(data: SnapshotImportInput[]): Promise<
  * Generates a CSV template for data import.
  */
 export async function getImportTemplate(): Promise<string> {
+    const session = await auth();
+    if (!session) {
+        throw new Error("Unauthorized");
+    }
+
     const headers = [
         "account_username",
         "platform",

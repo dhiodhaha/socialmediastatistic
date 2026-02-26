@@ -68,6 +68,7 @@ export function AccountDialog({
 
     // Track selected categories for multi-select
     const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (defaultValues as any)?.categoryIds || []
     );
 
@@ -78,6 +79,7 @@ export function AccountDialog({
             instagram: defaultValues?.instagram || "",
             tiktok: defaultValues?.tiktok || "",
             twitter: defaultValues?.twitter || "",
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             categoryIds: (defaultValues as any)?.categoryIds || [],
             isActive: defaultValues?.isActive ?? true,
         },

@@ -3,17 +3,23 @@
 import { prisma } from "@repo/database";
 import { revalidatePath } from "next/cache";
 import { hash, compare } from "bcryptjs";
+import { auth } from "@/shared/lib/auth";
 
 // Get app settings (creates default if not exists)
 export async function getSettings() {
     try {
-        // @ts-ignore - Settings model exists after migration
+        const session = await auth();
+        if (!session) {
+            return { success: false, error: "Unauthorized" };
+        }
+
+        // Settings model exists after migration
         let settings = await prisma.settings.findUnique({
             where: { id: "app" }
         });
 
         if (!settings) {
-            // @ts-ignore
+
             settings = await prisma.settings.create({
                 data: { id: "app" }
             });
@@ -29,13 +35,18 @@ export async function getSettings() {
 // Update cron schedule
 export async function updateCronSchedule(cronSchedule: string) {
     try {
+        const session = await auth();
+        if (!session) {
+            return { success: false, error: "Unauthorized" };
+        }
+
         // Basic cron validation (5 parts separated by spaces)
         const parts = cronSchedule.trim().split(/\s+/);
         if (parts.length !== 5) {
             return { success: false, error: "Invalid cron format. Must have 5 parts (minute hour day month weekday)." };
         }
 
-        // @ts-ignore - Settings model exists after migration
+        // Settings model exists after migration
         const settings = await prisma.settings.upsert({
             where: { id: "app" },
             update: { cronSchedule },
@@ -53,6 +64,11 @@ export async function updateCronSchedule(cronSchedule: string) {
 // Get current user (for profile section)
 export async function getCurrentUser(userId: string) {
     try {
+        const session = await auth();
+        if (!session) {
+            return { success: false, error: "Unauthorized" };
+        }
+
         const user = await prisma.user.findUnique({
             where: { id: userId },
             select: { id: true, name: true, email: true, createdAt: true }
@@ -72,6 +88,11 @@ export async function getCurrentUser(userId: string) {
 // Update user profile
 export async function updateProfile(userId: string, data: { name?: string }) {
     try {
+        const session = await auth();
+        if (!session) {
+            return { success: false, error: "Unauthorized" };
+        }
+
         const user = await prisma.user.update({
             where: { id: userId },
             data: { name: data.name }
@@ -88,6 +109,11 @@ export async function updateProfile(userId: string, data: { name?: string }) {
 // Change password
 export async function changePassword(userId: string, currentPassword: string, newPassword: string) {
     try {
+        const session = await auth();
+        if (!session) {
+            return { success: false, error: "Unauthorized" };
+        }
+
         const user = await prisma.user.findUnique({
             where: { id: userId }
         });

@@ -20,7 +20,7 @@ export default function DesignSystemPage() {
             <div className="space-y-4">
                 <Heading>Design System</Heading>
                 <Text>
-                    A collection of core components and tokens validating the "Clean & Engineered" aesthetic (Catalyst UI).
+                    A collection of core components and tokens validating the &quot;Clean &amp; Engineered&quot; aesthetic (Catalyst UI).
                 </Text>
             </div>
 
@@ -111,7 +111,7 @@ export default function DesignSystemPage() {
                         <Field>
                             <Label>Email address</Label>
                             <Input name="email" type="email" placeholder="you@example.com" />
-                            <Description>We'll only use this for spam.</Description>
+                            <Description>We&apos;ll only use this for spam.</Description>
                         </Field>
 
                         <Field>

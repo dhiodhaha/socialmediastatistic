@@ -5,6 +5,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -23,8 +24,6 @@ model Account {
   tiktok     String? // Handle
   twitter    String? // Handle
   isActive   Boolean           @default(true)
-  // NOTE: categoryId kept temporarily for migration, will be removed after data migration
-  categoryId String?
   createdAt  DateTime          @default(now())
   updatedAt  DateTime          @updatedAt
   snapshots  Snapshot[]

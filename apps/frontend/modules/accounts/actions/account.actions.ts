@@ -6,14 +6,21 @@ import { ZodError } from "zod";
 
 import { accountSchema, type AccountInput } from "@/shared/lib/schemas";
 import { logger } from "@/shared/lib/logger";
+import { auth } from "@/shared/lib/auth";
 
 
 
 export async function getAccounts(page = 1, limit = 10, search = "", categoryId?: string) {
     try {
+        const session = await auth();
+        if (!session) {
+            return { success: false, error: "Unauthorized" };
+        }
+
         const skip = (page - 1) * limit;
 
         // Search across username and all handles
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const where: any = search
             ? {
                 OR: [
@@ -52,6 +59,7 @@ export async function getAccounts(page = 1, limit = 10, search = "", categoryId?
         ]);
 
         // Calculate growth for each account
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const accountsWithGrowth = accounts.map((acc: any) => {
             let growth: number | null = null;
             if (acc.snapshots && acc.snapshots.length >= 2) {
@@ -97,6 +105,11 @@ export async function getAccounts(page = 1, limit = 10, search = "", categoryId?
 
 export async function createAccount(data: AccountInput) {
     try {
+        const session = await auth();
+        if (!session) {
+            return { success: false, error: "Unauthorized" };
+        }
+
         const validated = accountSchema.parse(data);
 
         // Check for duplicate username
@@ -147,6 +160,11 @@ export async function createAccount(data: AccountInput) {
 
 export async function updateAccount(id: string, data: Partial<AccountInput>) {
     try {
+        const session = await auth();
+        if (!session) {
+            return { success: false, error: "Unauthorized" };
+        }
+
         // Update account with categories via transaction
         const account = await prisma.$transaction(async (tx) => {
             // Update the account basic fields
@@ -187,6 +205,11 @@ export async function updateAccount(id: string, data: Partial<AccountInput>) {
 
 export async function deleteAccount(id: string) {
     try {
+        const session = await auth();
+        if (!session) {
+            return { success: false, error: "Unauthorized" };
+        }
+
         await prisma.account.delete({ where: { id } });
         revalidatePath("/accounts");
         return { success: true };
@@ -196,8 +219,13 @@ export async function deleteAccount(id: string) {
     }
 }
 
-    export async function bulkCreateAccounts(accounts: AccountInput[]) {
+export async function bulkCreateAccounts(accounts: AccountInput[]) {
     try {
+        const session = await auth();
+        if (!session) {
+            return { success: false, error: "Unauthorized" };
+        }
+
         let successCount = 0;
         const errors: string[] = [];
 
@@ -258,6 +286,7 @@ export async function deleteAccount(id: string) {
                 } else {
                     errors.push(`${acc.username}: ${result.error}`);
                 }
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } catch (err: any) {
                 errors.push(`${acc.username}: ${err.message || "Unknown error"}`);
             }
@@ -280,6 +309,11 @@ export async function deleteAccount(id: string) {
  */
 export async function getAccountsWithErrors() {
     try {
+        const session = await auth();
+        if (!session) {
+            return { success: false, error: "Unauthorized", data: [] };
+        }
+
         // Get the latest completed job with errors
         const latestJob = await prisma.scrapingJob.findFirst({
             where: {

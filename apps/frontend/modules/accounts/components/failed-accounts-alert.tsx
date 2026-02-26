@@ -157,7 +157,7 @@ export function FailedAccountsAlert() {
                             ))}
                         </div>
                         <p className="text-sm mt-3 text-muted-foreground">
-                            Klik "Edit Handle" untuk memperbarui username yang telah berubah atau akun yang suspended.
+                            Klik &quot;Edit Handle&quot; untuk memperbarui username yang telah berubah atau akun yang suspended.
                         </p>
                     </AlertDescription>
                 )}

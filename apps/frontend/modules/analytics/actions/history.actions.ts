@@ -2,6 +2,7 @@
 
 import { prisma, Prisma, JobStatus, Platform } from "@repo/database";
 import { logger } from "@/shared/lib/logger";
+import { auth } from "@/shared/lib/auth";
 
 // ... console.error("Failed to fetch scraping history:", error); -> logger.error({ error }, "Failed to fetch scraping history");
 // ... console.error("Failed to fetch all scraping history:", error); -> logger.error({ error }, "Failed to fetch all scraping history");
@@ -17,6 +18,11 @@ export interface HistoryFilters {
 
 export async function getScrapingHistory(page = 1, limit = 10, filters?: HistoryFilters) {
     try {
+        const session = await auth();
+        if (!session) {
+            return { success: false, error: "Unauthorized" };
+        }
+
         const skip = (page - 1) * limit;
 
         const where: Prisma.ScrapingJobWhereInput = {};
@@ -57,6 +63,11 @@ export async function getScrapingHistory(page = 1, limit = 10, filters?: History
 
 export async function getAllScrapingHistory(filters?: HistoryFilters) {
     try {
+        const session = await auth();
+        if (!session) {
+            return { success: false, error: "Unauthorized" };
+        }
+
         const where: Prisma.ScrapingJobWhereInput = {};
         if (filters?.status && filters.status !== "ALL") {
             where.status = filters.status as JobStatus;
@@ -81,6 +92,11 @@ export async function getAllScrapingHistory(filters?: HistoryFilters) {
 
 export async function exportHistoryPdf(filters: HistoryFilters) {
     try {
+        const session = await auth();
+        if (!session) {
+            return { success: false, error: "Unauthorized" };
+        }
+
         const workerUrl = process.env.WORKER_URL;
         const workerSecret = process.env.WORKER_SECRET;
 
@@ -120,6 +136,11 @@ export async function exportHistoryPdf(filters: HistoryFilters) {
 
 export async function exportHistoryCsv(filters: HistoryFilters) {
     try {
+        const session = await auth();
+        if (!session) {
+            return { success: false, error: "Unauthorized" };
+        }
+
         const where: Prisma.ScrapingJobWhereInput = {};
         if (filters?.status && filters.status !== "ALL") {
             where.status = filters.status as JobStatus;
@@ -171,6 +192,11 @@ export async function exportHistoryCsv(filters: HistoryFilters) {
  */
 export async function deleteScrapingJob(jobId: string) {
     try {
+        const session = await auth();
+        if (!session) {
+            return { success: false, error: "Unauthorized" };
+        }
+
         // Delete associated snapshots first
         await prisma.snapshot.deleteMany({
             where: { jobId }
@@ -194,6 +220,11 @@ export async function deleteScrapingJob(jobId: string) {
  */
 export async function fixOrphanSnapshots() {
     try {
+        const session = await auth();
+        if (!session) {
+            return { success: false, error: "Unauthorized" };
+        }
+
         // Find all snapshots without a jobId
         const orphanSnapshots = await prisma.snapshot.findMany({
             where: { jobId: null },

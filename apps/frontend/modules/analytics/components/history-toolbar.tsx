@@ -50,6 +50,7 @@ export function HistoryToolbar({ activeJobId }: { activeJobId?: string }) {
     useEffect(() => {
         getCategories().then(res => {
             if (res.success && res.data) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 setCategories(res.data as any[]);
             }
         });

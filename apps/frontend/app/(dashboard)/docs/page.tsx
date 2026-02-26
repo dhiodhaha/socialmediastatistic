@@ -315,7 +315,7 @@ export default function DocsPage() {
                             <strong>Import Historical Data</strong> (Optional) - If you have past statistics, use the historical data template at <code>/history</code>
                         </li>
                         <li>
-                            <strong>Start Scraping</strong> - Go to <code>/history</code> and click "Scrape All Accounts" to fetch current data
+                            <strong>Start Scraping</strong> - Go to <code>/history</code> and click &quot;Scrape All Accounts&quot; to fetch current data
                         </li>
                         <li>
                             <strong>View Reports</strong> - Navigate to <code>/reports</code> to see comparisons and export PDFs

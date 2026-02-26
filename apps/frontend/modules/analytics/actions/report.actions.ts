@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma, Platform } from "@repo/database";
+import { auth } from "@/shared/lib/auth";
 
 export interface ComparisonRow {
     accountId: string;
@@ -28,6 +29,11 @@ export async function getComparisonData(
     categoryId?: string,
     includeNA?: boolean
 ): Promise<ComparisonRow[]> {
+    const session = await auth();
+    if (!session) {
+        throw new Error("Unauthorized");
+    }
+
     // 1. Get the reference jobs to know the dates
     const [job1, job2] = await Promise.all([
         prisma.scrapingJob.findUnique({ where: { id: jobId1 } }),
@@ -107,6 +113,7 @@ export async function getComparisonData(
         }
 
         const categoryName = account.categories.length > 0
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             ? account.categories.map((c: any) => c.category.name).join(", ")
             : "Official Account";
 
@@ -131,15 +138,15 @@ export async function getComparisonData(
 
             // Find snapshots for this platform and the two date ranges
             // We use date matching instead of strict Job ID matching to handle shared entities
-            const snapshot1 = account.snapshots.find(s => 
-                s.platform === platform && 
-                s.scrapedAt >= range1.start && 
+            const snapshot1 = account.snapshots.find(s =>
+                s.platform === platform &&
+                s.scrapedAt >= range1.start &&
                 s.scrapedAt <= range1.end
             );
 
-            const snapshot2 = account.snapshots.find(s => 
-                s.platform === platform && 
-                s.scrapedAt >= range2.start && 
+            const snapshot2 = account.snapshots.find(s =>
+                s.platform === platform &&
+                s.scrapedAt >= range2.start &&
                 s.scrapedAt <= range2.end
             );
 
@@ -217,6 +224,11 @@ function calculateGrowth(
  * Fetch available completed jobs for the dropdown.
  */
 export async function getScrapingJobsForReport() {
+    const session = await auth();
+    if (!session) {
+        throw new Error("Unauthorized");
+    }
+
     return prisma.scrapingJob.findMany({
         where: {
             status: "COMPLETED",
@@ -261,6 +273,11 @@ interface ExportData {
  * Returns base64 encoded PDF data.
  */
 export async function exportComparisonPdf(exportData: ExportData): Promise<string> {
+    const session = await auth();
+    if (!session) {
+        throw new Error("Unauthorized");
+    }
+
     const workerUrl = process.env.WORKER_URL || "http://localhost:4000";
     const workerSecret = process.env.WORKER_SECRET;
 
@@ -308,6 +325,11 @@ interface LatestExportData {
  * Returns base64 encoded PDF data.
  */
 export async function exportLatestPdf(exportData: LatestExportData): Promise<string> {
+    const session = await auth();
+    if (!session) {
+        throw new Error("Unauthorized");
+    }
+
     const workerUrl = process.env.WORKER_URL || "http://localhost:4000";
     const workerSecret = process.env.WORKER_SECRET;
 

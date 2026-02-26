@@ -2,24 +2,20 @@
   "name": "socialmediastatistic",
   "private": true,
   "scripts": {
-    "dev": "turbo dev",
-    "build": "turbo build",
-    "lint": "turbo lint",
-    "typecheck": "turbo typecheck",
-    "dev:frontend": "turbo dev --filter=frontend",
-    "dev:worker": "turbo dev --filter=worker",
-    "build:frontend": "turbo build --filter=frontend",
-    "build:worker": "turbo build --filter=worker",
-    "db:generate": "turbo db:generate",
-    "db:push": "turbo db:push"
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "dev:frontend": "turbo run dev --filter=frontend",
+    "dev:worker": "turbo run dev --filter=worker",
+    "build:frontend": "turbo run build --filter=frontend",
+    "build:worker": "turbo run build --filter=worker",
+    "db:generate": "turbo run db:generate",
+    "db:push": "turbo run db:push"
   },
   "devDependencies": {
-    "prisma": "^7.4.1",
     "turbo": "^2.3.0"
   },
   "packageManager": "pnpm@9.15.0",
-  "dependencies": {
-    "@prisma/client": "^7.4.1",
-    "@prisma/client-runtime-utils": "^7.2.0"
-  }
+  "dependencies": {}
 }

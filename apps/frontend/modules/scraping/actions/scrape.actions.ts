@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { logger } from "@/shared/lib/logger";
+import { auth } from "@/shared/lib/auth";
 
 const MAX_RETRIES = 3;
 
@@ -23,6 +24,11 @@ async function fetchWithRetry(url: string, options: RequestInit, retries = MAX_R
 
 export async function triggerScrape(categoryId?: string) {
     try {
+        const session = await auth();
+        if (!session) {
+            return { success: false, error: "Unauthorized" };
+        }
+
         const workerUrl = process.env.WORKER_URL;
         const workerSecret = process.env.WORKER_SECRET;
 
@@ -57,6 +63,11 @@ export async function triggerScrape(categoryId?: string) {
 
 export async function stopScrape(jobId: string) {
     try {
+        const session = await auth();
+        if (!session) {
+            return { success: false, error: "Unauthorized" };
+        }
+
         const workerUrl = process.env.WORKER_URL;
         const workerSecret = process.env.WORKER_SECRET;
 
@@ -86,6 +97,11 @@ export async function stopScrape(jobId: string) {
 
 export async function retryFailedAccounts() {
     try {
+        const session = await auth();
+        if (!session) {
+            return { success: false, error: "Unauthorized" };
+        }
+
         const workerUrl = process.env.WORKER_URL;
         const workerSecret = process.env.WORKER_SECRET;
 

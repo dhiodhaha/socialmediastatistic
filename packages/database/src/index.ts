@@ -1,5 +1,7 @@
 import { PrismaClient } from ".prisma/client";
 import { PrismaNeon } from "@prisma/adapter-neon";
+import { Pool, neonConfig } from "@neondatabase/serverless";
+import ws from "ws";
 
 // Re-export Prisma types for use across the monorepo
 export * from ".prisma/client";
@@ -17,8 +19,12 @@ function createPrismaClient(): PrismaClient {
     throw new Error("DATABASE_URL environment variable is not set");
   }
 
-  // Pass connection string directly to PrismaNeon (not a Pool object)
-  const adapter = new PrismaNeon({ connectionString });
+  // Set up WebSocket for Node.js environment
+  neonConfig.webSocketConstructor = ws;
+
+  // Initialize Pool and pass it to PrismaNeon
+  const pool = new Pool({ connectionString });
+  const adapter = new PrismaNeon(pool as any);
 
   const isProduction = process.env.NODE_ENV === "production";
 
