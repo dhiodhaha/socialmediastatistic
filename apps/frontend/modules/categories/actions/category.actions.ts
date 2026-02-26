@@ -14,9 +14,9 @@ export async function getCategories() {
             orderBy: { name: "asc" },
             include: {
                 _count: {
-                    select: { accounts: true }
-                }
-            }
+                    select: { accounts: true },
+                },
+            },
         });
         return { success: true, data: categories };
     } catch (e) {
@@ -33,7 +33,7 @@ export async function createCategory(name: string) {
         }
 
         const existing = await prisma.category.findUnique({
-            where: { name }
+            where: { name },
         });
 
         if (existing) {
@@ -41,7 +41,7 @@ export async function createCategory(name: string) {
         }
 
         const category = await prisma.category.create({
-            data: { name }
+            data: { name },
         });
 
         revalidatePath("/categories");
@@ -61,7 +61,7 @@ export async function updateCategory(id: string, name: string) {
 
         const category = await prisma.category.update({
             where: { id },
-            data: { name }
+            data: { name },
         });
 
         revalidatePath("/categories");
@@ -80,7 +80,7 @@ export async function deleteCategory(id: string) {
         }
 
         await prisma.category.delete({
-            where: { id }
+            where: { id },
         });
 
         revalidatePath("/categories");
@@ -90,4 +90,3 @@ export async function deleteCategory(id: string) {
         return { success: false, error: "Failed to delete category" };
     }
 }
-

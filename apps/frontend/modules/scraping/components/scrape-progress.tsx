@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import { useRouter } from "next/navigation";
+import type { JobStatus } from "@repo/database";
 import { Loader2, Square } from "lucide-react";
-import { Progress } from "@/shared/components/ui/progress";
-import { Button } from "@/shared/components/catalyst/button";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { getJobStatus } from "@/modules/scraping/actions/job.actions";
 import { stopScrape } from "@/modules/scraping/actions/scrape.actions";
-import { toast } from "sonner";
-import { JobStatus } from "@repo/database";
+import { Button } from "@/shared/components/catalyst/button";
+import { Progress } from "@/shared/components/ui/progress";
 
 interface ScrapeProgressProps {
     jobId: string;
@@ -38,9 +38,10 @@ export function ScrapeProgress({ jobId, onComplete }: ScrapeProgressProps) {
             setStats({ completed: job.completedCount, total: job.totalAccounts });
 
             // Calculate progress percentage
-            const percentage = job.totalAccounts > 0
-                ? Math.round((job.completedCount / job.totalAccounts) * 100)
-                : 0;
+            const percentage =
+                job.totalAccounts > 0
+                    ? Math.round((job.completedCount / job.totalAccounts) * 100)
+                    : 0;
 
             setProgress(percentage);
 
@@ -87,19 +88,13 @@ export function ScrapeProgress({ jobId, onComplete }: ScrapeProgressProps) {
             <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                    <span className="font-medium text-sm">
-                        Scraping in progress... ({status})
-                    </span>
+                    <span className="font-medium text-sm">Scraping in progress... ({status})</span>
                 </div>
                 <div className="flex items-center gap-3">
                     <span className="text-sm text-muted-foreground">
                         {stats.completed} / {stats.total} accounts
                     </span>
-                    <Button
-                        color="red"
-                        onClick={handleStop}
-                        disabled={stopping}
-                    >
+                    <Button color="red" onClick={handleStop} disabled={stopping}>
                         {stopping ? (
                             <Loader2 className="h-3 w-3 animate-spin" data-slot="icon" />
                         ) : (
@@ -113,4 +108,3 @@ export function ScrapeProgress({ jobId, onComplete }: ScrapeProgressProps) {
         </div>
     );
 }
-

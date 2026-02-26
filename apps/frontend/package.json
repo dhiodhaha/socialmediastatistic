@@ -6,7 +6,9 @@
         "dev": "next dev",
         "build": "next build",
         "start": "next start",
-        "lint": "eslint",
+        "lint": "biome lint .",
+        "format": "biome format --write .",
+        "check": "biome check --write .",
         "typecheck": "tsc --noEmit"
     },
     "dependencies": {
@@ -58,8 +60,6 @@
         "@types/react-dom": "^19",
         "@types/ws": "^8.18.1",
         "@vitejs/plugin-react": "^5.1.2",
-        "eslint": "^9",
-        "eslint-config-next": "16.1.0",
         "jsdom": "^27.3.0",
         "tailwindcss": "^4",
         "typescript": "^5",

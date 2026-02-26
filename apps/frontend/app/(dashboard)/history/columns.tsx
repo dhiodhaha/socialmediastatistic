@@ -1,20 +1,18 @@
 "use client";
-import { ColumnDef } from "@tanstack/react-table";
-
-import { Badge } from "@/shared/components/catalyst/badge";
-import { Button } from "@/shared/components/catalyst/button";
-import { Text, Strong } from "@/shared/components/catalyst/text";
-import { formatDistance, format, formatDistanceToNow } from "date-fns";
-import { Trash2, MoreHorizontal, CheckCircle, XCircle, AlertCircle, Clock, Play } from "lucide-react";
-import { deleteScrapingJob } from "@/modules/analytics/actions/history.actions";
-import { toast } from "sonner";
+import type { ColumnDef } from "@tanstack/react-table";
+import { format, formatDistance, formatDistanceToNow } from "date-fns";
+import { CheckCircle, Clock, MoreHorizontal, Play, Trash2, XCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { deleteScrapingJob } from "@/modules/analytics/actions/history.actions";
+import { Badge } from "@/shared/components/catalyst/badge";
 import {
     Dropdown,
     DropdownButton,
-    DropdownMenu,
     DropdownItem,
+    DropdownMenu,
 } from "@/shared/components/catalyst/dropdown";
+import { Strong, Text } from "@/shared/components/catalyst/text";
 
 // Interface matching the real data structure from Prisma
 interface ScrapingJob {
@@ -71,22 +69,35 @@ export const columns: ColumnDef<ScrapingJob>[] = [
         header: "STATUS",
         cell: ({ row }) => {
             const status = row.original.status;
-            const color =
-                status === "COMPLETED" ? "green" :
-                    status === "FAILED" ? "red" :
-                        "amber"; // Running/Pending
+            const color = status === "COMPLETED" ? "green" : status === "FAILED" ? "red" : "amber"; // Running/Pending
 
             // Map status text to be friendlier if needed, or keep generic
             const label =
-                status === "COMPLETED" ? "Success" :
-                    status === "FAILED" ? "Failed" :
-                        status === "RUNNING" ? "Running" : "Pending";
+                status === "COMPLETED"
+                    ? "Success"
+                    : status === "FAILED"
+                      ? "Failed"
+                      : status === "RUNNING"
+                        ? "Running"
+                        : "Pending";
 
             return (
                 <Badge color={color}>
-                    {status === "COMPLETED" && <span className="flex items-center gap-1"><CheckCircle className="w-3 h-3" /> {label}</span>}
-                    {status === "FAILED" && <span className="flex items-center gap-1"><XCircle className="w-3 h-3" /> {label}</span>}
-                    {(status === "RUNNING" || status === "PENDING") && <span className="flex items-center gap-1"><Play className="w-3 h-3" /> {label}</span>}
+                    {status === "COMPLETED" && (
+                        <span className="flex items-center gap-1">
+                            <CheckCircle className="w-3 h-3" /> {label}
+                        </span>
+                    )}
+                    {status === "FAILED" && (
+                        <span className="flex items-center gap-1">
+                            <XCircle className="w-3 h-3" /> {label}
+                        </span>
+                    )}
+                    {(status === "RUNNING" || status === "PENDING") && (
+                        <span className="flex items-center gap-1">
+                            <Play className="w-3 h-3" /> {label}
+                        </span>
+                    )}
                 </Badge>
             );
         },
@@ -132,7 +143,12 @@ export const columns: ColumnDef<ScrapingJob>[] = [
         id: "metrics",
         header: "METRICS",
         cell: ({ row }) => {
-            const { totalAccounts: total, completedCount: success, failedCount: failed, status } = row.original;
+            const {
+                totalAccounts: total,
+                completedCount: success,
+                failedCount: failed,
+                status,
+            } = row.original;
 
             // Avoid division by zero
             const safeTotal = total || 1;
@@ -152,11 +168,14 @@ export const columns: ColumnDef<ScrapingJob>[] = [
                     {/* Progress Bar Container */}
                     <div className="h-2 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden flex">
                         {success > 0 && (
-                            <div style={{ width: `${successPct}%` }} className="h-full bg-green-500 shrink-0" />
+                            <div
+                                style={{ width: `${successPct}%` }}
+                                className="h-full bg-green-500 shrink-0"
+                            />
                         )}
                         {failed > 0 && (
                             <div
-                                style={{ width: `${failedPct}%`, backgroundColor: '#dc2626' }}
+                                style={{ width: `${failedPct}%`, backgroundColor: "#dc2626" }}
                                 className="h-full shrink-0"
                             />
                         )}

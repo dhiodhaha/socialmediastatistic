@@ -1,7 +1,7 @@
 /**
  * Migration script to copy existing Account.categoryId to AccountCategory join table.
  * Run this script once after schema update.
- * 
+ *
  * Usage: cd packages/database && npx tsx scripts/migrate-categories.ts
  */
 
@@ -20,18 +20,18 @@ const adapter = new PrismaNeon({ connectionString });
 const prisma = new PrismaClient({ adapter });
 
 async function migrateCategories() {
-    console.log('Starting category migration...');
+    console.log("Starting category migration...");
 
     // Find all accounts with a categoryId
     const accountsWithCategory = await prisma.account.findMany({
         where: {
-            categoryId: { not: null }
+            categoryId: { not: null },
         },
         select: {
             id: true,
             username: true,
-            categoryId: true
-        }
+            categoryId: true,
+        },
     });
 
     console.log(`Found ${accountsWithCategory.length} accounts with categories to migrate`);
@@ -48,9 +48,9 @@ async function migrateCategories() {
                 where: {
                     accountId_categoryId: {
                         accountId: account.id,
-                        categoryId: account.categoryId
-                    }
-                }
+                        categoryId: account.categoryId,
+                    },
+                },
             });
 
             if (existing) {
@@ -63,8 +63,8 @@ async function migrateCategories() {
             await prisma.accountCategory.create({
                 data: {
                     accountId: account.id,
-                    categoryId: account.categoryId
-                }
+                    categoryId: account.categoryId,
+                },
             });
 
             console.log(`  Migrated ${account.username} -> category ${account.categoryId}`);
@@ -74,12 +74,12 @@ async function migrateCategories() {
         }
     }
 
-    console.log('\n--- Migration Summary ---');
+    console.log("\n--- Migration Summary ---");
     console.log(`Total accounts: ${accountsWithCategory.length}`);
     console.log(`Migrated: ${migrated}`);
     console.log(`Skipped: ${skipped}`);
-    console.log('\nMigration complete!');
-    console.log('NOTE: You can now remove Account.categoryId from schema.prisma if desired.');
+    console.log("\nMigration complete!");
+    console.log("NOTE: You can now remove Account.categoryId from schema.prisma if desired.");
 }
 
 migrateCategories()

@@ -1,12 +1,11 @@
-import { getScrapingHistory } from "@/modules/analytics/actions/history.actions";
-import { columns } from "./columns";
-import { HistoryToolbar } from "@/modules/analytics/components/history-toolbar";
-import { HistoryDataTable } from "./history-data-table";
+import { type Platform, prisma } from "@repo/database";
 import { FailedAccountsAlert } from "@/modules/accounts/components/failed-accounts-alert";
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
-import { Platform, prisma } from "@repo/database";
+import { getScrapingHistory } from "@/modules/analytics/actions/history.actions";
+import { HistoryToolbar } from "@/modules/analytics/components/history-toolbar";
 import { DataImportUpload } from "@/modules/scraping/components/data-import-upload";
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { FixOrphanButton } from "./fix-orphan-button";
+import { HistoryDataTable } from "./history-data-table";
 
 export default async function HistoryPage({
     searchParams,
@@ -34,13 +33,12 @@ export default async function HistoryPage({
             activeJob = await prisma.scrapingJob.findFirst({
                 where: { status: { in: ["PENDING", "RUNNING"] } },
                 orderBy: { createdAt: "desc" },
-                select: { id: true }
+                select: { id: true },
             });
         } catch {
             console.warn("Failed to fetch active job (likely build time or DB unreachable)");
         }
     }
-
 
     return (
         <div className="space-y-6">

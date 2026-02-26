@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { Button } from "@/shared/components/catalyst/button";
-import { Wrench, Loader2 } from "lucide-react";
-import { fixOrphanSnapshots } from "@/modules/analytics/actions/history.actions";
-import { toast } from "sonner";
+import { Loader2, Wrench } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { toast } from "sonner";
+import { fixOrphanSnapshots } from "@/modules/analytics/actions/history.actions";
+import { Button } from "@/shared/components/catalyst/button";
 
 export function FixOrphanButton() {
     const [loading, setLoading] = useState(false);
@@ -34,7 +34,11 @@ export function FixOrphanButton() {
 
     return (
         <Button outline onClick={handleFix} disabled={loading}>
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" data-slot="icon" /> : <Wrench className="w-4 h-4" data-slot="icon" />}
+            {loading ? (
+                <Loader2 className="w-4 h-4 animate-spin" data-slot="icon" />
+            ) : (
+                <Wrench className="w-4 h-4" data-slot="icon" />
+            )}
             Fix Imports
         </Button>
     );

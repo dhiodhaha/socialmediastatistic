@@ -1,15 +1,15 @@
-import { defineConfig } from 'vitest/config';
-import react from '@vitejs/plugin-react';
-import { resolve } from 'path';
+import { resolve } from "node:path";
+import react from "@vitejs/plugin-react";
+import { defineConfig } from "vitest/config";
 
 export default defineConfig({
     plugins: [react()],
     test: {
-        environment: 'jsdom',
+        environment: "jsdom",
         globals: true,
         alias: {
-            '@': resolve(__dirname, './'),
-            '@repo/database': resolve(__dirname, './test/mocks/repo-database.ts'),
+            "@": resolve(__dirname, "./"),
+            "@repo/database": resolve(__dirname, "./test/mocks/repo-database.ts"),
         },
     },
 });

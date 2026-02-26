@@ -1,4 +1,3 @@
-
 /**
  * Combined report with main cover + all platform sections (Latest Data Only)
  */
@@ -30,30 +29,34 @@ export function generateLatestReportHtml(config: LatestReportConfig): string {
     const platformNames: Record<string, string> = {
         INSTAGRAM: "Instagram",
         TIKTOK: "TikTok",
-        TWITTER: "Twitter / X"
+        TWITTER: "Twitter / X",
     };
 
     // Generate section HTML for each platform
-    const sectionsHtml = sections.map(({ platform, data }) => {
-        const isTikTok = platform.toUpperCase() === "TIKTOK";
-        const likesHeader = isTikTok ? `<th>Likes</th>` : "";
+    const sectionsHtml = sections
+        .map(({ platform, data }) => {
+            const isTikTok = platform.toUpperCase() === "TIKTOK";
+            const likesHeader = isTikTok ? `<th>Likes</th>` : "";
 
-        const rows = data.map((row, idx) => {
-            const isNA = row.followers === -1;
-            const likesColumn = isTikTok
-                ? `<td style="text-align: right;">${isNA ? formatNumber(-1) : formatNumber(row.likes || 0)}</td>`
-                : "";
+            const rows = data
+                .map((row, idx) => {
+                    const isNA = row.followers === -1;
+                    const likesColumn = isTikTok
+                        ? `<td style="text-align: right;">${isNA ? formatNumber(-1) : formatNumber(row.likes || 0)}</td>`
+                        : "";
 
-            const handleDisplay = isNA
-                ? '<span style="color: #d97706; font-weight: bold;">N/A</span>'
-                : row.handle.startsWith('@') ? row.handle : `@${row.handle}`;
+                    const handleDisplay = isNA
+                        ? '<span style="color: #d97706; font-weight: bold;">N/A</span>'
+                        : row.handle.startsWith("@")
+                          ? row.handle
+                          : `@${row.handle}`;
 
-            const rowBg = isNA ? 'background-color: #fef3c7;' : '';
+                    const rowBg = isNA ? "background-color: #fef3c7;" : "";
 
-            // Format rank with leading zero if single digit
-            const rank = (idx + 1).toString().padStart(2, '0');
+                    // Format rank with leading zero if single digit
+                    const rank = (idx + 1).toString().padStart(2, "0");
 
-            return `
+                    return `
             <tr style="${rowBg}">
                 <td>${rank}</td>
                 <td title="${row.accountName}">${row.accountName}</td>
@@ -63,9 +66,10 @@ export function generateLatestReportHtml(config: LatestReportConfig): string {
                 ${likesColumn}
             </tr>
         `;
-        }).join("");
+                })
+                .join("");
 
-        return `
+            return `
         <!-- Platform Cover Page -->
         <div class="platform-cover">
             <div class="platform-title">${platformNames[platform] || platform}</div>
@@ -94,9 +98,10 @@ export function generateLatestReportHtml(config: LatestReportConfig): string {
             </table>
         </div>
         `;
-    }).join("");
+        })
+        .join("");
 
-    const platformList = sections.map(s => platformNames[s.platform] || s.platform).join(", ");
+    const platformList = sections.map((s) => platformNames[s.platform] || s.platform).join(", ");
 
     return `
     <!DOCTYPE html>
@@ -287,14 +292,18 @@ export function generateLatestReportHtml(config: LatestReportConfig): string {
         </style>
     </head>
     <body>
-        ${includeCover ? `
+        ${
+            includeCover
+                ? `
         <!-- Main Cover Page -->
         <div class="main-cover">
             <div class="main-title">${customTitle || "Laporan<br/>Social Media"}</div>
             <div class="main-subtitle">Edisi ${month}</div>
             <div class="main-platforms">Platform: ${platformList}</div>
         </div>
-        ` : ''}
+        `
+                : ""
+        }
 
         ${sectionsHtml}
 

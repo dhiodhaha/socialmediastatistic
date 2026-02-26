@@ -3,12 +3,9 @@
 import { prisma } from "@repo/database";
 import { revalidatePath } from "next/cache";
 import { ZodError } from "zod";
-
-import { accountSchema, type AccountInput } from "@/shared/lib/schemas";
-import { logger } from "@/shared/lib/logger";
 import { auth } from "@/shared/lib/auth";
-
-
+import { logger } from "@/shared/lib/logger";
+import { type AccountInput, accountSchema } from "@/shared/lib/schemas";
 
 export async function getAccounts(page = 1, limit = 10, search = "", categoryId?: string) {
     try {
@@ -23,19 +20,19 @@ export async function getAccounts(page = 1, limit = 10, search = "", categoryId?
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const where: any = search
             ? {
-                OR: [
-                    { username: { contains: search, mode: "insensitive" as const } },
-                    { instagram: { contains: search, mode: "insensitive" as const } },
-                    { tiktok: { contains: search, mode: "insensitive" as const } },
-                    { twitter: { contains: search, mode: "insensitive" as const } },
-                ],
-            }
+                  OR: [
+                      { username: { contains: search, mode: "insensitive" as const } },
+                      { instagram: { contains: search, mode: "insensitive" as const } },
+                      { tiktok: { contains: search, mode: "insensitive" as const } },
+                      { twitter: { contains: search, mode: "insensitive" as const } },
+                  ],
+              }
             : {};
 
         // Filter by category via many-to-many join table
         if (categoryId && categoryId !== "ALL") {
             where.categories = {
-                some: { categoryId: categoryId }
+                some: { categoryId: categoryId },
             };
         }
 
@@ -47,13 +44,13 @@ export async function getAccounts(page = 1, limit = 10, search = "", categoryId?
                 orderBy: { createdAt: "desc" },
                 include: {
                     categories: {
-                        include: { category: true }
+                        include: { category: true },
                     },
                     snapshots: {
                         orderBy: { scrapedAt: "desc" },
-                        take: 2 // We need latest 2 to calculate growth
-                    }
-                }
+                        take: 2, // We need latest 2 to calculate growth
+                    },
+                },
             }),
             prisma.account.count({ where }),
         ]);
@@ -85,8 +82,8 @@ export async function getAccounts(page = 1, limit = 10, search = "", categoryId?
     } catch (error) {
         logger.error({ error }, "Failed to fetch accounts");
         // If it's a connection error (common during build), return empty compatible response
-        const err = error as { code?: string, message?: string };
-        if (err?.code === 'P1001' || err?.message?.includes('Can\'t reach database')) {
+        const err = error as { code?: string; message?: string };
+        if (err?.code === "P1001" || err?.message?.includes("Can't reach database")) {
             logger.warn("Database unreachable, returning empty list (Build safe mode)");
             return {
                 success: true,
@@ -95,8 +92,8 @@ export async function getAccounts(page = 1, limit = 10, search = "", categoryId?
                     total: 0,
                     page,
                     limit,
-                    totalPages: 1
-                }
+                    totalPages: 1,
+                },
             };
         }
         return { success: false, error: "Failed to fetch accounts" };
@@ -137,10 +134,10 @@ export async function createAccount(data: AccountInput) {
             // Create category associations if any
             if (validated.categoryIds && validated.categoryIds.length > 0) {
                 await tx.accountCategory.createMany({
-                    data: validated.categoryIds.map(catId => ({
+                    data: validated.categoryIds.map((catId) => ({
                         accountId: newAccount.id,
-                        categoryId: catId
-                    }))
+                        categoryId: catId,
+                    })),
                 });
             }
 
@@ -178,16 +175,16 @@ export async function updateAccount(id: string, data: Partial<AccountInput>) {
             if (categoryIds !== undefined) {
                 // Delete existing associations
                 await tx.accountCategory.deleteMany({
-                    where: { accountId: id }
+                    where: { accountId: id },
                 });
 
                 // Create new associations
                 if (categoryIds.length > 0) {
                     await tx.accountCategory.createMany({
-                        data: categoryIds.map(catId => ({
+                        data: categoryIds.map((catId) => ({
                             accountId: id,
-                            categoryId: catId
-                        }))
+                            categoryId: catId,
+                        })),
                     });
                 }
             }
@@ -254,7 +251,7 @@ export async function bulkCreateAccounts(accounts: AccountInput[]) {
                 if (result.error === "Account with this name already exists") {
                     // Find the existing account
                     const existingAccount = await prisma.account.findUnique({
-                        where: { username: acc.username }
+                        where: { username: acc.username },
                     });
 
                     if (existingAccount && acc.categoryIds && acc.categoryIds.length > 0) {
@@ -264,17 +261,17 @@ export async function bulkCreateAccounts(accounts: AccountInput[]) {
                                 where: {
                                     accountId_categoryId: {
                                         accountId: existingAccount.id,
-                                        categoryId: catId
-                                    }
-                                }
+                                        categoryId: catId,
+                                    },
+                                },
                             });
 
                             if (!existingLink) {
                                 await prisma.accountCategory.create({
                                     data: {
                                         accountId: existingAccount.id,
-                                        categoryId: catId
-                                    }
+                                        categoryId: catId,
+                                    },
                                 });
                             }
                         }
@@ -296,7 +293,7 @@ export async function bulkCreateAccounts(accounts: AccountInput[]) {
         return {
             success: true,
             count: successCount,
-            errors: errors.length > 0 ? errors : undefined
+            errors: errors.length > 0 ? errors : undefined,
         };
     } catch (error) {
         logger.error({ error }, "Bulk create failed");
@@ -318,14 +315,14 @@ export async function getAccountsWithErrors() {
         const latestJob = await prisma.scrapingJob.findFirst({
             where: {
                 status: "COMPLETED",
-                failedCount: { gt: 0 }
+                failedCount: { gt: 0 },
             },
             orderBy: { completedAt: "desc" },
             select: {
                 id: true,
                 errors: true,
-                completedAt: true
-            }
+                completedAt: true,
+            },
         });
 
         if (!latestJob || !latestJob.errors) {
@@ -341,28 +338,30 @@ export async function getAccountsWithErrors() {
         }>;
 
         // Get unique account IDs from errors
-        const accountIds = [...new Set(errors.map(e => e.accountId).filter(id => id !== "system"))];
+        const accountIds = [
+            ...new Set(errors.map((e) => e.accountId).filter((id) => id !== "system")),
+        ];
 
         // Fetch account details
         const accounts = await prisma.account.findMany({
             where: { id: { in: accountIds } },
             include: {
                 categories: {
-                    include: { category: true }
-                }
-            }
+                    include: { category: true },
+                },
+            },
         });
 
         // Merge account info with error details
-        const accountsWithErrors = accounts.map(acc => {
-            const accErrors = errors.filter(e => e.accountId === acc.id);
+        const accountsWithErrors = accounts.map((acc) => {
+            const accErrors = errors.filter((e) => e.accountId === acc.id);
             return {
                 ...acc,
-                errors: accErrors.map(e => ({
+                errors: accErrors.map((e) => ({
                     platform: e.platform,
                     handle: e.handle,
-                    error: e.error
-                }))
+                    error: e.error,
+                })),
             };
         });
 
@@ -370,7 +369,7 @@ export async function getAccountsWithErrors() {
             success: true,
             data: accountsWithErrors,
             jobId: latestJob.id,
-            jobDate: latestJob.completedAt
+            jobDate: latestJob.completedAt,
         };
     } catch (error) {
         logger.error({ error }, "Failed to get accounts with errors");

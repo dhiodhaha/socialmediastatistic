@@ -1,7 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { Download, FileJson, FileText, Loader2 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
+import Papa from "papaparse";
+import { useState } from "react";
+import {
+    exportHistoryPdf,
+    getAllScrapingHistory,
+    type HistoryFilters,
+} from "@/modules/analytics/actions/history.actions";
 import { Button } from "@/shared/components/catalyst/button";
 import {
     DropdownMenu,
@@ -9,9 +16,6 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
-import { Download, FileJson, FileText, Loader2 } from "lucide-react";
-import { getAllScrapingHistory, exportHistoryPdf, type HistoryFilters } from "@/modules/analytics/actions/history.actions";
-import Papa from "papaparse";
 
 export function HistoryExport() {
     const searchParams = useSearchParams();
@@ -105,7 +109,11 @@ export function HistoryExport() {
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <Button outline disabled={isExporting}>
-                    {isExporting ? <Loader2 className="h-4 w-4 animate-spin" data-slot="icon" /> : <Download className="h-4 w-4" data-slot="icon" />}
+                    {isExporting ? (
+                        <Loader2 className="h-4 w-4 animate-spin" data-slot="icon" />
+                    ) : (
+                        <Download className="h-4 w-4" data-slot="icon" />
+                    )}
                     Export
                 </Button>
             </DropdownMenuTrigger>

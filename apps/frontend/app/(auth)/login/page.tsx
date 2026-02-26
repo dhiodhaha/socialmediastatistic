@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
+import { useState } from "react";
 import { Button } from "@/shared/components/catalyst/button";
+import { Card } from "@/shared/components/ui/card";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
-import { Card } from "@/shared/components/ui/card";
 
 export default function LoginPage() {
     const [email, setEmail] = useState("");
@@ -73,9 +73,7 @@ export default function LoginPage() {
                     )}
 
                     <div className="space-y-2">
-                        <Label htmlFor="email">
-                            Email
-                        </Label>
+                        <Label htmlFor="email">Email</Label>
                         <Input
                             id="email"
                             type="email"
@@ -87,9 +85,7 @@ export default function LoginPage() {
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="password">
-                            Password
-                        </Label>
+                        <Label htmlFor="password">Password</Label>
                         <Input
                             id="password"
                             type="password"
@@ -100,14 +96,14 @@ export default function LoginPage() {
                         />
                     </div>
 
-                    <Button
-                        type="submit"
-                        disabled={isLoading}
-                        className="w-full"
-                    >
+                    <Button type="submit" disabled={isLoading} className="w-full">
                         {isLoading ? (
                             <span className="flex items-center justify-center gap-2">
-                                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" data-slot="icon">
+                                <svg
+                                    className="animate-spin h-5 w-5"
+                                    viewBox="0 0 24 24"
+                                    data-slot="icon"
+                                >
                                     <circle
                                         className="opacity-25"
                                         cx="12"

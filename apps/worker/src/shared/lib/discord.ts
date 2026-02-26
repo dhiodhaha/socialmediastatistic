@@ -15,9 +15,7 @@ interface DiscordEmbed {
 /**
  * Send a notification to Discord via webhook.
  */
-export async function sendDiscordNotification(
-    embed: DiscordEmbed
-): Promise<void> {
+export async function sendDiscordNotification(embed: DiscordEmbed): Promise<void> {
     const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
 
     if (!webhookUrl) {
@@ -54,10 +52,7 @@ export async function sendDiscordNotification(
 /**
  * Send an error alert to Discord.
  */
-export async function sendDiscordAlert(
-    title: string,
-    error: string
-): Promise<void> {
+export async function sendDiscordAlert(title: string, error: string): Promise<void> {
     await sendDiscordNotification({
         title: `⚠️ ${title}`,
         description: error,

@@ -1,21 +1,29 @@
 {
-  "name": "socialmediastatistic",
-  "private": true,
-  "scripts": {
-    "dev": "turbo run dev",
-    "build": "turbo run build",
-    "lint": "turbo run lint",
-    "typecheck": "turbo run typecheck",
-    "dev:frontend": "turbo run dev --filter=frontend",
-    "dev:worker": "turbo run dev --filter=worker",
-    "build:frontend": "turbo run build --filter=frontend",
-    "build:worker": "turbo run build --filter=worker",
-    "db:generate": "turbo run db:generate",
-    "db:push": "turbo run db:push"
-  },
-  "devDependencies": {
-    "turbo": "^2.3.0"
-  },
-  "packageManager": "pnpm@9.15.0",
-  "dependencies": {}
+    "name": "socialmediastatistic",
+    "private": true,
+    "scripts": {
+        "dev": "turbo run dev",
+        "build": "turbo run build",
+        "lint": "turbo run lint",
+        "typecheck": "turbo run typecheck",
+        "dev:frontend": "turbo run dev --filter=frontend",
+        "dev:worker": "turbo run dev --filter=worker",
+        "build:frontend": "turbo run build --filter=frontend",
+        "build:worker": "turbo run build --filter=worker",
+        "db:generate": "turbo run db:generate",
+        "db:push": "turbo run db:push",
+        "prepare": "husky"
+    },
+    "devDependencies": {
+        "@biomejs/biome": "^2.4.4",
+        "husky": "^9.1.7",
+        "lint-staged": "^16.2.7",
+        "turbo": "^2.3.0"
+    },
+    "packageManager": "pnpm@9.15.0",
+    "lint-staged": {
+        "*.{js,ts,jsx,tsx,json}": [
+            "biome check --write --no-errors-on-unmatched"
+        ]
+    }
 }

@@ -1,13 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { useForm } from "react-hook-form";
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
 import { createAccount, updateAccount } from "@/modules/accounts/actions/account.actions";
 import { getCategories } from "@/modules/categories/actions/category.actions";
-import { accountSchema, type AccountInput, type AccountFormInput } from "@/shared/lib/schemas";
-
-
+import { Button } from "@/shared/components/catalyst/button";
+import { Checkbox } from "@/shared/components/ui/checkbox";
 import {
     Dialog,
     DialogContent,
@@ -17,18 +16,9 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/shared/components/ui/dialog";
-import { Button } from "@/shared/components/catalyst/button";
 import { Input } from "@/shared/components/ui/input";
-import { Checkbox } from "@/shared/components/ui/checkbox";
 import { Label } from "@/shared/components/ui/label";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/shared/components/ui/select";
-import { useEffect } from "react";
+import { type AccountFormInput, type AccountInput, accountSchema } from "@/shared/lib/schemas";
 
 interface AccountDialogProps {
     open?: boolean;
@@ -69,10 +59,16 @@ export function AccountDialog({
     // Track selected categories for multi-select
     const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (defaultValues as any)?.categoryIds || []
+        (defaultValues as any)?.categoryIds || [],
     );
 
-    const { register, handleSubmit, formState: { errors }, reset, setValue, watch } = useForm<AccountFormInput>({
+    const {
+        register,
+        handleSubmit,
+        formState: { errors },
+        reset,
+        setValue,
+    } = useForm<AccountFormInput>({
         resolver: standardSchemaResolver(accountSchema),
         defaultValues: {
             username: defaultValues?.username || "",
@@ -91,10 +87,10 @@ export function AccountDialog({
     }, [selectedCategoryIds, setValue]);
 
     const toggleCategory = (categoryId: string) => {
-        setSelectedCategoryIds(prev =>
+        setSelectedCategoryIds((prev) =>
             prev.includes(categoryId)
-                ? prev.filter(id => id !== categoryId)
-                : [...prev, categoryId]
+                ? prev.filter((id) => id !== categoryId)
+                : [...prev, categoryId],
         );
     };
 
@@ -114,7 +110,7 @@ export function AccountDialog({
         };
 
         try {
-            let result;
+            let result: { success: boolean; data?: any; error?: string } | undefined;
             if (mode === "create") {
                 result = await createAccount(payload);
             } else if (mode === "edit" && accountId) {
@@ -154,8 +150,16 @@ export function AccountDialog({
                             Name
                         </Label>
                         <div className="col-span-3">
-                            <Input id="username" {...register("username")} placeholder="Kementerian X" />
-                            {errors.username && <p className="text-sm text-destructive mt-1">{errors.username.message}</p>}
+                            <Input
+                                id="username"
+                                {...register("username")}
+                                placeholder="Kementerian X"
+                            />
+                            {errors.username && (
+                                <p className="text-sm text-destructive mt-1">
+                                    {errors.username.message}
+                                </p>
+                            )}
                         </div>
                     </div>
 
@@ -187,12 +191,12 @@ export function AccountDialog({
                     </div>
 
                     <div className="grid grid-cols-4 items-start gap-4">
-                        <Label className="text-right pt-2">
-                            Categories
-                        </Label>
+                        <Label className="text-right pt-2">Categories</Label>
                         <div className="col-span-3 space-y-2 max-h-32 overflow-y-auto border rounded-md p-2">
                             {categories.length === 0 ? (
-                                <p className="text-sm text-muted-foreground">No categories available</p>
+                                <p className="text-sm text-muted-foreground">
+                                    No categories available
+                                </p>
                             ) : (
                                 categories.map((cat) => (
                                     <div key={cat.id} className="flex items-center space-x-2">
@@ -225,17 +229,27 @@ export function AccountDialog({
                                     // Manually handle checkbox update since we aren't using full FormField
                                     // but we can register a hidden input or just rely on react-hook-form's setValue if we had it
                                     // A simpler way for this refactor without rewriting the whole form to FormField:
-                                    const input = document.getElementById('isActive-hidden') as HTMLInputElement;
+                                    const input = document.getElementById(
+                                        "isActive-hidden",
+                                    ) as HTMLInputElement;
                                     if (input) {
                                         input.checked = checked === true;
-                                        input.dispatchEvent(new Event('change', { bubbles: true }));
+                                        input.dispatchEvent(new Event("change", { bubbles: true }));
                                     }
                                 }}
                             />
                             {/* Hidden input to bind with register since Shadcn Checkbox doesn't forward ref easily without FormField */}
-                            <input type="checkbox" id="isActive-hidden" {...register("isActive")} className="hidden" />
+                            <input
+                                type="checkbox"
+                                id="isActive-hidden"
+                                {...register("isActive")}
+                                className="hidden"
+                            />
 
-                            <label htmlFor="isActive" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                            <label
+                                htmlFor="isActive"
+                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                            >
                                 Enable tracking
                             </label>
                         </div>
@@ -244,7 +258,9 @@ export function AccountDialog({
                     {error && <p className="text-center text-sm text-destructive">{error}</p>}
 
                     <DialogFooter>
-                        <Button type="submit" disabled={loading}>{loading ? "Saving..." : "Save changes"}</Button>
+                        <Button type="submit" disabled={loading}>
+                            {loading ? "Saving..." : "Save changes"}
+                        </Button>
                     </DialogFooter>
                 </form>
             </DialogContent>

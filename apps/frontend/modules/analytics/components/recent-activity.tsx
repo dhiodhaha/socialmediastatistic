@@ -16,7 +16,7 @@ interface RecentActivityProps {
 }
 
 export function RecentActivity({ snapshots }: RecentActivityProps) {
-    const getHandle = (s: RecentActivityProps['snapshots'][0]) => {
+    const getHandle = (s: RecentActivityProps["snapshots"][0]) => {
         if (s.platform === "INSTAGRAM") return s.account.instagram;
         if (s.platform === "TIKTOK") return s.account.tiktok;
         if (s.platform === "TWITTER") return s.account.twitter;
@@ -38,15 +38,11 @@ export function RecentActivity({ snapshots }: RecentActivityProps) {
                                     key={snapshot.id}
                                     className="flex items-center gap-4 p-3 rounded-md border bg-muted/50"
                                 >
-                                    <div
-                                        className="w-10 h-10 rounded-md bg-background border flex items-center justify-center text-xs font-bold text-muted-foreground"
-                                    >
+                                    <div className="w-10 h-10 rounded-md bg-background border flex items-center justify-center text-xs font-bold text-muted-foreground">
                                         {snapshot.platform.slice(0, 2)}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium truncate">
-                                            @{handle}
-                                        </p>
+                                        <p className="text-sm font-medium truncate">@{handle}</p>
                                         <p className="text-xs text-muted-foreground truncate">
                                             {snapshot.account.username}
                                         </p>
@@ -58,7 +54,7 @@ export function RecentActivity({ snapshots }: RecentActivityProps) {
                                         <p className="text-xs text-muted-foreground">followers</p>
                                     </div>
                                 </div>
-                            )
+                            );
                         })
                     ) : (
                         <div className="text-center py-8">

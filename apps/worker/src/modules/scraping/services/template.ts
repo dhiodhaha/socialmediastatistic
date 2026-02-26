@@ -1,5 +1,4 @@
-
-import { ScrapingJob } from "@repo/database";
+import type { ScrapingJob } from "@repo/database";
 
 interface ReportData {
     filteredJobs: ScrapingJob[]; // ScrapingJob[] from database
@@ -14,11 +13,17 @@ interface ReportData {
 export function generateReportHtml(data: ReportData): string {
     const { filteredJobs, filters, generatedAt } = data;
 
-    const rows = filteredJobs.map(job => {
-        const date = new Date(job.createdAt).toLocaleString();
-        const statusColor = job.status === "COMPLETED" ? "#22c55e" : job.status === "FAILED" ? "#ef4444" : "#64748b";
+    const rows = filteredJobs
+        .map((job) => {
+            const date = new Date(job.createdAt).toLocaleString();
+            const statusColor =
+                job.status === "COMPLETED"
+                    ? "#22c55e"
+                    : job.status === "FAILED"
+                      ? "#ef4444"
+                      : "#64748b";
 
-        return `
+            return `
             <tr>
                 <td>${date}</td>
                 <td><span style="color: ${statusColor}; font-weight: bold;">${job.status}</span></td>
@@ -27,7 +32,8 @@ export function generateReportHtml(data: ReportData): string {
                 <td>${job.failedCount}</td>
             </tr>
         `;
-    }).join("");
+        })
+        .join("");
 
     return `
     <!DOCTYPE html>

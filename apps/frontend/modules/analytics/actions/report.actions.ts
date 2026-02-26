@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma, Platform } from "@repo/database";
+import { type Platform, prisma } from "@repo/database";
 import { auth } from "@/shared/lib/auth";
 
 export interface ComparisonRow {
@@ -21,13 +21,13 @@ export interface ComparisonRow {
     };
 }
 
-import { startOfDay, endOfDay } from "date-fns";
+import { endOfDay, startOfDay } from "date-fns";
 
 export async function getComparisonData(
     jobId1: string,
     jobId2: string,
     categoryId?: string,
-    includeNA?: boolean
+    includeNA?: boolean,
 ): Promise<ComparisonRow[]> {
     const session = await auth();
     if (!session) {
@@ -37,7 +37,7 @@ export async function getComparisonData(
     // 1. Get the reference jobs to know the dates
     const [job1, job2] = await Promise.all([
         prisma.scrapingJob.findUnique({ where: { id: jobId1 } }),
-        prisma.scrapingJob.findUnique({ where: { id: jobId2 } })
+        prisma.scrapingJob.findUnique({ where: { id: jobId2 } }),
     ]);
 
     if (!job1 || !job2 || !job1.completedAt || !job2.completedAt) {
@@ -47,14 +47,14 @@ export async function getComparisonData(
     // Define date ranges for matching (full day of the job)
     const range1 = {
         start: startOfDay(job1.completedAt),
-        end: endOfDay(job1.completedAt)
+        end: endOfDay(job1.completedAt),
     };
     const range2 = {
         start: startOfDay(job2.completedAt),
-        end: endOfDay(job2.completedAt)
+        end: endOfDay(job2.completedAt),
     };
 
-    // 2. Fetch all accounts 
+    // 2. Fetch all accounts
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const whereClause: any = { isActive: true };
     if (categoryId) {
@@ -62,9 +62,9 @@ export async function getComparisonData(
         whereClause.categories = {
             some: {
                 category: {
-                    id: categoryId
-                }
-            }
+                    id: categoryId,
+                },
+            },
         };
     }
 
@@ -77,24 +77,24 @@ export async function getComparisonData(
                         {
                             scrapedAt: {
                                 gte: range1.start,
-                                lte: range1.end
-                            }
+                                lte: range1.end,
+                            },
                         },
                         {
                             scrapedAt: {
                                 gte: range2.start,
-                                lte: range2.end
-                            }
-                        }
-                    ]
+                                lte: range2.end,
+                            },
+                        },
+                    ],
                 },
-                orderBy: { scrapedAt: "desc" }
+                orderBy: { scrapedAt: "desc" },
             },
             categories: {
                 include: {
-                    category: true
-                }
-            }
+                    category: true,
+                },
+            },
         },
     });
 
@@ -112,10 +112,11 @@ export async function getComparisonData(
             if (account.twitter) platformsToCheck.push("TWITTER");
         }
 
-        const categoryName = account.categories.length > 0
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            ? account.categories.map((c: any) => c.category.name).join(", ")
-            : "Official Account";
+        const categoryName =
+            account.categories.length > 0
+                ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  account.categories.map((c: any) => c.category.name).join(", ")
+                : "Official Account";
 
         for (const platform of platformsToCheck) {
             // Check if account has this platform
@@ -138,16 +139,18 @@ export async function getComparisonData(
 
             // Find snapshots for this platform and the two date ranges
             // We use date matching instead of strict Job ID matching to handle shared entities
-            const snapshot1 = account.snapshots.find(s =>
-                s.platform === platform &&
-                s.scrapedAt >= range1.start &&
-                s.scrapedAt <= range1.end
+            const snapshot1 = account.snapshots.find(
+                (s) =>
+                    s.platform === platform &&
+                    s.scrapedAt >= range1.start &&
+                    s.scrapedAt <= range1.end,
             );
 
-            const snapshot2 = account.snapshots.find(s =>
-                s.platform === platform &&
-                s.scrapedAt >= range2.start &&
-                s.scrapedAt <= range2.end
+            const snapshot2 = account.snapshots.find(
+                (s) =>
+                    s.platform === platform &&
+                    s.scrapedAt >= range2.start &&
+                    s.scrapedAt <= range2.end,
             );
 
             // If account doesn't have this platform, show as N/A
@@ -160,7 +163,14 @@ export async function getComparisonData(
                     platform,
                     oldStats: { followers: -1, posts: -1, likes: -1 }, // -1 indicates N/A
                     newStats: { followers: -1, posts: -1, likes: -1 },
-                    delta: { followersVal: 0, followersPct: 0, postsVal: 0, postsPct: 0, likesVal: 0, likesPct: 0 },
+                    delta: {
+                        followersVal: 0,
+                        followersPct: 0,
+                        postsVal: 0,
+                        postsPct: 0,
+                        likesVal: 0,
+                        likesPct: 0,
+                    },
                 });
                 continue;
             }
@@ -198,11 +208,10 @@ export async function getComparisonData(
     return rows;
 }
 
-
 function calculateGrowth(
     oldVal: number,
     newVal: number,
-    key: "followers" | "posts" | "likes"
+    key: "followers" | "posts" | "likes",
 ): { [K in `${typeof key}Val` | `${typeof key}Pct`]: number } {
     const valDiff = newVal - oldVal;
     let pct = 0;
@@ -241,7 +250,7 @@ export async function getScrapingJobsForReport() {
             createdAt: true,
             completedAt: true,
             totalAccounts: true,
-        }
+        },
     });
 }
 
@@ -289,7 +298,7 @@ export async function exportComparisonPdf(exportData: ExportData): Promise<strin
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${workerSecret}`,
+            Authorization: `Bearer ${workerSecret}`,
         },
         body: JSON.stringify(exportData),
     });
@@ -341,7 +350,7 @@ export async function exportLatestPdf(exportData: LatestExportData): Promise<str
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${workerSecret}`,
+            Authorization: `Bearer ${workerSecret}`,
         },
         body: JSON.stringify(exportData),
     });

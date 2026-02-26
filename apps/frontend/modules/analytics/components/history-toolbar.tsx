@@ -1,10 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import type { Platform } from "@repo/database";
+import { Loader2, Play } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { exportHistoryCsv, exportHistoryPdf } from "@/modules/analytics/actions/history.actions";
+import { ExportModal } from "@/modules/analytics/components/export-modal";
+import { getCategories } from "@/modules/categories/actions/category.actions";
+import { triggerScrape } from "@/modules/scraping/actions/scrape.actions";
+import { ScrapeProgress } from "@/modules/scraping/components/scrape-progress";
 import { Button } from "@/shared/components/catalyst/button";
-import { Download, Loader2, FileSpreadsheet, Play } from "lucide-react";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -16,15 +22,13 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/shared/components/ui/alert-dialog";
-import { exportHistoryPdf, exportHistoryCsv } from "@/modules/analytics/actions/history.actions";
-import { getCategories } from "@/modules/categories/actions/category.actions";
-import { Platform } from "@repo/database";
-
-import { ScrapeProgress } from "@/modules/scraping/components/scrape-progress";
-import { ExportModal } from "@/modules/analytics/components/export-modal";
-import { triggerScrape } from "@/modules/scraping/actions/scrape.actions";
-import { toast } from "sonner";
-import { useEffect } from "react";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/shared/components/ui/select";
 
 export function HistoryToolbar({ activeJobId }: { activeJobId?: string }) {
     const router = useRouter();
@@ -41,14 +45,14 @@ export function HistoryToolbar({ activeJobId }: { activeJobId?: string }) {
     // Parse initial state from URL
     const [status, setStatus] = useState(initialStatus);
     const [platform, setPlatform] = useState(initialPlatform);
-    const [isExporting, setIsExporting] = useState(false);
+    const [_isExporting, setIsExporting] = useState(false);
     const [isScraping, setIsScraping] = useState(false);
 
     const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
     const [scrapeCategoryId, setScrapeCategoryId] = useState<string>("ALL");
 
     useEffect(() => {
-        getCategories().then(res => {
+        getCategories().then((res) => {
             if (res.success && res.data) {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 setCategories(res.data as any[]);
@@ -76,7 +80,6 @@ export function HistoryToolbar({ activeJobId }: { activeJobId?: string }) {
 
         router.push(`?${params.toString()}`);
     };
-
 
     const handleStatusChange = (newStatus: string) => {
         setStatus(newStatus);
@@ -120,12 +123,12 @@ export function HistoryToolbar({ activeJobId }: { activeJobId?: string }) {
         setCurrentJobId(undefined);
     };
 
-    const handleExportCsv = async () => {
+    const _handleExportCsv = async () => {
         setIsExporting(true);
         try {
             const filters = {
                 status: status !== "ALL" ? status : undefined,
-                platform: platform !== "ALL" ? (platform as Platform) : undefined
+                platform: platform !== "ALL" ? (platform as Platform) : undefined,
             };
 
             const result = await exportHistoryCsv(filters);
@@ -138,7 +141,7 @@ export function HistoryToolbar({ activeJobId }: { activeJobId?: string }) {
                 link.click();
                 document.body.removeChild(link);
             } else {
-                alert("Failed to export: " + result.error);
+                alert(`Failed to export: ${result.error}`);
             }
         } catch (error) {
             console.error(error);
@@ -148,11 +151,11 @@ export function HistoryToolbar({ activeJobId }: { activeJobId?: string }) {
         }
     };
 
-    const handleExport = async () => {
+    const _handleExport = async () => {
         setIsExporting(true);
         try {
             const filters = {
-                status: status !== "ALL" ? status : undefined
+                status: status !== "ALL" ? status : undefined,
             };
 
             const result = await exportHistoryPdf(filters);
@@ -166,7 +169,7 @@ export function HistoryToolbar({ activeJobId }: { activeJobId?: string }) {
                 link.click();
                 document.body.removeChild(link);
             } else {
-                alert("Failed to export: " + result.error);
+                alert(`Failed to export: ${result.error}`);
             }
         } catch (error) {
             console.error(error);
@@ -178,10 +181,11 @@ export function HistoryToolbar({ activeJobId }: { activeJobId?: string }) {
 
     return (
         <div className="flex flex-col gap-4">
-            {currentJobId && <ScrapeProgress jobId={currentJobId} onComplete={handleScrapeComplete} />}
+            {currentJobId && (
+                <ScrapeProgress jobId={currentJobId} onComplete={handleScrapeComplete} />
+            )}
             <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center bg-card p-4 rounded-lg border">
                 <div className="flex flex-1 flex-col sm:flex-row gap-4 w-full">
-
                     <Select value={status} onValueChange={handleStatusChange}>
                         <SelectTrigger className="w-[180px]">
                             <SelectValue placeholder="Status" />
@@ -216,7 +220,7 @@ export function HistoryToolbar({ activeJobId }: { activeJobId?: string }) {
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="ALL">Scrape All</SelectItem>
-                            {categories.map(cat => (
+                            {categories.map((cat) => (
                                 <SelectItem key={cat.id} value={cat.id}>
                                     Scrape {cat.name}
                                 </SelectItem>
@@ -227,7 +231,11 @@ export function HistoryToolbar({ activeJobId }: { activeJobId?: string }) {
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
                             <Button disabled={isScraping || !!currentJobId}>
-                                {isScraping ? <Loader2 className="h-4 w-4 animate-spin" data-slot="icon" /> : <Play className="h-4 w-4" data-slot="icon" />}
+                                {isScraping ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" data-slot="icon" />
+                                ) : (
+                                    <Play className="h-4 w-4" data-slot="icon" />
+                                )}
                                 Scrape Now
                             </Button>
                         </AlertDialogTrigger>
@@ -237,19 +245,19 @@ export function HistoryToolbar({ activeJobId }: { activeJobId?: string }) {
                                 <AlertDialogDescription>
                                     {scrapeCategoryId === "ALL"
                                         ? "Ini akan menjalankan scraping untuk SEMUA akun. Proses ini bisa memakan waktu beberapa menit."
-                                        : `Ini akan menjalankan scraping untuk kategori yang dipilih. Proses ini bisa memakan waktu beberapa menit.`
-                                    }
+                                        : `Ini akan menjalankan scraping untuk kategori yang dipilih. Proses ini bisa memakan waktu beberapa menit.`}
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                                 <AlertDialogCancel>Batal</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleScrape}>Ya, Mulai Scraping</AlertDialogAction>
+                                <AlertDialogAction onClick={handleScrape}>
+                                    Ya, Mulai Scraping
+                                </AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
                 </div>
-            </div >
-        </div >
+            </div>
+        </div>
     );
 }
-

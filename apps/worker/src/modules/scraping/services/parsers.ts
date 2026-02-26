@@ -1,5 +1,4 @@
-
-import { Platform } from "@repo/database";
+import type { Platform } from "@repo/database";
 import { logger } from "../../../shared/lib/logger";
 
 export interface ScrapeCreatorsResponse {
@@ -41,7 +40,7 @@ export interface PlatformStats {
 export function parsePlatformData(
     platform: Platform,
     handle: string,
-    data: ScrapeCreatorsResponse
+    data: ScrapeCreatorsResponse,
 ): PlatformStats {
     const stats: PlatformStats = {
         followers: 0,

@@ -1,16 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { getAccountsWithErrors } from "@/modules/accounts/actions/account.actions";
-import { retryFailedAccounts } from "@/modules/scraping/actions/scrape.actions";
-import { Alert, AlertDescription, AlertTitle } from "@/shared/components/ui/alert";
-import { Button } from "@/shared/components/catalyst/button";
-import { AlertTriangle, ChevronDown, ChevronUp, Pencil, RefreshCw, Loader2, X } from "lucide-react";
-import { AccountDialog } from "./account-dialog";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
+import { AlertTriangle, ChevronDown, ChevronUp, Loader2, Pencil, RefreshCw, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { getAccountsWithErrors } from "@/modules/accounts/actions/account.actions";
+import { retryFailedAccounts } from "@/modules/scraping/actions/scrape.actions";
+import { Button } from "@/shared/components/catalyst/button";
+import { Alert, AlertDescription, AlertTitle } from "@/shared/components/ui/alert";
+import { AccountDialog } from "./account-dialog";
 
 interface AccountError {
     platform: string;
@@ -112,18 +112,15 @@ export function FailedAccountsAlert() {
                             )}
                             {retrying ? "Retrying..." : "Retry Failed"}
                         </Button>
-                        <Button
-                            plain
-                            onClick={() => setExpanded(!expanded)}
-                        >
-                            {expanded ? <ChevronUp className="h-4 w-4" data-slot="icon" /> : <ChevronDown className="h-4 w-4" data-slot="icon" />}
+                        <Button plain onClick={() => setExpanded(!expanded)}>
+                            {expanded ? (
+                                <ChevronUp className="h-4 w-4" data-slot="icon" />
+                            ) : (
+                                <ChevronDown className="h-4 w-4" data-slot="icon" />
+                            )}
                             {expanded ? "Sembunyikan" : "Lihat Detail"}
                         </Button>
-                        <Button
-                            plain
-                            onClick={handleDismiss}
-                            title="Abaikan untuk sementara"
-                        >
+                        <Button plain onClick={handleDismiss} title="Abaikan untuk sementara">
                             <X className="h-4 w-4" data-slot="icon" />
                         </Button>
                     </div>
@@ -141,15 +138,13 @@ export function FailedAccountsAlert() {
                                         <div className="text-sm text-muted-foreground">
                                             {acc.errors.map((e, i) => (
                                                 <div key={i}>
-                                                    <span className="font-mono">@{e.handle}</span> ({e.platform}): {e.error}
+                                                    <span className="font-mono">@{e.handle}</span> (
+                                                    {e.platform}): {e.error}
                                                 </div>
                                             ))}
                                         </div>
                                     </div>
-                                    <Button
-                                        outline
-                                        onClick={() => setEditingAccount(acc)}
-                                    >
+                                    <Button outline onClick={() => setEditingAccount(acc)}>
                                         <Pencil className="h-3 w-3" data-slot="icon" />
                                         Edit Handle
                                     </Button>
@@ -157,7 +152,8 @@ export function FailedAccountsAlert() {
                             ))}
                         </div>
                         <p className="text-sm mt-3 text-muted-foreground">
-                            Klik &quot;Edit Handle&quot; untuk memperbarui username yang telah berubah atau akun yang suspended.
+                            Klik &quot;Edit Handle&quot; untuk memperbarui username yang telah
+                            berubah atau akun yang suspended.
                         </p>
                     </AlertDescription>
                 )}
@@ -175,7 +171,7 @@ export function FailedAccountsAlert() {
                         tiktok: editingAccount.tiktok || "",
                         twitter: editingAccount.twitter || "",
                         isActive: editingAccount.isActive,
-                        categoryIds: editingAccount.categories?.map(c => c.category.id) || [],
+                        categoryIds: editingAccount.categories?.map((c) => c.category.id) || [],
                     }}
                 />
             )}

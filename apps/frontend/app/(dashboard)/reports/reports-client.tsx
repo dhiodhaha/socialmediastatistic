@@ -1,20 +1,27 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { SortingState } from "@tanstack/react-table";
-import { FileText } from "lucide-react";
+import type { SortingState } from "@tanstack/react-table";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
+import { FileText } from "lucide-react";
+import { useEffect, useState } from "react";
 
 // --- ACTIONS & TYPES ---
-import { getComparisonData, exportComparisonPdf, exportLatestPdf, type ComparisonRow } from "@/modules/analytics/actions/report.actions";
-
+import {
+    type ComparisonRow,
+    exportComparisonPdf,
+    exportLatestPdf,
+    getComparisonData,
+} from "@/modules/analytics/actions/report.actions";
+import type { DisplayRow } from "@/modules/analytics/components/reports/columns";
+import type { SelectOption } from "@/modules/analytics/components/reports/filter-listbox";
 // --- COMPONENTS ---
 import { ReportHeader } from "@/modules/analytics/components/reports/report-header";
-import { ReportsControls, Platform } from "@/modules/analytics/components/reports/reports-controls";
+import {
+    type Platform,
+    ReportsControls,
+} from "@/modules/analytics/components/reports/reports-controls";
 import { ReportsTable } from "@/modules/analytics/components/reports/reports-table";
-import { SelectOption } from "@/modules/analytics/components/reports/filter-listbox";
-import { DisplayRow } from "@/modules/analytics/components/reports/columns";
 
 type ReportsClientProps = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -43,13 +50,16 @@ export function ReportsClient({ initialJobs, initialCategories }: ReportsClientP
     const [exportingLatest, setExportingLatest] = useState(false);
 
     // Selected Options
-    const [selectedCategory, setSelectedCategory] = useState<SelectOption>({ id: "all", label: "Semua Kategori" });
+    const [selectedCategory, setSelectedCategory] = useState<SelectOption>({
+        id: "all",
+        label: "Semua Kategori",
+    });
     const [selectedPeriod, setSelectedPeriod] = useState<SelectOption | null>(null);
     const [selectedComparison, setSelectedComparison] = useState<SelectOption | null>(null);
 
     // Sorting State
     const [sorting, setSorting] = useState<SortingState>([
-        { id: 'result', desc: true } // Default sort
+        { id: "result", desc: true }, // Default sort
     ]);
 
     // --- EFFECTS ---
@@ -61,18 +71,19 @@ export function ReportsClient({ initialJobs, initialCategories }: ReportsClientP
             id: job.id,
             label: format(new Date(job.createdAt), "MMMM yyyy", { locale: idLocale }),
             sub: idx === 0 ? "Latest Snapshot" : "Archived",
-            icon: FileText
+            icon: FileText,
         }));
         setJobs(jobOptions);
 
         // Map Categories
-        let catOptions: SelectOption[] = [
-            { id: "all", label: "Semua Kategori" }
-        ];
+        let catOptions: SelectOption[] = [{ id: "all", label: "Semua Kategori" }];
 
         catOptions = [
             ...catOptions,
-            ...initialCategories.map((c: { id: string; name: string }) => ({ id: c.id, label: c.name }))
+            ...initialCategories.map((c: { id: string; name: string }) => ({
+                id: c.id,
+                label: c.name,
+            })),
         ];
 
         setCategories(catOptions);
@@ -96,7 +107,7 @@ export function ReportsClient({ initialJobs, initialCategories }: ReportsClientP
         }
 
         // 1. Filter by Platform
-        const filtered = rawData.filter(row => row.platform === selectedPlatform);
+        const filtered = rawData.filter((row) => row.platform === selectedPlatform);
 
         // 2. Sort by Followers Descending (to determine RANK correctly)
         // We do this BEFORE mapping to ensure rank 1 is highest followers
@@ -116,13 +127,13 @@ export function ReportsClient({ initialJobs, initialCategories }: ReportsClientP
 
             // Result
             currentFollowers: row.newStats.followers,
-            followersGrowth: row.delta.followersPct.toFixed(1) + "%",
-            followersGrowthDir: row.delta.followersPct >= 0 ? "up" as const : "down" as const,
+            followersGrowth: `${row.delta.followersPct.toFixed(1)}%`,
+            followersGrowthDir: row.delta.followersPct >= 0 ? ("up" as const) : ("down" as const),
 
             // Engagement (TikTok)
             currentLikes: row.newStats.likes !== -1 ? row.newStats.likes : undefined,
-            likesGrowth: (row.delta.likesPct ?? 0).toFixed(1) + "%",
-            likesGrowthDir: (row.delta.likesPct ?? 0) >= 0 ? "up" as const : "down" as const,
+            likesGrowth: `${(row.delta.likesPct ?? 0).toFixed(1)}%`,
+            likesGrowthDir: (row.delta.likesPct ?? 0) >= 0 ? ("up" as const) : ("down" as const),
 
             // Effort
             currentPosts: row.newStats.posts !== -1 ? row.newStats.posts : 0,
@@ -133,7 +144,7 @@ export function ReportsClient({ initialJobs, initialCategories }: ReportsClientP
             // Helper for verification
             rawOldFollowers: row.oldStats.followers,
             rawOldPosts: row.oldStats.posts,
-            rawOldLikes: row.oldStats.likes
+            rawOldLikes: row.oldStats.likes,
         }));
 
         setComparisonData(mappedRows);
@@ -150,7 +161,7 @@ export function ReportsClient({ initialJobs, initialCategories }: ReportsClientP
                 selectedComparison.id,
                 selectedPeriod.id,
                 selectedCategory.id === "all" ? undefined : selectedCategory.id,
-                includeNA
+                includeNA,
             );
             setRawData(data);
             setHasViewed(true);
@@ -170,25 +181,30 @@ export function ReportsClient({ initialJobs, initialCategories }: ReportsClientP
                 month2: selectedPeriod.label,
                 customTitle: `${selectedPlatform}<br/>Laporan Pertumbuhan`,
                 includeCover: true,
-                sections: [{
-                    platform: selectedPlatform,
-                    data: comparisonData.map(d => ({
-                        accountName: d.name,
-                        handle: d.handle,
-                        oldFollowers: d.rawOldFollowers,
-                        newFollowers: d.currentFollowers,
-                        followersPct: parseFloat(d.followersGrowth),
-                        oldPosts: d.rawOldPosts,
-                        newPosts: d.currentPosts,
-                        postsPct: 0,
-                        oldLikes: d.rawOldLikes,
-                        newLikes: d.currentLikes,
-                        likesPct: d.likesGrowth ? parseFloat(d.likesGrowth) : 0
-                    }))
-                }]
+                sections: [
+                    {
+                        platform: selectedPlatform,
+                        data: comparisonData.map((d) => ({
+                            accountName: d.name,
+                            handle: d.handle,
+                            oldFollowers: d.rawOldFollowers,
+                            newFollowers: d.currentFollowers,
+                            followersPct: parseFloat(d.followersGrowth),
+                            oldPosts: d.rawOldPosts,
+                            newPosts: d.currentPosts,
+                            postsPct: 0,
+                            oldLikes: d.rawOldLikes,
+                            newLikes: d.currentLikes,
+                            likesPct: d.likesGrowth ? parseFloat(d.likesGrowth) : 0,
+                        })),
+                    },
+                ],
             });
 
-            downloadPdf(pdfBase64, `report-${selectedPlatform.toLowerCase()}-${format(new Date(), "yyyyMMdd")}.pdf`);
+            downloadPdf(
+                pdfBase64,
+                `report-${selectedPlatform.toLowerCase()}-${format(new Date(), "yyyyMMdd")}.pdf`,
+            );
         } catch (error) {
             console.error("Export failed:", error);
             alert("Export failed. Please check console.");
@@ -206,7 +222,7 @@ export function ReportsClient({ initialJobs, initialCategories }: ReportsClientP
 
             for (const platform of ["INSTAGRAM", "TIKTOK", "TWITTER"] as const) {
                 // Filter and sort for each platform
-                const pRows = rawData.filter(r => r.platform === platform);
+                const pRows = rawData.filter((r) => r.platform === platform);
                 if (pRows.length === 0) continue;
 
                 pRows.sort((a, b) => {
@@ -217,7 +233,7 @@ export function ReportsClient({ initialJobs, initialCategories }: ReportsClientP
 
                 sections.push({
                     platform: platform,
-                    data: pRows.map(row => ({
+                    data: pRows.map((row) => ({
                         accountName: row.accountName,
                         handle: `@${row.handle}`,
                         oldFollowers: row.oldStats.followers,
@@ -228,8 +244,8 @@ export function ReportsClient({ initialJobs, initialCategories }: ReportsClientP
                         postsPct: row.delta.postsPct,
                         oldLikes: row.oldStats.likes,
                         newLikes: row.newStats.likes,
-                        likesPct: row.delta.likesPct
-                    }))
+                        likesPct: row.delta.likesPct,
+                    })),
                 });
             }
 
@@ -238,11 +254,10 @@ export function ReportsClient({ initialJobs, initialCategories }: ReportsClientP
                 month2: selectedPeriod.label,
                 customTitle: `Analisis Performa Media Sosial<br/>${selectedCategory.label}`,
                 includeCover: true,
-                sections: sections
+                sections: sections,
             });
 
             downloadPdf(pdfBase64, `report-all-${format(new Date(), "yyyyMMdd")}.pdf`);
-
         } catch (error) {
             console.error("Export All failed:", error);
             alert("Export All failed. Please check console.");
@@ -259,7 +274,7 @@ export function ReportsClient({ initialJobs, initialCategories }: ReportsClientP
 
             for (const platform of ["INSTAGRAM", "TIKTOK", "TWITTER"] as const) {
                 // Filter and sort for each platform
-                const pRows = rawData.filter(r => r.platform === platform);
+                const pRows = rawData.filter((r) => r.platform === platform);
                 if (pRows.length === 0) continue;
 
                 pRows.sort((a, b) => {
@@ -270,14 +285,14 @@ export function ReportsClient({ initialJobs, initialCategories }: ReportsClientP
 
                 sections.push({
                     platform: platform,
-                    data: pRows.map(row => ({
+                    data: pRows.map((row) => ({
                         accountName: row.accountName,
                         handle: `@${row.handle}`,
                         // Only need new stats
                         followers: row.newStats.followers,
                         posts: row.newStats.posts,
-                        likes: row.newStats.likes
-                    }))
+                        likes: row.newStats.likes,
+                    })),
                 });
             }
 
@@ -285,11 +300,10 @@ export function ReportsClient({ initialJobs, initialCategories }: ReportsClientP
                 month: selectedPeriod.label,
                 customTitle: `Laporan Data Terbaru<br/>${selectedCategory.label}`,
                 includeCover: true,
-                sections: sections
+                sections: sections,
             });
 
             downloadPdf(pdfBase64, `report-latest-${format(new Date(), "yyyyMMdd")}.pdf`);
-
         } catch (error) {
             console.error("Export Latest failed:", error);
             alert("Export Latest failed. Please check console.");
@@ -312,15 +326,14 @@ export function ReportsClient({ initialJobs, initialCategories }: ReportsClientP
 
     // --- COMPUTED OPTIONS ---
     const comparisonOptions = jobs
-        .filter(j => j.id !== selectedPeriod?.id)
-        .map(j => ({
+        .filter((j) => j.id !== selectedPeriod?.id)
+        .map((j) => ({
             ...j,
-            desc: `vs ${j.label}`
+            desc: `vs ${j.label}`,
         }));
 
     return (
         <div className="flex flex-col space-y-8 p-10 max-w-7xl mx-auto">
-
             <ReportHeader
                 exporting={exporting}
                 exportingAll={exportingAll}

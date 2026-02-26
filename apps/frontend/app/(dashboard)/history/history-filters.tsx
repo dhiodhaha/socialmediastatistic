@@ -1,10 +1,12 @@
 "use client";
 
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { X } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { Label } from "@/shared/components/ui/label";
+import type { DateRange } from "react-day-picker";
+import { Button } from "@/shared/components/catalyst/button";
 import { DatePickerWithRange } from "@/shared/components/ui/date-range-picker";
-import { DateRange } from "react-day-picker";
+import { Label } from "@/shared/components/ui/label";
 import {
     Select,
     SelectContent,
@@ -12,8 +14,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/shared/components/ui/select";
-import { Button } from "@/shared/components/catalyst/button";
-import { X } from "lucide-react";
 
 export function HistoryFilters() {
     const router = useRouter();
@@ -23,17 +23,14 @@ export function HistoryFilters() {
     // Local state for immediate UI feedback
     const [status, setStatus] = useState(searchParams.get("status") || "ALL");
 
-    const initialDateRange: DateRange | undefined =
-        searchParams.get("startDate")
-            ? {
-                from: new Date(searchParams.get("startDate")!),
-                to: searchParams.get("endDate") ? new Date(searchParams.get("endDate")!) : undefined
-            }
-            : undefined;
+    const initialDateRange: DateRange | undefined = searchParams.get("startDate")
+        ? {
+              from: new Date(searchParams.get("startDate")!),
+              to: searchParams.get("endDate") ? new Date(searchParams.get("endDate")!) : undefined,
+          }
+        : undefined;
 
     const [date, setDate] = useState<DateRange | undefined>(initialDateRange);
-
-
 
     const updateFilterParams = (newParams: Record<string, string | null>) => {
         const params = new URLSearchParams(searchParams.toString());
@@ -47,7 +44,7 @@ export function HistoryFilters() {
             }
         });
 
-        router.push(pathname + "?" + params.toString());
+        router.push(`${pathname}?${params.toString()}`);
     };
 
     const handleStatusChange = (val: string) => {
@@ -60,7 +57,7 @@ export function HistoryFilters() {
         if (newDate?.from) {
             updateFilterParams({
                 startDate: newDate.from.toISOString(),
-                endDate: newDate.to ? newDate.to.toISOString() : null
+                endDate: newDate.to ? newDate.to.toISOString() : null,
             });
         } else {
             updateFilterParams({ startDate: null, endDate: null });
@@ -99,12 +96,7 @@ export function HistoryFilters() {
             </div>
 
             {hasFilters && (
-                <Button
-                    plain
-                    onClick={clearFilters}
-                    className="mb-0.5"
-                    title="Clear filters"
-                >
+                <Button plain onClick={clearFilters} className="mb-0.5" title="Clear filters">
                     <X className="h-4 w-4" data-slot="icon" />
                 </Button>
             )}

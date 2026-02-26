@@ -1,18 +1,32 @@
-"use client"
+"use client";
 
-import { Button } from "@/shared/components/catalyst/button"
-import { Badge } from "@/shared/components/catalyst/badge"
-import { Avatar } from "@/shared/components/catalyst/avatar"
-import { Divider } from "@/shared/components/catalyst/divider"
-import { Heading, Subheading } from "@/shared/components/catalyst/heading"
-import { Text, Code, Strong } from "@/shared/components/catalyst/text"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/components/catalyst/table"
-import { Input } from "@/shared/components/catalyst/input"
-import { Select } from "@/shared/components/catalyst/select"
-import { Switch, SwitchField } from "@/shared/components/catalyst/switch"
-import { Checkbox, CheckboxField, CheckboxGroup } from "@/shared/components/catalyst/checkbox"
-import { Radio, RadioField, RadioGroup } from "@/shared/components/catalyst/radio"
-import { Field, FieldGroup, Fieldset, Label, Legend, Description } from "@/shared/components/catalyst/fieldset"
+import { Avatar } from "@/shared/components/catalyst/avatar";
+import { Badge } from "@/shared/components/catalyst/badge";
+import { Button } from "@/shared/components/catalyst/button";
+import { Checkbox, CheckboxField, CheckboxGroup } from "@/shared/components/catalyst/checkbox";
+import { Divider } from "@/shared/components/catalyst/divider";
+import {
+    Description,
+    Field,
+    FieldGroup,
+    Fieldset,
+    Label,
+    Legend,
+} from "@/shared/components/catalyst/fieldset";
+import { Heading, Subheading } from "@/shared/components/catalyst/heading";
+import { Input } from "@/shared/components/catalyst/input";
+import { Radio, RadioField, RadioGroup } from "@/shared/components/catalyst/radio";
+import { Select } from "@/shared/components/catalyst/select";
+import { Switch, SwitchField } from "@/shared/components/catalyst/switch";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/shared/components/catalyst/table";
+import { Code, Strong, Text } from "@/shared/components/catalyst/text";
 
 export default function DesignSystemPage() {
     return (
@@ -20,7 +34,8 @@ export default function DesignSystemPage() {
             <div className="space-y-4">
                 <Heading>Design System</Heading>
                 <Text>
-                    A collection of core components and tokens validating the &quot;Clean &amp; Engineered&quot; aesthetic (Catalyst UI).
+                    A collection of core components and tokens validating the &quot;Clean &amp;
+                    Engineered&quot; aesthetic (Catalyst UI).
                 </Text>
             </div>
 
@@ -35,11 +50,12 @@ export default function DesignSystemPage() {
                     <Heading level={3}>Heading 3</Heading>
                     <Subheading level={4}>Subheading (H4 approx)</Subheading>
                     <Text>
-                        Body Text (Regular). The quick brown fox jumps over the <Strong>lazy dog</Strong>.
-                        Efficiency is the soul of this design system.
+                        Body Text (Regular). The quick brown fox jumps over the{" "}
+                        <Strong>lazy dog</Strong>. Efficiency is the soul of this design system.
                     </Text>
                     <Text>
-                        <Code>Monospace Code</Code> for technical details using <Code>Inter</Code> with <Code>cv11</Code>.
+                        <Code>Monospace Code</Code> for technical details using <Code>Inter</Code>{" "}
+                        with <Code>cv11</Code>.
                     </Text>
                 </div>
             </section>
@@ -129,7 +145,9 @@ export default function DesignSystemPage() {
                                 <CheckboxField>
                                     <Checkbox name="email_notifications" defaultChecked />
                                     <Label>Email notifications</Label>
-                                    <Description>Get emails about your account activity.</Description>
+                                    <Description>
+                                        Get emails about your account activity.
+                                    </Description>
                                 </CheckboxField>
                                 <CheckboxField>
                                     <Checkbox name="sms_notifications" />
@@ -190,19 +208,25 @@ export default function DesignSystemPage() {
                     <TableBody>
                         <TableRow>
                             <TableCell className="font-medium">TRX-987123</TableCell>
-                            <TableCell><Badge color="emerald">Success</Badge></TableCell>
+                            <TableCell>
+                                <Badge color="emerald">Success</Badge>
+                            </TableCell>
                             <TableCell className="text-zinc-500">Credit Card</TableCell>
                             <TableCell className="text-right">$250.00</TableCell>
                         </TableRow>
                         <TableRow>
                             <TableCell className="font-medium">TRX-987124</TableCell>
-                            <TableCell><Badge color="amber">Pending</Badge></TableCell>
+                            <TableCell>
+                                <Badge color="amber">Pending</Badge>
+                            </TableCell>
                             <TableCell className="text-zinc-500">PayPal</TableCell>
                             <TableCell className="text-right">$39.99</TableCell>
                         </TableRow>
                         <TableRow>
                             <TableCell className="font-medium">TRX-987125</TableCell>
-                            <TableCell><Badge color="emerald">Success</Badge></TableCell>
+                            <TableCell>
+                                <Badge color="emerald">Success</Badge>
+                            </TableCell>
                             <TableCell className="text-zinc-500">Bank Transfer</TableCell>
                             <TableCell className="text-right">$1,200.00</TableCell>
                         </TableRow>
@@ -210,5 +234,5 @@ export default function DesignSystemPage() {
                 </Table>
             </section>
         </div>
-    )
+    );
 }

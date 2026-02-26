@@ -6,12 +6,13 @@ export default async function ReportsPage() {
     // Fetch initial options server-side
     const [jobsData, categoriesResult] = await Promise.all([
         getScrapingJobsForReport(),
-        getCategories()
+        getCategories(),
     ]);
 
-    const initialCategories = categoriesResult.success && Array.isArray(categoriesResult.data)
-        ? categoriesResult.data
-        : [];
+    const initialCategories =
+        categoriesResult.success && Array.isArray(categoriesResult.data)
+            ? categoriesResult.data
+            : [];
 
     return (
         <ReportsClient

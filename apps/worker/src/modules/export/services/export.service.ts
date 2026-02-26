@@ -1,7 +1,7 @@
+import { type JobStatus, type Prisma, prisma } from "@repo/database";
 import puppeteer from "puppeteer";
-import { prisma, Prisma, JobStatus } from "@repo/database";
-import { generateReportHtml } from "../../scraping/services/template";
 import { generateCombinedReportHtml } from "../../scraping/services/comparison-template";
+import { generateReportHtml } from "../../scraping/services/template";
 
 interface ExportFilters {
     startDate?: string;
@@ -48,7 +48,7 @@ export class ExportService {
         const jobs = await prisma.scrapingJob.findMany({
             where,
             orderBy: { createdAt: "desc" },
-            take: 1000 // Limit to prevent massive exploits
+            take: 1000, // Limit to prevent massive exploits
         });
 
         // Generate HTML

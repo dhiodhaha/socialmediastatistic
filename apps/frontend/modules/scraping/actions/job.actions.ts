@@ -1,8 +1,8 @@
 "use server";
 
 import { prisma } from "@repo/database";
-import { logger } from "@/shared/lib/logger";
 import { auth } from "@/shared/lib/auth";
+import { logger } from "@/shared/lib/logger";
 
 export async function getJobStatus(jobId: string) {
     try {
