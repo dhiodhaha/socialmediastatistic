@@ -1,9 +1,27 @@
 {
     "$schema": "https://turbo.build/schema.json",
-    "globalDependencies": [".env*"],
+    "globalPassThroughEnv": [
+        "CI",
+        "VERCEL",
+        "VERCEL_ENV",
+        "VERCEL_URL",
+        "VERCEL_PROJECT_PRODUCTION_URL",
+        "VERCEL_BRANCH_URL"
+    ],
     "tasks": {
         "build": {
             "dependsOn": ["^build"],
+            "inputs": ["$TURBO_DEFAULT$", ".env", ".env.*"],
+            "env": [
+                "DATABASE_URL",
+                "WORKER_URL",
+                "WORKER_SECRET",
+                "DISCORD_WEBHOOK_URL",
+                "SCRAPECREATORS_API_KEY",
+                "PORT",
+                "LOG_LEVEL",
+                "NODE_ENV"
+            ],
             "outputs": [".next/**", "!.next/cache/**", "dist/**", "build/**"]
         },
         "dev": {
@@ -11,10 +29,12 @@
             "persistent": true
         },
         "lint": {
-            "dependsOn": ["^build"]
+            "dependsOn": ["^build"],
+            "inputs": ["$TURBO_DEFAULT$", ".env", ".env.*"]
         },
         "typecheck": {
-            "dependsOn": ["^build"]
+            "dependsOn": ["^build"],
+            "inputs": ["$TURBO_DEFAULT$", ".env", ".env.*"]
         },
         "db:generate": {
             "cache": false
