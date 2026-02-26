@@ -17,15 +17,20 @@ function createPrismaClient(): PrismaClient {
         throw new Error("DATABASE_URL environment variable is not set");
     }
 
-    // Prisma v7+: PrismaNeon accepts connectionString directly (no Pool/ws needed)
-    const adapter = new PrismaNeon({ connectionString });
+    try {
+        // Prisma v7+: PrismaNeon accepts connectionString directly (no Pool/ws needed)
+        const adapter = new PrismaNeon({ connectionString });
 
-    const isProduction = process.env.NODE_ENV === "production";
+        const isProduction = process.env.NODE_ENV === "production";
 
-    return new PrismaClient({
-        adapter,
-        log: isProduction ? ["error"] : ["query", "error", "warn"],
-    });
+        return new PrismaClient({
+            adapter,
+            log: isProduction ? ["error"] : ["query", "error", "warn"],
+        });
+    } catch (error) {
+        console.error("[database] Failed to create Prisma client:", error);
+        throw error;
+    }
 }
 
 // Getter function that creates client on first access
@@ -40,12 +45,24 @@ function getPrismaClient(): PrismaClient {
 // This delays client creation until first property access
 export const prisma = new Proxy({} as PrismaClient, {
     get(_target, prop) {
-        const client = getPrismaClient();
-        const value = (client as unknown as Record<string | symbol, unknown>)[prop];
-        if (typeof value === "function") {
-            return value.bind(client);
+        // Allow Symbol.toPrimitive and toJSON to avoid swallowing errors during serialization
+        if (prop === Symbol.toPrimitive || prop === "toJSON" || prop === Symbol.toStringTag) {
+            return undefined;
         }
-        return value;
+        try {
+            const client = getPrismaClient();
+            const value = (client as unknown as Record<string | symbol, unknown>)[prop];
+            if (typeof value === "function") {
+                return value.bind(client);
+            }
+            return value;
+        } catch (error) {
+            console.error(
+                `[database] Prisma client initialization failed on access to "${String(prop)}":`,
+                error,
+            );
+            throw error;
+        }
     },
 });
 
