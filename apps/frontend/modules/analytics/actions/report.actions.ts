@@ -313,6 +313,42 @@ export async function exportComparisonPdf(exportData: ExportData): Promise<strin
     return base64;
 }
 
+/**
+ * Export comparison report as PDF V2 via worker service.
+ * Returns base64 encoded PDF data.
+ */
+export async function exportComparisonPdfV2(exportData: ExportData): Promise<string> {
+    const session = await auth();
+    if (!session) {
+        throw new Error("Unauthorized");
+    }
+
+    const workerUrl = process.env.WORKER_URL || "http://localhost:4000";
+    const workerSecret = process.env.WORKER_SECRET;
+
+    if (!workerSecret) {
+        throw new Error("WORKER_SECRET not configured");
+    }
+
+    const response = await fetch(`${workerUrl}/export/comparison-pdf-v2`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${workerSecret}`,
+        },
+        body: JSON.stringify(exportData),
+    });
+
+    if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`Export V2 failed: ${response.status} - ${text}`);
+    }
+
+    const buffer = await response.arrayBuffer();
+    const base64 = Buffer.from(buffer).toString("base64");
+    return base64;
+}
+
 interface LatestExportData {
     sections: Array<{
         platform: string;
