@@ -21,6 +21,16 @@
             "sourceType": "github",
             "computedHash": "515ba75178bd44875812d9a560bdf14651f86709f89cf1d4f209638e879807f3"
         },
+        "prd-to-issues": {
+            "source": "mattpocock/skills",
+            "sourceType": "github",
+            "computedHash": "32192340c1a14317b25741f5a0a38d162b387b6d4bfd09e0ed3859367321e98f"
+        },
+        "prd-to-plan": {
+            "source": "mattpocock/skills",
+            "sourceType": "github",
+            "computedHash": "b0fad4a6e8097a5095fe00bfc2ebd98827c2d599e8b0a974c9d3c50b59295ac8"
+        },
         "prisma-expert": {
             "source": "sickn33/antigravity-awesome-skills",
             "sourceType": "github",
@@ -34,7 +44,12 @@
         "vercel-react-best-practices": {
             "source": "vercel-labs/agent-skills",
             "sourceType": "github",
-            "computedHash": "4365be772fd3b41994a72ad478472c6d680678e7f3859860ab010e9c46e48ee0"
+            "computedHash": "43ca6c197f8ec13055079da7053232d477068b03ca443f9ac1bc819b95cdd432"
+        },
+        "write-a-prd": {
+            "source": "mattpocock/skills",
+            "sourceType": "github",
+            "computedHash": "d03d51db8cfd3dd5c27f9b8e1ffe61686391fdbd62bf4cb2f47db7e62ee68cd2"
         }
     }
 }
