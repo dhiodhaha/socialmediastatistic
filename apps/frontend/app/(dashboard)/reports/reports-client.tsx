@@ -12,9 +12,14 @@ import {
     exportComparisonPdfV2,
     exportLatestPdf,
     getComparisonData,
+    getQuarterlyOptions,
+    getQuarterlyStatus,
+    type QuarterlyOption,
+    type QuarterlyStatus,
 } from "@/modules/analytics/actions/report.actions";
 import type { DisplayRow } from "@/modules/analytics/components/reports/columns";
 import type { SelectOption } from "@/modules/analytics/components/reports/filter-listbox";
+import { QuarterlyStatusSummary } from "@/modules/analytics/components/reports/quarterly-status-summary";
 // --- COMPONENTS ---
 import { ReportHeader } from "@/modules/analytics/components/reports/report-header";
 import type { ReportMode } from "@/modules/analytics/components/reports/report-mode";
@@ -31,10 +36,15 @@ type ReportsClientProps = {
         completedAt?: string | Date | null;
         totalAccounts?: number;
     }>;
+    initialQuarterlyOptions: QuarterlyOption[];
     initialCategories: { id: string; name: string }[];
 };
 
-export function ReportsClient({ initialJobs, initialCategories }: ReportsClientProps) {
+export function ReportsClient({
+    initialJobs,
+    initialQuarterlyOptions,
+    initialCategories,
+}: ReportsClientProps) {
     // --- STATE ---
     const [reportMode, setReportMode] = useState<ReportMode>("MONTHLY");
     const [selectedPlatform, setSelectedPlatform] = useState<Platform>("INSTAGRAM");
@@ -64,6 +74,7 @@ export function ReportsClient({ initialJobs, initialCategories }: ReportsClientP
     const [selectedComparison, setSelectedComparison] = useState<SelectOption | null>(null);
     const [selectedYear, setSelectedYear] = useState<SelectOption | null>(null);
     const [selectedQuarter, setSelectedQuarter] = useState<SelectOption | null>(null);
+    const [quarterlyStatus, setQuarterlyStatus] = useState<QuarterlyStatus | null>(null);
 
     // Sorting State
     const [sorting, setSorting] = useState<SortingState>([
@@ -112,13 +123,25 @@ export function ReportsClient({ initialJobs, initialCategories }: ReportsClientP
                 const latestQuarterNumber = Math.floor(latestDate.getMonth() / 3) + 1;
 
                 setSelectedYear({ id: String(latestYear), label: String(latestYear) });
-                setSelectedQuarter({
-                    id: `Q${latestQuarterNumber}`,
-                    label: `Q${latestQuarterNumber}`,
-                });
+                const defaultQuarterOption =
+                    initialQuarterlyOptions.find(
+                        (option) =>
+                            option.year === latestYear && option.quarter === latestQuarterNumber,
+                    ) || null;
+
+                setSelectedQuarter(
+                    defaultQuarterOption
+                        ? {
+                              id: defaultQuarterOption.id,
+                              label: defaultQuarterOption.label,
+                              desc: defaultQuarterOption.desc,
+                              disabled: defaultQuarterOption.disabled,
+                          }
+                        : null,
+                );
             }
         }
-    }, [initialJobs, initialCategories]);
+    }, [initialJobs, initialCategories, initialQuarterlyOptions]);
 
     // 2. Filter Raw Data when Platform or RawData changes
     useEffect(() => {
@@ -175,9 +198,30 @@ export function ReportsClient({ initialJobs, initialCategories }: ReportsClientP
 
     const handleViewReport = async () => {
         if (reportMode === "QUARTERLY") {
-            setRawData([]);
-            setComparisonData([]);
-            setHasViewed(true);
+            if (!selectedYear || !selectedQuarter) return;
+
+            const match = selectedQuarter.id.match(/Q(\d)$/);
+            const quarterNumber = match
+                ? Number(match[1])
+                : Number(selectedQuarter.label.replace("Q", ""));
+            if (!quarterNumber) return;
+
+            setLoadingData(true);
+            try {
+                const status = await getQuarterlyStatus(
+                    Number(selectedYear.id),
+                    quarterNumber,
+                    selectedCategory.id === "all" ? undefined : selectedCategory.id,
+                );
+                setQuarterlyStatus(status);
+                setRawData([]);
+                setComparisonData([]);
+                setHasViewed(true);
+            } catch (error) {
+                console.error(error);
+            } finally {
+                setLoadingData(false);
+            }
             return;
         }
 
@@ -205,6 +249,7 @@ export function ReportsClient({ initialJobs, initialCategories }: ReportsClientP
         setHasViewed(false);
         setRawData([]);
         setComparisonData([]);
+        setQuarterlyStatus(null);
     };
 
     const handleExportPdf = async () => {
@@ -368,17 +413,23 @@ export function ReportsClient({ initialJobs, initialCategories }: ReportsClientP
         }));
 
     const quarterYears = Array.from(
-        new Set(initialJobs.map((job) => String(new Date(job.createdAt).getFullYear()))),
+        new Set(initialQuarterlyOptions.map((option) => String(option.year))),
     )
         .sort((a, b) => Number(b) - Number(a))
         .map((year) => ({ id: year, label: year }));
 
-    const quarterOptions: SelectOption[] = [
-        { id: "Q1", label: "Q1", desc: "Jan - Mar" },
-        { id: "Q2", label: "Q2", desc: "Apr - Jun" },
-        { id: "Q3", label: "Q3", desc: "Jul - Sep" },
-        { id: "Q4", label: "Q4", desc: "Oct - Dec" },
-    ];
+    const quarterOptions: SelectOption[] = initialQuarterlyOptions
+        .filter((option) => !selectedYear || option.year === Number(selectedYear.id))
+        .map((option) => ({
+            id: option.id,
+            label: `Q${option.quarter}`,
+            desc: option.desc,
+            disabled: option.disabled,
+        }));
+
+    const selectedQuarterOption = initialQuarterlyOptions.find(
+        (option) => option.id === selectedQuarter?.id,
+    );
 
     return (
         <div className="flex flex-col space-y-8 p-10 max-w-7xl mx-auto">
@@ -414,11 +465,18 @@ export function ReportsClient({ initialJobs, initialCategories }: ReportsClientP
                 jobs={jobs}
                 years={quarterYears}
                 quarters={quarterOptions}
+                quarterUnavailableReason={
+                    selectedQuarterOption?.disabled ? selectedQuarterOption.desc : null
+                }
                 comparisonOptions={comparisonOptions}
                 loading={false}
                 loadingData={loadingData}
                 onViewReport={handleViewReport}
             />
+
+            {reportMode === "QUARTERLY" && quarterlyStatus && (
+                <QuarterlyStatusSummary status={quarterlyStatus} />
+            )}
 
             <ReportsTable
                 data={comparisonData}

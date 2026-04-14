@@ -12,6 +12,7 @@ interface ReportsQuarterlyControlsProps {
     categories: SelectOption[];
     years: SelectOption[];
     quarters: SelectOption[];
+    quarterUnavailableReason?: string | null;
     loading: boolean;
     loadingData: boolean;
     onViewReport: () => void;
@@ -27,6 +28,7 @@ export function ReportsQuarterlyControls({
     categories,
     years,
     quarters,
+    quarterUnavailableReason,
     loading,
     loadingData,
     onViewReport,
@@ -67,13 +69,25 @@ export function ReportsQuarterlyControls({
 
             <div className="flex-1" />
 
-            <div className="rounded-lg border border-dashed border-blue-200 bg-blue-50 px-3 py-2 text-[11px] font-medium text-blue-700 dark:border-blue-900/40 dark:bg-blue-950/30 dark:text-blue-300">
-                Quarterly shell active. Quarter derivation and export land in the next slices.
-            </div>
+            {quarterUnavailableReason ? (
+                <div className="rounded-lg border border-dashed border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-medium text-amber-700 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-300">
+                    {quarterUnavailableReason}
+                </div>
+            ) : (
+                <div className="rounded-lg border border-dashed border-blue-200 bg-blue-50 px-3 py-2 text-[11px] font-medium text-blue-700 dark:border-blue-900/40 dark:bg-blue-950/30 dark:text-blue-300">
+                    Quarter availability is derived from completed month-end jobs.
+                </div>
+            )}
 
             <Button
                 onClick={onViewReport}
-                disabled={loading || loadingData || !selectedYear || !selectedQuarter}
+                disabled={
+                    loading ||
+                    loadingData ||
+                    !selectedYear ||
+                    !selectedQuarter ||
+                    selectedQuarter.disabled
+                }
                 className="ml-2 !py-2 !px-4 !text-xs !h-9"
             >
                 {loadingData ? (

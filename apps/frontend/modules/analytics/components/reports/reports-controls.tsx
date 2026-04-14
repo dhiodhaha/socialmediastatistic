@@ -46,6 +46,7 @@ interface ReportsControlsProps {
     jobs: SelectOption[];
     years: SelectOption[];
     quarters: SelectOption[];
+    quarterUnavailableReason?: string | null;
     comparisonOptions: SelectOption[];
     loading: boolean;
     loadingData: boolean;
@@ -75,6 +76,7 @@ export function ReportsControls({
     jobs,
     years,
     quarters,
+    quarterUnavailableReason,
     comparisonOptions,
     loading,
     loadingData,
@@ -133,6 +135,7 @@ export function ReportsControls({
                     categories={categories}
                     years={years}
                     quarters={quarters}
+                    quarterUnavailableReason={quarterUnavailableReason}
                     loading={loading}
                     loadingData={loadingData}
                     onViewReport={onViewReport}

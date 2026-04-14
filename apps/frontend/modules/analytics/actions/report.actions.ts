@@ -1,6 +1,7 @@
 "use server";
 
 import { type Platform, prisma } from "@repo/database";
+import { endOfDay, endOfMonth, format, startOfDay, startOfMonth, subMonths } from "date-fns";
 import { auth } from "@/shared/lib/auth";
 
 export interface ComparisonRow {
@@ -20,8 +21,6 @@ export interface ComparisonRow {
         likesPct?: number;
     };
 }
-
-import { endOfDay, startOfDay } from "date-fns";
 
 export async function getComparisonData(
     jobId1: string,
@@ -206,6 +205,317 @@ export async function getComparisonData(
     }
 
     return rows;
+}
+
+interface QuarterlyJobReference {
+    id: string;
+    createdAt: Date;
+    completedAt: Date | null;
+}
+
+export interface QuarterlyOption {
+    id: string;
+    year: number;
+    quarter: number;
+    label: string;
+    desc: string;
+    disabled: boolean;
+}
+
+export interface QuarterlyStatus {
+    selectedYear: number;
+    selectedQuarter: number;
+    sourceMonths: Array<{
+        key: string;
+        label: string;
+        hasAnchor: boolean;
+        anchorJobId: string | null;
+    }>;
+    quarterEnd: {
+        key: string;
+        label: string;
+        hasAnchor: boolean;
+        anchorJobId: string | null;
+    };
+    baseline: {
+        key: string;
+        label: string;
+        hasAnchor: boolean;
+        anchorJobId: string | null;
+    };
+    availability: {
+        isAvailable: boolean;
+        reason: string;
+    };
+    coverage: {
+        quarterEndCaptured: number;
+        fullQuarterCaptured: number;
+        totalAccounts: number;
+    };
+    warnings: string[];
+}
+
+function monthKey(date: Date) {
+    return format(date, "yyyy-MM");
+}
+
+function monthLabel(date: Date) {
+    return format(date, "MMM yyyy");
+}
+
+function quarterMonthStarts(year: number, quarter: number) {
+    const startMonthIndex = (quarter - 1) * 3;
+    return [0, 1, 2].map((offset) => new Date(year, startMonthIndex + offset, 1));
+}
+
+function latestCompletedJobByMonth(jobs: QuarterlyJobReference[]) {
+    const map = new Map<string, QuarterlyJobReference>();
+
+    for (const job of jobs) {
+        const referenceDate = job.completedAt || job.createdAt;
+        const key = monthKey(referenceDate);
+        const existing = map.get(key);
+
+        if (
+            !existing ||
+            referenceDate.getTime() >
+                ((existing.completedAt || existing.createdAt) as Date).getTime()
+        ) {
+            map.set(key, job);
+        }
+    }
+
+    return map;
+}
+
+function buildQuarterOption(
+    year: number,
+    quarter: number,
+    jobsByMonth: Map<string, QuarterlyJobReference>,
+) {
+    const quarterMonths = quarterMonthStarts(year, quarter);
+    const quarterEndMonth = quarterMonths[2];
+    const quarterEndKey = monthKey(quarterEndMonth);
+    const hasQuarterEnd = jobsByMonth.has(quarterEndKey);
+    const missingMonths = quarterMonths.filter((month) => !jobsByMonth.has(monthKey(month)));
+
+    let desc = `${monthLabel(quarterMonths[0])} - ${monthLabel(quarterMonths[2])}`;
+    if (!hasQuarterEnd) {
+        desc = `Unavailable: missing quarter-end snapshot (${monthLabel(quarterEndMonth)})`;
+    } else if (missingMonths.length > 0) {
+        desc = `Available with warnings: missing ${missingMonths
+            .map((month) => monthLabel(month))
+            .join(", ")}`;
+    }
+
+    return {
+        id: `${year}-Q${quarter}`,
+        year,
+        quarter,
+        label: `Q${quarter} ${year}`,
+        desc,
+        disabled: !hasQuarterEnd,
+    } satisfies QuarterlyOption;
+}
+
+export function deriveQuarterlyOptions(jobs: QuarterlyJobReference[]): QuarterlyOption[] {
+    const jobsByMonth = latestCompletedJobByMonth(jobs);
+    const years = Array.from(
+        new Set(jobs.map((job) => (job.completedAt || job.createdAt).getFullYear())),
+    ).sort((a, b) => b - a);
+
+    return years.flatMap((year) =>
+        [1, 2, 3, 4].map((quarter) => buildQuarterOption(year, quarter, jobsByMonth)),
+    );
+}
+
+export async function getQuarterlyOptions(): Promise<QuarterlyOption[]> {
+    const session = await auth();
+    if (!session) {
+        throw new Error("Unauthorized");
+    }
+
+    const jobs = await prisma.scrapingJob.findMany({
+        where: {
+            status: "COMPLETED",
+            completedAt: { not: null },
+        },
+        orderBy: { completedAt: "desc" },
+        select: {
+            id: true,
+            createdAt: true,
+            completedAt: true,
+        },
+    });
+
+    return deriveQuarterlyOptions(jobs);
+}
+
+export async function getQuarterlyStatus(
+    year: number,
+    quarter: number,
+    categoryId?: string,
+): Promise<QuarterlyStatus> {
+    const session = await auth();
+    if (!session) {
+        throw new Error("Unauthorized");
+    }
+
+    const jobs = await prisma.scrapingJob.findMany({
+        where: {
+            status: "COMPLETED",
+            completedAt: { not: null },
+        },
+        orderBy: { completedAt: "desc" },
+        select: {
+            id: true,
+            createdAt: true,
+            completedAt: true,
+        },
+    });
+
+    const jobsByMonth = latestCompletedJobByMonth(jobs);
+    const quarterMonths = quarterMonthStarts(year, quarter);
+    const quarterEndMonth = quarterMonths[2];
+    const baselineMonth = subMonths(quarterEndMonth, 3);
+
+    const whereClause = categoryId
+        ? {
+              isActive: true,
+              categories: {
+                  some: {
+                      category: { id: categoryId },
+                  },
+              },
+          }
+        : { isActive: true };
+
+    const accounts = await prisma.account.findMany({
+        where: whereClause,
+        select: {
+            id: true,
+            instagram: true,
+            tiktok: true,
+            twitter: true,
+            snapshots: {
+                where: {
+                    scrapedAt: {
+                        gte: startOfMonth(quarterMonths[0]),
+                        lte: endOfMonth(quarterEndMonth),
+                    },
+                },
+                select: {
+                    platform: true,
+                    scrapedAt: true,
+                },
+            },
+        },
+    });
+
+    const sourceMonths = quarterMonths.map((month) => {
+        const key = monthKey(month);
+        const job = jobsByMonth.get(key) || null;
+
+        return {
+            key,
+            label: monthLabel(month),
+            hasAnchor: !!job,
+            anchorJobId: job?.id || null,
+        };
+    });
+
+    const quarterEndKey = monthKey(quarterEndMonth);
+    const quarterEndJob = jobsByMonth.get(quarterEndKey) || null;
+    const baselineKey = monthKey(baselineMonth);
+    const baselineJob = jobsByMonth.get(baselineKey) || null;
+
+    const quarterEndRange = {
+        start: startOfDay(startOfMonth(quarterEndMonth)),
+        end: endOfDay(endOfMonth(quarterEndMonth)),
+    };
+
+    let quarterEndCaptured = 0;
+    let fullQuarterCaptured = 0;
+    for (const account of accounts) {
+        const accountPlatforms = [
+            account.instagram ? "INSTAGRAM" : null,
+            account.tiktok ? "TIKTOK" : null,
+            account.twitter ? "TWITTER" : null,
+        ].filter(Boolean);
+
+        const hasQuarterEnd = account.snapshots.some(
+            (snapshot) =>
+                snapshot.scrapedAt >= quarterEndRange.start &&
+                snapshot.scrapedAt <= quarterEndRange.end &&
+                accountPlatforms.includes(snapshot.platform),
+        );
+
+        if (hasQuarterEnd) {
+            quarterEndCaptured++;
+        }
+
+        const monthsCovered = new Set(
+            account.snapshots
+                .filter((snapshot) => accountPlatforms.includes(snapshot.platform))
+                .map((snapshot) => monthKey(snapshot.scrapedAt)),
+        );
+
+        if (quarterMonths.every((month) => monthsCovered.has(monthKey(month)))) {
+            fullQuarterCaptured++;
+        }
+    }
+
+    const missingMonths = sourceMonths.filter((month) => !month.hasAnchor);
+    const warnings: string[] = [];
+
+    if (missingMonths.length > 0) {
+        warnings.push(
+            `Missing supporting month snapshots: ${missingMonths
+                .map((month) => month.label)
+                .join(", ")}.`,
+        );
+    }
+
+    if (!baselineJob) {
+        warnings.push(
+            `Previous quarter baseline unavailable for ${monthLabel(baselineMonth)}. Quarter-over-quarter comparison will degrade gracefully.`,
+        );
+    }
+
+    return {
+        selectedYear: year,
+        selectedQuarter: quarter,
+        sourceMonths,
+        quarterEnd: {
+            key: quarterEndKey,
+            label: monthLabel(quarterEndMonth),
+            hasAnchor: !!quarterEndJob,
+            anchorJobId: quarterEndJob?.id || null,
+        },
+        baseline: {
+            key: baselineKey,
+            label: monthLabel(baselineMonth),
+            hasAnchor: !!baselineJob,
+            anchorJobId: baselineJob?.id || null,
+        },
+        availability: quarterEndJob
+            ? {
+                  isAvailable: true,
+                  reason: "Quarter available for review",
+              }
+            : {
+                  isAvailable: false,
+                  reason: `Quarter unavailable: missing quarter-end snapshot for ${monthLabel(
+                      quarterEndMonth,
+                  )}.`,
+              },
+        coverage: {
+            quarterEndCaptured,
+            fullQuarterCaptured,
+            totalAccounts: accounts.length,
+        },
+        warnings,
+    };
 }
 
 function calculateGrowth(

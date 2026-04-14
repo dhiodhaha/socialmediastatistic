@@ -17,6 +17,7 @@ export interface SelectOption {
     desc?: string;
     icon?: React.ElementType;
     group?: string;
+    disabled?: boolean;
 }
 
 interface FilterListboxProps {
@@ -113,9 +114,12 @@ export function FilterListbox({
                                                 )}
                                                 <ListboxOption
                                                     value={opt}
+                                                    disabled={opt.disabled}
                                                     className={({ active, selected }) =>
                                                         cn(
                                                             "relative cursor-pointer select-none rounded-xl py-3 pl-3 pr-9 transition-colors",
+                                                            opt.disabled &&
+                                                                "opacity-50 cursor-not-allowed",
                                                             active || selected
                                                                 ? "bg-blue-50 dark:bg-blue-900/20"
                                                                 : "text-zinc-900 dark:text-zinc-100",
