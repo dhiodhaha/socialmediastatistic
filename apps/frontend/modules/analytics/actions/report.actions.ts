@@ -3,14 +3,16 @@
 import { type Platform, prisma } from "@repo/database";
 import { endOfDay, endOfMonth, format, startOfDay, startOfMonth, subMonths } from "date-fns";
 import {
+    buildQuarterlyPlatformPreview,
+    type QuarterlyPlatformPreview,
+} from "@/modules/analytics/lib/quarterly-platform-preview";
+import {
+    buildQuarterlyStatus,
     deriveQuarterlyOptions,
-    latestCompletedJobByMonth,
-    monthKey,
-    monthLabel,
     type QuarterlyOption,
     type QuarterlyStatus,
-    quarterMonthStarts,
 } from "@/modules/analytics/lib/quarterly-reporting";
+import { calculateGrowth } from "@/modules/analytics/lib/report-metrics";
 import { auth } from "@/shared/lib/auth";
 
 export interface ComparisonRow {
@@ -248,24 +250,6 @@ export async function getQuarterlyStatus(
         throw new Error("Unauthorized");
     }
 
-    const jobs = await prisma.scrapingJob.findMany({
-        where: {
-            status: "COMPLETED",
-            completedAt: { not: null },
-        },
-        orderBy: { completedAt: "desc" },
-        select: {
-            id: true,
-            createdAt: true,
-            completedAt: true,
-        },
-    });
-
-    const jobsByMonth = latestCompletedJobByMonth(jobs);
-    const quarterMonths = quarterMonthStarts(year, quarter);
-    const quarterEndMonth = quarterMonths[2];
-    const baselineMonth = subMonths(quarterEndMonth, 3);
-
     const whereClause = categoryId
         ? {
               isActive: true,
@@ -277,153 +261,150 @@ export async function getQuarterlyStatus(
           }
         : { isActive: true };
 
-    const accounts = await prisma.account.findMany({
-        where: whereClause,
-        select: {
-            id: true,
-            instagram: true,
-            tiktok: true,
-            twitter: true,
-            snapshots: {
-                where: {
-                    scrapedAt: {
-                        gte: startOfMonth(quarterMonths[0]),
-                        lte: endOfMonth(quarterEndMonth),
+    const quarterStartMonth = new Date(year, (quarter - 1) * 3, 1);
+    const quarterEndMonth = new Date(year, (quarter - 1) * 3 + 2, 1);
+
+    const [jobs, accounts] = await Promise.all([
+        prisma.scrapingJob.findMany({
+            where: {
+                status: "COMPLETED",
+                completedAt: { not: null },
+            },
+            orderBy: { completedAt: "desc" },
+            select: {
+                id: true,
+                createdAt: true,
+                completedAt: true,
+            },
+        }),
+        prisma.account.findMany({
+            where: whereClause,
+            select: {
+                instagram: true,
+                tiktok: true,
+                twitter: true,
+                snapshots: {
+                    where: {
+                        scrapedAt: {
+                            gte: startOfMonth(quarterStartMonth),
+                            lte: endOfMonth(quarterEndMonth),
+                        },
+                    },
+                    select: {
+                        platform: true,
+                        scrapedAt: true,
                     },
                 },
-                select: {
-                    platform: true,
-                    scrapedAt: true,
-                },
             },
-        },
+        }),
+    ]);
+
+    return buildQuarterlyStatus({
+        year,
+        quarter,
+        jobs,
+        accounts,
     });
-
-    const sourceMonths = quarterMonths.map((month) => {
-        const key = monthKey(month);
-        const job = jobsByMonth.get(key) || null;
-
-        return {
-            key,
-            label: monthLabel(month),
-            hasAnchor: !!job,
-            anchorJobId: job?.id || null,
-        };
-    });
-
-    const quarterEndKey = monthKey(quarterEndMonth);
-    const quarterEndJob = jobsByMonth.get(quarterEndKey) || null;
-    const baselineKey = monthKey(baselineMonth);
-    const baselineJob = jobsByMonth.get(baselineKey) || null;
-
-    const quarterEndRange = {
-        start: startOfDay(startOfMonth(quarterEndMonth)),
-        end: endOfDay(endOfMonth(quarterEndMonth)),
-    };
-
-    let quarterEndCaptured = 0;
-    let fullQuarterCaptured = 0;
-    for (const account of accounts) {
-        const accountPlatforms = [
-            account.instagram ? "INSTAGRAM" : null,
-            account.tiktok ? "TIKTOK" : null,
-            account.twitter ? "TWITTER" : null,
-        ].filter(Boolean);
-
-        const hasQuarterEnd = account.snapshots.some(
-            (snapshot) =>
-                snapshot.scrapedAt >= quarterEndRange.start &&
-                snapshot.scrapedAt <= quarterEndRange.end &&
-                accountPlatforms.includes(snapshot.platform),
-        );
-
-        if (hasQuarterEnd) {
-            quarterEndCaptured++;
-        }
-
-        const monthsCovered = new Set(
-            account.snapshots
-                .filter((snapshot) => accountPlatforms.includes(snapshot.platform))
-                .map((snapshot) => monthKey(snapshot.scrapedAt)),
-        );
-
-        if (quarterMonths.every((month) => monthsCovered.has(monthKey(month)))) {
-            fullQuarterCaptured++;
-        }
-    }
-
-    const missingMonths = sourceMonths.filter((month) => !month.hasAnchor);
-    const warnings: string[] = [];
-
-    if (missingMonths.length > 0) {
-        warnings.push(
-            `Missing supporting month snapshots: ${missingMonths
-                .map((month) => month.label)
-                .join(", ")}.`,
-        );
-    }
-
-    if (!baselineJob) {
-        warnings.push(
-            `Previous quarter baseline unavailable for ${monthLabel(baselineMonth)}. Quarter-over-quarter comparison will degrade gracefully.`,
-        );
-    }
-
-    return {
-        selectedYear: year,
-        selectedQuarter: quarter,
-        sourceMonths,
-        quarterEnd: {
-            key: quarterEndKey,
-            label: monthLabel(quarterEndMonth),
-            hasAnchor: !!quarterEndJob,
-            anchorJobId: quarterEndJob?.id || null,
-        },
-        baseline: {
-            key: baselineKey,
-            label: monthLabel(baselineMonth),
-            hasAnchor: !!baselineJob,
-            anchorJobId: baselineJob?.id || null,
-        },
-        availability: quarterEndJob
-            ? {
-                  isAvailable: true,
-                  reason: "Quarter available for review",
-              }
-            : {
-                  isAvailable: false,
-                  reason: `Quarter unavailable: missing quarter-end snapshot for ${monthLabel(
-                      quarterEndMonth,
-                  )}.`,
-              },
-        coverage: {
-            quarterEndCaptured,
-            fullQuarterCaptured,
-            totalAccounts: accounts.length,
-        },
-        warnings,
-    };
 }
 
-function calculateGrowth(
-    oldVal: number,
-    newVal: number,
-    key: "followers" | "posts" | "likes",
-): { [K in `${typeof key}Val` | `${typeof key}Pct`]: number } {
-    const valDiff = newVal - oldVal;
-    let pct = 0;
-
-    if (oldVal > 0) {
-        pct = (valDiff / oldVal) * 100;
-    } else if (newVal > 0) {
-        pct = 100;
+export async function getQuarterlyPreviewData(
+    year: number,
+    quarter: number,
+    categoryId?: string,
+): Promise<QuarterlyPlatformPreview> {
+    const session = await auth();
+    if (!session) {
+        throw new Error("Unauthorized");
     }
 
-    // Use type assertion to satisfy TypeScript
-    return {
-        [`${key}Val`]: valDiff,
-        [`${key}Pct`]: pct,
-    } as { [K in `${typeof key}Val` | `${typeof key}Pct`]: number };
+    const quarterEndMonth = new Date(year, (quarter - 1) * 3 + 2, 1);
+    const baselineMonth = subMonths(quarterEndMonth, 3);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const whereClause: any = categoryId
+        ? {
+              isActive: true,
+              categories: {
+                  some: {
+                      category: { id: categoryId },
+                  },
+              },
+          }
+        : { isActive: true };
+
+    const [jobs, accounts] = await Promise.all([
+        prisma.scrapingJob.findMany({
+            where: {
+                status: "COMPLETED",
+                completedAt: { not: null },
+            },
+            orderBy: { completedAt: "desc" },
+            select: {
+                id: true,
+                createdAt: true,
+                completedAt: true,
+            },
+        }),
+        prisma.account.findMany({
+            where: whereClause,
+            select: {
+                id: true,
+                username: true,
+                instagram: true,
+                tiktok: true,
+                twitter: true,
+                categories: {
+                    include: {
+                        category: true,
+                    },
+                },
+                snapshots: {
+                    where: {
+                        scrapedAt: {
+                            gte: startOfMonth(baselineMonth),
+                            lte: endOfMonth(quarterEndMonth),
+                        },
+                    },
+                    orderBy: { scrapedAt: "desc" },
+                    select: {
+                        platform: true,
+                        followers: true,
+                        posts: true,
+                        likes: true,
+                        scrapedAt: true,
+                    },
+                },
+            },
+        }),
+    ]);
+
+    const status = buildQuarterlyStatus({
+        year,
+        quarter,
+        jobs,
+        accounts: accounts.map((account) => ({
+            instagram: account.instagram,
+            tiktok: account.tiktok,
+            twitter: account.twitter,
+            snapshots: account.snapshots.map((snapshot) => ({
+                platform: snapshot.platform,
+                scrapedAt: snapshot.scrapedAt,
+            })),
+        })),
+    });
+
+    return buildQuarterlyPlatformPreview({
+        status,
+        accounts: accounts.map((account) => ({
+            id: account.id,
+            username: account.username,
+            instagram: account.instagram,
+            tiktok: account.tiktok,
+            twitter: account.twitter,
+            categoryNames: account.categories.map((entry) => entry.category.name),
+            snapshots: account.snapshots,
+        })),
+    });
 }
 
 /**

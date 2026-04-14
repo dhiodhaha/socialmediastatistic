@@ -14,18 +14,21 @@ export interface DisplayRow {
     // Result
     currentFollowers: number;
     followersGrowth: string; // "28.6%"
-    followersGrowthDir: "up" | "down";
+    followersGrowthDir: "up" | "down" | "flat" | "na";
 
     // Engagement
     currentLikes?: number;
     likesGrowth?: string;
-    likesGrowthDir?: "up" | "down";
+    likesGrowthDir?: "up" | "down" | "flat" | "na";
 
     // Effort
     currentPosts: number;
     newPosts: number;
 
     isNA: boolean;
+    isRanked?: boolean;
+    badges?: Array<{ label: string; tone: "rose" | "amber" | "blue" | "zinc" }>;
+    detailNote?: string | null;
 
     // Raw stats for sorting if needed
     rawOldFollowers: number;
@@ -57,8 +60,10 @@ function getRankBadgeStyles(rank: number, isNA: boolean) {
 /**
  * Styles for growth text based on direction.
  */
-function getGrowthTextStyles(direction: "up" | "down") {
-    return direction === "up" ? "text-emerald-600" : "text-rose-600";
+function getGrowthTextStyles(direction: "up" | "down" | "flat" | "na") {
+    if (direction === "up") return "text-emerald-600";
+    if (direction === "down") return "text-rose-600";
+    return "text-zinc-500";
 }
 
 /**
@@ -85,7 +90,10 @@ export function useReportsColumns(selectedPlatform: string) {
                 cell: ({ row }) => {
                     const account = row.original;
                     // Rank style logic extracted to helper
-                    const badgeClass = getRankBadgeStyles(account.rank, account.isNA);
+                    const badgeClass = getRankBadgeStyles(
+                        account.isRanked === false ? 0 : account.rank,
+                        account.isNA || account.isRanked === false,
+                    );
 
                     return (
                         <div className="flex items-center gap-4 !pl-6">
@@ -96,7 +104,9 @@ export function useReportsColumns(selectedPlatform: string) {
                                         badgeClass,
                                     )}
                                 >
-                                    {account.isNA ? "-" : `#${account.rank}`}
+                                    {account.isNA || account.isRanked === false
+                                        ? "-"
+                                        : `#${account.rank}`}
                                 </span>
                             </div>
                             <div className="min-w-0 flex-1">
@@ -105,12 +115,14 @@ export function useReportsColumns(selectedPlatform: string) {
                                         {account.name}
                                     </Strong>
                                     {/* Ternary kept for rendering condition, but cleaner */}
-                                    {account.rank <= 2 && !account.isNA && (
-                                        <CheckCircle2
-                                            size={14}
-                                            className="text-blue-500 fill-blue-50 flex-shrink-0"
-                                        />
-                                    )}
+                                    {account.rank <= 2 &&
+                                        !account.isNA &&
+                                        account.isRanked !== false && (
+                                            <CheckCircle2
+                                                size={14}
+                                                className="text-blue-500 fill-blue-50 flex-shrink-0"
+                                            />
+                                        )}
                                 </div>
                                 <div className="mt-1 flex items-center gap-2">
                                     <span className="text-xs text-zinc-500 dark:text-zinc-400 font-mono">
@@ -121,6 +133,33 @@ export function useReportsColumns(selectedPlatform: string) {
                                         {account.category}
                                     </span>
                                 </div>
+                                {(account.badges?.length || account.detailNote) && (
+                                    <div className="mt-2 flex flex-wrap gap-2">
+                                        {account.badges?.map((badge) => (
+                                            <span
+                                                key={`${account.handle}-${badge.label}`}
+                                                className={cn(
+                                                    "rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+                                                    badge.tone === "rose" &&
+                                                        "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900/50 dark:bg-rose-950/30 dark:text-rose-300",
+                                                    badge.tone === "amber" &&
+                                                        "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-300",
+                                                    badge.tone === "blue" &&
+                                                        "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-300",
+                                                    badge.tone === "zinc" &&
+                                                        "border-zinc-200 bg-zinc-50 text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-300",
+                                                )}
+                                            >
+                                                {badge.label}
+                                            </span>
+                                        ))}
+                                        {account.detailNote && (
+                                            <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                                                {account.detailNote}
+                                            </span>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     );
@@ -137,7 +176,9 @@ export function useReportsColumns(selectedPlatform: string) {
                     return (
                         <div>
                             <span className="block text-lg font-bold text-zinc-900 dark:text-white tracking-tight">
-                                {formatNumber(account.currentFollowers)}
+                                {account.currentFollowers >= 0
+                                    ? formatNumber(account.currentFollowers)
+                                    : "N/A"}
                             </span>
                             <div
                                 className={cn(
@@ -147,9 +188,9 @@ export function useReportsColumns(selectedPlatform: string) {
                             >
                                 {account.followersGrowthDir === "up" ? (
                                     <TrendingUp size={12} />
-                                ) : (
+                                ) : account.followersGrowthDir === "down" ? (
                                     <ArrowDownRight size={12} />
-                                )}
+                                ) : null}
                                 {account.followersGrowth}
                             </div>
                         </div>
@@ -168,14 +209,23 @@ export function useReportsColumns(selectedPlatform: string) {
                     return (
                         <div>
                             <span className="block text-lg font-bold text-zinc-900 dark:text-white tracking-tight">
-                                {account.currentLikes ? formatNumber(account.currentLikes) : "N/A"}
+                                {account.currentLikes !== undefined && account.currentLikes >= 0
+                                    ? formatNumber(account.currentLikes)
+                                    : "N/A"}
                             </span>
-                            {account.currentLikes && (
-                                <div className="inline-flex items-center gap-1 mt-0.5 text-xs font-medium text-pink-600">
-                                    <Heart size={10} className="fill-pink-600" />+
-                                    {account.likesGrowth}
-                                </div>
-                            )}
+                            {account.currentLikes !== undefined &&
+                                account.currentLikes >= 0 &&
+                                account.likesGrowth && (
+                                    <div
+                                        className={cn(
+                                            "inline-flex items-center gap-1 mt-0.5 text-xs font-medium",
+                                            getGrowthTextStyles(account.likesGrowthDir || "na"),
+                                        )}
+                                    >
+                                        <Heart size={10} className="fill-current" />
+                                        {account.likesGrowth}
+                                    </div>
+                                )}
                         </div>
                     );
                 },
@@ -192,18 +242,30 @@ export function useReportsColumns(selectedPlatform: string) {
 
                 return (
                     <div>
-                        <div className="text-zinc-900 dark:text-white font-semibold text-sm">
-                            {account.currentPosts}{" "}
-                            <span className="text-zinc-400 font-normal">posts</span>
-                        </div>
+                        {account.currentPosts >= 0 ? (
+                            <div className="text-zinc-900 dark:text-white font-semibold text-sm">
+                                {account.currentPosts}{" "}
+                                <span className="text-zinc-400 font-normal">posts</span>
+                            </div>
+                        ) : (
+                            <div className="text-zinc-500 dark:text-zinc-400 font-semibold text-sm">
+                                N/A
+                            </div>
+                        )}
                         <div
                             className={cn(
                                 "mt-0.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border",
                                 badgeClass,
                             )}
                         >
-                            {account.newPosts >= 0 ? "+" : ""}
-                            {account.newPosts} New
+                            {account.currentPosts >= 0 ? (
+                                <>
+                                    {account.newPosts >= 0 ? "+" : ""}
+                                    {account.newPosts} New
+                                </>
+                            ) : (
+                                "No quarter-end data"
+                            )}
                         </div>
                     </div>
                 );

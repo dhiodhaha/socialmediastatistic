@@ -3,8 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@/modules/analytics/actions/report.actions", () => ({
     getComparisonData: vi.fn(),
-    getQuarterlyOptions: vi.fn(),
-    getQuarterlyStatus: vi.fn(),
+    getQuarterlyPreviewData: vi.fn(),
     exportComparisonPdfV2: vi.fn(),
     exportLatestPdf: vi.fn(),
 }));
@@ -88,37 +87,119 @@ describe("ReportsClient", () => {
     });
 
     it("shows quarterly availability summary after reviewing a quarter", async () => {
-        const { getQuarterlyStatus } = await import("@/modules/analytics/actions/report.actions");
-        vi.mocked(getQuarterlyStatus).mockResolvedValue({
-            selectedYear: 2026,
-            selectedQuarter: 1,
-            sourceMonths: [
-                { key: "2026-01", label: "Jan 2026", hasAnchor: true, anchorJobId: "jan" },
-                { key: "2026-02", label: "Feb 2026", hasAnchor: false, anchorJobId: null },
-                { key: "2026-03", label: "Mar 2026", hasAnchor: true, anchorJobId: "mar" },
+        const { getQuarterlyPreviewData } = await import(
+            "@/modules/analytics/actions/report.actions"
+        );
+        vi.mocked(getQuarterlyPreviewData).mockResolvedValue({
+            status: {
+                selectedYear: 2026,
+                selectedQuarter: 1,
+                sourceMonths: [
+                    { key: "2026-01", label: "Jan 2026", hasAnchor: true, anchorJobId: "jan" },
+                    { key: "2026-02", label: "Feb 2026", hasAnchor: false, anchorJobId: null },
+                    { key: "2026-03", label: "Mar 2026", hasAnchor: true, anchorJobId: "mar" },
+                ],
+                quarterEnd: {
+                    key: "2026-03",
+                    label: "Mar 2026",
+                    hasAnchor: true,
+                    anchorJobId: "mar",
+                },
+                baseline: {
+                    key: "2025-12",
+                    label: "Dec 2025",
+                    hasAnchor: true,
+                    anchorJobId: "dec",
+                },
+                availability: {
+                    isAvailable: true,
+                    reason: "Quarter available for review",
+                },
+                coverage: {
+                    quarterEndCaptured: 9,
+                    fullQuarterCaptured: 6,
+                    totalAccounts: 10,
+                },
+                warnings: ["Missing supporting month snapshots: Feb 2026."],
+            },
+            rows: [
+                {
+                    accountId: "acc-1",
+                    accountName: "Kemdikbud",
+                    handle: "kemdikbud",
+                    category: "Pendidikan",
+                    platform: "INSTAGRAM",
+                    rankingEligible: true,
+                    hasQuarterEndData: true,
+                    performanceIssue: false,
+                    dataQualityIssue: true,
+                    missingMonths: ["Feb 2026"],
+                    oldStats: { followers: 100, posts: 10, likes: null },
+                    newStats: { followers: 130, posts: 13, likes: null },
+                    delta: {
+                        followersVal: 30,
+                        followersPct: 30,
+                        postsVal: 3,
+                        postsPct: 30,
+                        likesVal: null,
+                        likesPct: null,
+                    },
+                    issueLabels: ["Data quality issue"],
+                    detailNote: "Missing supporting month snapshots: Feb 2026.",
+                },
             ],
-            quarterEnd: {
-                key: "2026-03",
-                label: "Mar 2026",
-                hasAnchor: true,
-                anchorJobId: "mar",
-            },
-            baseline: {
-                key: "2025-12",
-                label: "Dec 2025",
-                hasAnchor: false,
-                anchorJobId: null,
-            },
-            availability: {
-                isAvailable: true,
-                reason: "Quarter available for review",
-            },
-            coverage: {
-                quarterEndCaptured: 9,
-                fullQuarterCaptured: 6,
-                totalAccounts: 10,
-            },
-            warnings: ["Missing supporting month snapshots: Feb 2026."],
+            summaries: [
+                {
+                    platform: "INSTAGRAM",
+                    totalAccounts: 1,
+                    rankingEligibleCount: 1,
+                    performanceIssueCount: 0,
+                    dataQualityIssueCount: 1,
+                    netFollowerGrowth: 30,
+                    topGainers: [
+                        {
+                            accountId: "acc-1",
+                            accountName: "Kemdikbud",
+                            handle: "kemdikbud",
+                            category: "Pendidikan",
+                            followerGrowthPct: 30,
+                            followerGrowthValue: 30,
+                            detailNote: "Missing supporting month snapshots: Feb 2026.",
+                        },
+                    ],
+                    topDecliners: [
+                        {
+                            accountId: "acc-1",
+                            accountName: "Kemdikbud",
+                            handle: "kemdikbud",
+                            category: "Pendidikan",
+                            followerGrowthPct: 30,
+                            followerGrowthValue: 30,
+                            detailNote: "Missing supporting month snapshots: Feb 2026.",
+                        },
+                    ],
+                },
+                {
+                    platform: "TIKTOK",
+                    totalAccounts: 0,
+                    rankingEligibleCount: 0,
+                    performanceIssueCount: 0,
+                    dataQualityIssueCount: 0,
+                    netFollowerGrowth: 0,
+                    topGainers: [],
+                    topDecliners: [],
+                },
+                {
+                    platform: "TWITTER",
+                    totalAccounts: 0,
+                    rankingEligibleCount: 0,
+                    performanceIssueCount: 0,
+                    dataQualityIssueCount: 0,
+                    netFollowerGrowth: 0,
+                    topGainers: [],
+                    topDecliners: [],
+                },
+            ],
         });
 
         render(
@@ -142,12 +223,15 @@ describe("ReportsClient", () => {
         fireEvent.click(screen.getByRole("button", { name: "View Report" }));
 
         await waitFor(() => {
-            expect(vi.mocked(getQuarterlyStatus)).toHaveBeenCalledWith(2026, 1, undefined);
+            expect(vi.mocked(getQuarterlyPreviewData)).toHaveBeenCalledWith(2026, 1, undefined);
         });
 
         expect(screen.getByText("Quarterly Review Status")).toBeTruthy();
         expect(screen.getByText("9/10")).toBeTruthy();
         expect(screen.getByText("6/10")).toBeTruthy();
-        expect(screen.getByText("Dec 2025")).toBeTruthy();
+        expect(screen.getAllByText("Dec 2025").length).toBeGreaterThan(0);
+        expect(screen.getByText("Quarterly Platform Summary")).toBeTruthy();
+        expect(screen.getByText("Top Gainers")).toBeTruthy();
+        expect(screen.getAllByText("Kemdikbud").length).toBeGreaterThan(0);
     });
 });
