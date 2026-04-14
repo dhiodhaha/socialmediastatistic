@@ -17,6 +17,7 @@ import type { DisplayRow } from "@/modules/analytics/components/reports/columns"
 import type { SelectOption } from "@/modules/analytics/components/reports/filter-listbox";
 // --- COMPONENTS ---
 import { ReportHeader } from "@/modules/analytics/components/reports/report-header";
+import type { ReportMode } from "@/modules/analytics/components/reports/report-mode";
 import {
     type Platform,
     ReportsControls,
@@ -24,13 +25,18 @@ import {
 import { ReportsTable } from "@/modules/analytics/components/reports/reports-table";
 
 type ReportsClientProps = {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    initialJobs: any[];
+    initialJobs: Array<{
+        id: string;
+        createdAt: string | Date;
+        completedAt?: string | Date | null;
+        totalAccounts?: number;
+    }>;
     initialCategories: { id: string; name: string }[];
 };
 
 export function ReportsClient({ initialJobs, initialCategories }: ReportsClientProps) {
     // --- STATE ---
+    const [reportMode, setReportMode] = useState<ReportMode>("MONTHLY");
     const [selectedPlatform, setSelectedPlatform] = useState<Platform>("INSTAGRAM");
     const [includeNA, setIncludeNA] = useState(false);
     const [hasViewed, setHasViewed] = useState(false);
@@ -56,6 +62,8 @@ export function ReportsClient({ initialJobs, initialCategories }: ReportsClientP
     });
     const [selectedPeriod, setSelectedPeriod] = useState<SelectOption | null>(null);
     const [selectedComparison, setSelectedComparison] = useState<SelectOption | null>(null);
+    const [selectedYear, setSelectedYear] = useState<SelectOption | null>(null);
+    const [selectedQuarter, setSelectedQuarter] = useState<SelectOption | null>(null);
 
     // Sorting State
     const [sorting, setSorting] = useState<SortingState>([
@@ -95,6 +103,19 @@ export function ReportsClient({ initialJobs, initialCategories }: ReportsClientP
                 // Default comparison is previous month (2nd latest)
                 const prev = jobOptions[1];
                 setSelectedComparison({ ...prev, desc: `vs ${prev.label}` });
+            }
+
+            const latestJob = initialJobs[0];
+            if (latestJob) {
+                const latestDate = new Date(latestJob.createdAt);
+                const latestYear = latestDate.getFullYear();
+                const latestQuarterNumber = Math.floor(latestDate.getMonth() / 3) + 1;
+
+                setSelectedYear({ id: String(latestYear), label: String(latestYear) });
+                setSelectedQuarter({
+                    id: `Q${latestQuarterNumber}`,
+                    label: `Q${latestQuarterNumber}`,
+                });
             }
         }
     }, [initialJobs, initialCategories]);
@@ -153,6 +174,13 @@ export function ReportsClient({ initialJobs, initialCategories }: ReportsClientP
     // --- ACTIONS ---
 
     const handleViewReport = async () => {
+        if (reportMode === "QUARTERLY") {
+            setRawData([]);
+            setComparisonData([]);
+            setHasViewed(true);
+            return;
+        }
+
         if (!selectedPeriod || !selectedComparison) return;
 
         setLoadingData(true);
@@ -170,6 +198,13 @@ export function ReportsClient({ initialJobs, initialCategories }: ReportsClientP
         } finally {
             setLoadingData(false);
         }
+    };
+
+    const handleReportModeChange = (mode: ReportMode) => {
+        setReportMode(mode);
+        setHasViewed(false);
+        setRawData([]);
+        setComparisonData([]);
     };
 
     const handleExportPdf = async () => {
@@ -332,9 +367,23 @@ export function ReportsClient({ initialJobs, initialCategories }: ReportsClientP
             desc: `vs ${j.label}`,
         }));
 
+    const quarterYears = Array.from(
+        new Set(initialJobs.map((job) => String(new Date(job.createdAt).getFullYear()))),
+    )
+        .sort((a, b) => Number(b) - Number(a))
+        .map((year) => ({ id: year, label: year }));
+
+    const quarterOptions: SelectOption[] = [
+        { id: "Q1", label: "Q1", desc: "Jan - Mar" },
+        { id: "Q2", label: "Q2", desc: "Apr - Jun" },
+        { id: "Q3", label: "Q3", desc: "Jul - Sep" },
+        { id: "Q4", label: "Q4", desc: "Oct - Dec" },
+    ];
+
     return (
         <div className="flex flex-col space-y-8 p-10 max-w-7xl mx-auto">
             <ReportHeader
+                reportMode={reportMode}
                 exporting={exporting}
                 exportingAll={exportingAll}
                 exportingLatest={exportingLatest}
@@ -345,6 +394,8 @@ export function ReportsClient({ initialJobs, initialCategories }: ReportsClientP
             />
 
             <ReportsControls
+                reportMode={reportMode}
+                setReportMode={handleReportModeChange}
                 selectedPlatform={selectedPlatform}
                 setSelectedPlatform={setSelectedPlatform}
                 selectedCategory={selectedCategory}
@@ -353,10 +404,16 @@ export function ReportsClient({ initialJobs, initialCategories }: ReportsClientP
                 setSelectedPeriod={setSelectedPeriod}
                 selectedComparison={selectedComparison}
                 setSelectedComparison={setSelectedComparison}
+                selectedYear={selectedYear}
+                setSelectedYear={setSelectedYear}
+                selectedQuarter={selectedQuarter}
+                setSelectedQuarter={setSelectedQuarter}
                 includeNA={includeNA}
                 setIncludeNA={setIncludeNA}
                 categories={categories}
                 jobs={jobs}
+                years={quarterYears}
+                quarters={quarterOptions}
                 comparisonOptions={comparisonOptions}
                 loading={false}
                 loadingData={loadingData}
@@ -370,6 +427,7 @@ export function ReportsClient({ initialJobs, initialCategories }: ReportsClientP
                 selectedPlatform={selectedPlatform}
                 loadingData={loadingData}
                 hasViewed={hasViewed}
+                reportMode={reportMode}
             />
         </div>
     );

@@ -19,6 +19,7 @@ import {
 } from "@/shared/components/catalyst/table";
 import { Strong, Text } from "@/shared/components/catalyst/text";
 import { type DisplayRow, useReportsColumns } from "./columns";
+import type { ReportMode } from "./report-mode";
 
 interface ReportsTableProps {
     data: DisplayRow[];
@@ -27,6 +28,7 @@ interface ReportsTableProps {
     selectedPlatform: string;
     loadingData: boolean;
     hasViewed: boolean;
+    reportMode: ReportMode;
 }
 
 export function ReportsTable({
@@ -36,6 +38,7 @@ export function ReportsTable({
     selectedPlatform,
     loadingData,
     hasViewed,
+    reportMode,
 }: ReportsTableProps) {
     // Use extracted hook for columns
     const columns = useReportsColumns(selectedPlatform);
@@ -60,11 +63,14 @@ export function ReportsTable({
                         <Search className="h-8 w-8 text-zinc-400" />
                     </div>
                     <Strong className="text-lg text-zinc-900 dark:text-white">
-                        Bandingkan Data
+                        {reportMode === "QUARTERLY"
+                            ? "Siapkan Laporan Triwulanan"
+                            : "Bandingkan Data"}
                     </Strong>
                     <Text className="text-zinc-500 max-w-sm mt-2">
-                        Pilih dua periode (snapshot) di panel atas untuk melihat analisis
-                        pertumbuhan akun.
+                        {reportMode === "QUARTERLY"
+                            ? "Pilih tahun dan kuartal di panel atas untuk mengaktifkan shell review triwulanan."
+                            : "Pilih dua periode (snapshot) di panel atas untuk melihat analisis pertumbuhan akun."}
                     </Text>
                 </div>
             )}
@@ -120,10 +126,14 @@ export function ReportsTable({
                     <div className="p-12 text-center text-zinc-500 flex flex-col items-center">
                         <Filter size={48} className="text-zinc-200 dark:text-zinc-700 mb-4" />
                         <Strong className="text-lg text-zinc-900 dark:text-white">
-                            Tidak ada data ditemukan
+                            {reportMode === "QUARTERLY"
+                                ? "Quarterly shell ready"
+                                : "Tidak ada data ditemukan"}
                         </Strong>
                         <Text className="mt-1 max-w-sm">
-                            Coba ganti filter kategori atau pilih platform lain.
+                            {reportMode === "QUARTERLY"
+                                ? "Quarter derivation, coverage, and quarterly preview data land in the next implementation slices."
+                                : "Coba ganti filter kategori atau pilih platform lain."}
                         </Text>
                     </div>
                 ))}
