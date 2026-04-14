@@ -1,5 +1,5 @@
 import { AlertTriangle, CalendarClock, DatabaseZap, ShieldCheck } from "lucide-react";
-import type { QuarterlyStatus } from "@/modules/analytics/actions/report.actions";
+import type { QuarterlyStatus } from "@/modules/analytics/lib/quarterly-reporting";
 
 interface QuarterlyStatusSummaryProps {
     status: QuarterlyStatus;
@@ -56,21 +56,23 @@ export function QuarterlyStatusSummary({ status }: QuarterlyStatusSummaryProps) 
                         Source Months
                     </div>
                     <div className="mt-3 flex flex-wrap gap-2">
-                        {status.sourceMonths.map((month) => (
-                            <div
-                                key={month.key}
-                                className={`rounded-lg border px-3 py-2 text-sm ${
-                                    month.hasAnchor
-                                        ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300"
-                                        : "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-300"
-                                }`}
-                            >
-                                <div className="font-medium">{month.label}</div>
-                                <div className="text-xs opacity-80">
-                                    {month.hasAnchor ? "Anchor ready" : "Missing anchor"}
+                        {status.sourceMonths.map(
+                            (month: QuarterlyStatus["sourceMonths"][number]) => (
+                                <div
+                                    key={month.key}
+                                    className={`rounded-lg border px-3 py-2 text-sm ${
+                                        month.hasAnchor
+                                            ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300"
+                                            : "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-300"
+                                    }`}
+                                >
+                                    <div className="font-medium">{month.label}</div>
+                                    <div className="text-xs opacity-80">
+                                        {month.hasAnchor ? "Anchor ready" : "Missing anchor"}
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            ),
+                        )}
                     </div>
                 </div>
 
@@ -96,7 +98,7 @@ export function QuarterlyStatusSummary({ status }: QuarterlyStatusSummaryProps) 
                         Warnings
                     </div>
                     <ul className="space-y-1">
-                        {status.warnings.map((warning) => (
+                        {status.warnings.map((warning: string) => (
                             <li key={warning}>{warning}</li>
                         ))}
                     </ul>
