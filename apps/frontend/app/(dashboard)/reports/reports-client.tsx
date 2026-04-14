@@ -14,8 +14,6 @@ import {
     getComparisonData,
     getQuarterlyOptions,
     getQuarterlyStatus,
-    type QuarterlyOption,
-    type QuarterlyStatus,
 } from "@/modules/analytics/actions/report.actions";
 import type { DisplayRow } from "@/modules/analytics/components/reports/columns";
 import type { SelectOption } from "@/modules/analytics/components/reports/filter-listbox";
@@ -28,6 +26,7 @@ import {
     ReportsControls,
 } from "@/modules/analytics/components/reports/reports-controls";
 import { ReportsTable } from "@/modules/analytics/components/reports/reports-table";
+import type { QuarterlyOption, QuarterlyStatus } from "@/modules/analytics/lib/quarterly-reporting";
 
 type ReportsClientProps = {
     initialJobs: Array<{

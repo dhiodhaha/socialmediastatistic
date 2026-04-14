@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { deriveQuarterlyOptions } from "@/modules/analytics/lib/quarterly-reporting";
 import { prismaMock, resetMocks } from "@/test/utils";
-import { deriveQuarterlyOptions, getQuarterlyStatus } from "./report.actions";
+import { getQuarterlyStatus } from "./report.actions";
 
 vi.mock("@/shared/lib/auth", () => ({
     auth: vi.fn(async () => ({ user: { id: "user-1" } })),
