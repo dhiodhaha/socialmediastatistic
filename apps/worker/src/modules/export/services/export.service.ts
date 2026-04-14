@@ -114,6 +114,43 @@ export class ExportService {
             await browser.close();
         }
     }
+
+    static async generateComparisonPdfV2(exportData: CombinedExportData): Promise<Buffer> {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const {
+            generateCombinedReportHtmlV2,
+        } = require("../../scraping/services/comparison-template-v2");
+
+        const html = generateCombinedReportHtmlV2({
+            sections: exportData.sections,
+            month1: exportData.month1,
+            month2: exportData.month2,
+            generatedAt: new Date().toLocaleString("id-ID"),
+            includeCover: exportData.includeCover,
+            customTitle: exportData.customTitle,
+        });
+
+        const browser = await puppeteer.launch({
+            headless: true,
+            args: ["--no-sandbox", "--disable-setuid-sandbox"],
+        });
+
+        try {
+            const page = await browser.newPage();
+            await page.setContent(html, { waitUntil: "networkidle0" });
+
+            const pdfBuffer = await page.pdf({
+                format: "A4",
+                landscape: true, // Landscape for comparison table
+                printBackground: true,
+                margin: { top: "15px", right: "15px", bottom: "15px", left: "15px" },
+            });
+
+            return Buffer.from(pdfBuffer);
+        } finally {
+            await browser.close();
+        }
+    }
     static async generateLatestPdf(exportData: {
         sections: Array<{
             platform: string;

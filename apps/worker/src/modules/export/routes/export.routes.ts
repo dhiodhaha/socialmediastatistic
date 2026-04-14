@@ -54,6 +54,36 @@ router.post("/comparison-pdf", async (req, res) => {
 });
 
 /**
+ * Generate Comparison PDF Export V2
+ * POST /export/comparison-pdf-v2
+ * Body: { platform, month1, month2, data }
+ */
+router.post("/comparison-pdf-v2", async (req, res) => {
+    try {
+        const exportData = req.body;
+        logger.info(
+            { platform: exportData.platform, dataCount: exportData.data?.length },
+            "Comparison PDF export V2 requested",
+        );
+
+        const pdfBuffer = await ExportService.generateComparisonPdfV2(exportData);
+
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader(
+            "Content-Disposition",
+            `attachment; filename=comparison-v2-${exportData.platform}-${Date.now()}.pdf`,
+        );
+        res.send(pdfBuffer);
+    } catch (error) {
+        logger.error({ error }, "Failed to generate comparison PDF V2");
+        res.status(500).json({
+            success: false,
+            error: "Failed to generate comparison PDF report V2",
+        });
+    }
+});
+
+/**
  * Generate Latest PDF Export
  * POST /export/latest-pdf
  * Body: { platform, month, data }

@@ -9,7 +9,7 @@ import { useEffect, useState } from "react";
 // --- ACTIONS & TYPES ---
 import {
     type ComparisonRow,
-    exportComparisonPdf,
+    exportComparisonPdfV2,
     exportLatestPdf,
     getComparisonData,
 } from "@/modules/analytics/actions/report.actions";
@@ -176,7 +176,7 @@ export function ReportsClient({ initialJobs, initialCategories }: ReportsClientP
         if (!selectedPeriod || !selectedComparison || comparisonData.length === 0) return;
         setExporting(true);
         try {
-            const pdfBase64 = await exportComparisonPdf({
+            const pdfBase64 = await exportComparisonPdfV2({
                 month1: selectedComparison.label,
                 month2: selectedPeriod.label,
                 customTitle: `${selectedPlatform}<br/>Laporan Pertumbuhan`,
@@ -249,7 +249,7 @@ export function ReportsClient({ initialJobs, initialCategories }: ReportsClientP
                 });
             }
 
-            const pdfBase64 = await exportComparisonPdf({
+            const pdfBase64 = await exportComparisonPdfV2({
                 month1: selectedComparison.label,
                 month2: selectedPeriod.label,
                 customTitle: `Analisis Performa Media Sosial<br/>${selectedCategory.label}`,
