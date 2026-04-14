@@ -2,8 +2,10 @@ import { Clock, Download, FileText, Layers, Share2 } from "lucide-react";
 import { Button } from "@/shared/components/catalyst/button";
 import { Text } from "@/shared/components/catalyst/text";
 import { FilterListbox, type SelectOption } from "./filter-listbox";
+import type { ReportMode } from "./report-mode";
 
 interface ReportHeaderProps {
+    reportMode: ReportMode;
     exporting: boolean;
     exportingAll: boolean;
     exportingLatest: boolean;
@@ -14,6 +16,7 @@ interface ReportHeaderProps {
 }
 
 export function ReportHeader({
+    reportMode,
     exporting,
     exportingAll,
     exportingLatest,
@@ -23,26 +26,31 @@ export function ReportHeader({
     onExportLatest,
 }: ReportHeaderProps) {
     const isExporting = exporting || exportingAll || exportingLatest;
+    const isQuarterly = reportMode === "QUARTERLY";
 
     const exportOptions: SelectOption[] = [
         {
             id: "current",
-            label: "Export this Data",
-            desc: "Current view",
+            label: isQuarterly ? "Quarterly Export Soon" : "Export this Data",
+            desc: isQuarterly ? "Quarterly PDF is built in the next slice" : "Current view",
             icon: FileText,
             group: "Single Files",
         },
         {
             id: "latest",
-            label: "Export Standard Data",
-            desc: "Overview Standard Data",
+            label: isQuarterly ? "Executive Export Soon" : "Export Standard Data",
+            desc: isQuarterly
+                ? "Executive quarterly output is not wired yet"
+                : "Overview Standard Data",
             icon: Clock,
             group: "Single Files",
         },
         {
             id: "full",
-            label: "Export Full Data",
-            desc: "Full Data with Comparison",
+            label: isQuarterly ? "All Platform Export Soon" : "Export Full Data",
+            desc: isQuarterly
+                ? "Combined quarterly export lands later"
+                : "Full Data with Comparison",
             icon: Layers,
             group: "Comprehensive",
         },
@@ -60,13 +68,15 @@ export function ReportHeader({
                 <div className="flex items-center gap-2 text-sm text-zinc-500 mb-1 font-medium">
                     <span className="text-blue-600">Analytics</span>
                     <span className="text-zinc-300">/</span>
-                    <span>Growth Report</span>
+                    <span>{isQuarterly ? "Quarterly Report" : "Growth Report"}</span>
                 </div>
                 <h1 className="text-3xl font-bold text-zinc-900 dark:text-white tracking-tight">
-                    Laporan Bulanan
+                    {isQuarterly ? "Laporan Triwulanan" : "Laporan Bulanan"}
                 </h1>
                 <Text className="mt-2 max-w-2xl">
-                    Monitoring performa akun resmi pemerintahan. Data diambil setiap akhir bulan.
+                    {isQuarterly
+                        ? "Persiapkan shell laporan triwulanan untuk review per kuartal sebelum PDF executive diaktifkan."
+                        : "Monitoring performa akun resmi pemerintahan. Data diambil setiap akhir bulan."}
                 </Text>
             </div>
             <div className="flex gap-3">
@@ -80,7 +90,7 @@ export function ReportHeader({
                     value={{ id: "trigger", label: "Export Options" }}
                     onChange={handleExportChange}
                     options={exportOptions}
-                    disabled={!hasViewed}
+                    disabled={!hasViewed || isQuarterly}
                     loading={isExporting}
                 />
             </div>
