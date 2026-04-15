@@ -2,7 +2,6 @@
 
 import type { SortingState } from "@tanstack/react-table";
 import { format } from "date-fns";
-import { id as idLocale } from "date-fns/locale";
 import { FileText } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
@@ -15,6 +14,7 @@ import {
 } from "@/modules/analytics/actions/report.actions";
 import type { DisplayRow } from "@/modules/analytics/components/reports/columns";
 import type { SelectOption } from "@/modules/analytics/components/reports/filter-listbox";
+import { MonthlySourceSummary } from "@/modules/analytics/components/reports/monthly-source-summary";
 import { QuarterlyPlatformSummary } from "@/modules/analytics/components/reports/quarterly-platform-summary";
 import { QuarterlyStatusSummary } from "@/modules/analytics/components/reports/quarterly-status-summary";
 import { ReportHeader } from "@/modules/analytics/components/reports/report-header";
@@ -34,6 +34,11 @@ import type { QuarterlyOption, QuarterlyStatus } from "@/modules/analytics/lib/q
 type ReportsClientProps = {
     initialJobs: Array<{
         id: string;
+        label: string;
+        sourceLabel: string;
+        source: "manual" | "inferred";
+        reportingYear: number;
+        reportingMonth: number;
         createdAt: string | Date;
         completedAt?: string | Date | null;
         totalAccounts?: number;
@@ -74,8 +79,9 @@ export function ReportsClient({
     useEffect(() => {
         const jobOptions: SelectOption[] = initialJobs.map((job, idx) => ({
             id: job.id,
-            label: format(new Date(job.createdAt), "MMMM yyyy", { locale: idLocale }),
-            sub: idx === 0 ? "Latest Snapshot" : "Archived",
+            label: job.label,
+            sub: job.sourceLabel,
+            desc: idx === 0 ? "Latest reporting anchor" : "Archived reporting anchor",
             icon: FileText,
         }));
         setJobs(jobOptions);
@@ -99,9 +105,8 @@ export function ReportsClient({
         const latestJob = initialJobs[0];
         if (!latestJob) return;
 
-        const latestDate = new Date(latestJob.createdAt);
-        const latestYear = latestDate.getFullYear();
-        const latestQuarterNumber = Math.floor(latestDate.getMonth() / 3) + 1;
+        const latestYear = latestJob.reportingYear;
+        const latestQuarterNumber = Math.floor((latestJob.reportingMonth - 1) / 3) + 1;
         setSelectedYear({ id: String(latestYear), label: String(latestYear) });
 
         const defaultQuarterOption =
@@ -226,6 +231,10 @@ export function ReportsClient({
                 month2: selectedPeriod.label,
                 customTitle: `${selectedPlatform}<br/>Laporan Pertumbuhan`,
                 includeCover: true,
+                sourceMetadata: {
+                    month1SourceLabel: selectedComparison.sub,
+                    month2SourceLabel: selectedPeriod.sub,
+                },
                 sections: [
                     {
                         platform: selectedPlatform,
@@ -319,6 +328,10 @@ export function ReportsClient({
                 month2: selectedPeriod.label,
                 customTitle: `Analisis Performa Media Sosial<br/>${selectedCategory.label}`,
                 includeCover: true,
+                sourceMetadata: {
+                    month1SourceLabel: selectedComparison.sub,
+                    month2SourceLabel: selectedPeriod.sub,
+                },
                 sections,
             });
 
@@ -468,6 +481,13 @@ export function ReportsClient({
                     categoryLabel={selectedCategory.label}
                     methodologyNote={quarterlyPreview.methodologyNote}
                     summary={selectedQuarterSummary}
+                />
+            )}
+
+            {reportMode === "MONTHLY" && hasViewed && (
+                <MonthlySourceSummary
+                    currentPeriod={selectedPeriod}
+                    comparisonPeriod={selectedComparison}
                 />
             )}
 

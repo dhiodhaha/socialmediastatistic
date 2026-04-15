@@ -68,7 +68,9 @@ export function QuarterlyStatusSummary({ status }: QuarterlyStatusSummaryProps) 
                                 >
                                     <div className="font-medium">{month.label}</div>
                                     <div className="text-xs opacity-80">
-                                        {month.hasAnchor ? "Anchor ready" : "Missing anchor"}
+                                        {month.hasAnchor
+                                            ? month.sourceLabel || "Anchor ready"
+                                            : "Missing anchor"}
                                     </div>
                                 </div>
                             ),
@@ -85,7 +87,7 @@ export function QuarterlyStatusSummary({ status }: QuarterlyStatusSummaryProps) 
                     </div>
                     <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
                         {status.baseline.hasAnchor
-                            ? "Baseline anchor available"
+                            ? status.baseline.sourceLabel || "Baseline anchor available"
                             : "Quarter report can still proceed without QoQ comparison"}
                     </div>
                 </div>

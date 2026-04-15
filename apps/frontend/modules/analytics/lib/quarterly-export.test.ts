@@ -7,21 +7,46 @@ const preview: QuarterlyPlatformPreview = {
         selectedYear: 2026,
         selectedQuarter: 1,
         sourceMonths: [
-            { key: "2026-01", label: "Jan 2026", hasAnchor: true, anchorJobId: "jan" },
-            { key: "2026-02", label: "Feb 2026", hasAnchor: true, anchorJobId: "feb" },
-            { key: "2026-03", label: "Mar 2026", hasAnchor: true, anchorJobId: "mar" },
+            {
+                key: "2026-01",
+                label: "Jan 2026",
+                hasAnchor: true,
+                anchorJobId: "jan",
+                source: "inferred",
+                sourceLabel: "Auto from completion month",
+            },
+            {
+                key: "2026-02",
+                label: "Feb 2026",
+                hasAnchor: true,
+                anchorJobId: "feb",
+                source: "inferred",
+                sourceLabel: "Auto from completion month",
+            },
+            {
+                key: "2026-03",
+                label: "Mar 2026",
+                hasAnchor: true,
+                anchorJobId: "mar",
+                source: "manual",
+                sourceLabel: "Manual reporting month",
+            },
         ],
         quarterEnd: {
             key: "2026-03",
             label: "Mar 2026",
             hasAnchor: true,
             anchorJobId: "mar",
+            source: "manual",
+            sourceLabel: "Manual reporting month",
         },
         baseline: {
             key: "2025-12",
             label: "Dec 2025",
             hasAnchor: true,
             anchorJobId: "dec",
+            source: "inferred",
+            sourceLabel: "Auto from completion month",
         },
         availability: {
             isAvailable: true,
@@ -154,6 +179,11 @@ describe("buildQuarterlyExportData", () => {
         expect(result.executiveSummary.headlineValue).toBe(20);
         expect(result.executiveSummary.quarterEndCoverageLabel).toBe("8/10");
         expect(result.executiveSummary.methodologyNote).toContain("current category membership");
+        expect(result.executiveSummary.sourceMonths).toContainEqual({
+            label: "Mar 2026",
+            sourceLabel: "Manual reporting month",
+        });
+        expect(result.executiveSummary.baselineSourceLabel).toBe("Auto from completion month");
         expect(result.sections).toHaveLength(2);
         expect(result.sections[0]?.platform).toBe("Instagram");
         expect(result.sections[1]?.rows[0]?.sharedAccount).toBe(true);

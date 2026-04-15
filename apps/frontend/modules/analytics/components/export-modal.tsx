@@ -1,8 +1,6 @@
 "use client";
 
 import type { Platform } from "@repo/database";
-import { format } from "date-fns";
-import { id } from "date-fns/locale";
 import { ArrowRight, Download, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -12,6 +10,7 @@ import {
     getComparisonData,
     getScrapingJobsForReport,
 } from "@/modules/analytics/actions/report.actions";
+import type { MonthlyReportingAnchor } from "@/modules/analytics/lib/monthly-reporting";
 import { getCategories } from "@/modules/categories/actions/category.actions";
 import { Button } from "@/shared/components/catalyst/button";
 import { Checkbox } from "@/shared/components/ui/checkbox";
@@ -56,9 +55,7 @@ export function ExportModal({ trigger, defaultCategoryId }: ExportModalProps) {
     // Filters
     const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
     const [categoryId, setCategoryId] = useState<string>(defaultCategoryId || "ALL");
-    const [jobs, setJobs] = useState<
-        { id: string; createdAt: Date; completedAt: Date | null; totalAccounts: number }[]
-    >([]);
+    const [jobs, setJobs] = useState<MonthlyReportingAnchor[]>([]);
     const [job1, setJob1] = useState<string>("");
     const [job2, setJob2] = useState<string>("");
 
@@ -105,8 +102,8 @@ export function ExportModal({ trigger, defaultCategoryId }: ExportModalProps) {
     const allSelected = platforms.INSTAGRAM && platforms.TIKTOK && platforms.TWITTER;
     const noneSelected = !platforms.INSTAGRAM && !platforms.TIKTOK && !platforms.TWITTER;
 
-    const formatJobLabel = (job: { createdAt: Date; totalAccounts: number }) => {
-        return format(new Date(job.createdAt), "dd MMM yyyy", { locale: id });
+    const formatJobLabel = (job: MonthlyReportingAnchor) => {
+        return `${job.label} • ${job.sourceLabel}`;
     };
 
     const handleExport = async () => {
@@ -151,12 +148,8 @@ export function ExportModal({ trigger, defaultCategoryId }: ExportModalProps) {
             // Get job dates for labels
             const job1Data = jobs.find((j) => j.id === job1);
             const job2Data = jobs.find((j) => j.id === job2);
-            const month1 = job1Data
-                ? format(new Date(job1Data.createdAt), "MMMM yyyy", { locale: id })
-                : "Data Lama";
-            const month2 = job2Data
-                ? format(new Date(job2Data.createdAt), "MMMM yyyy", { locale: id })
-                : "Data Baru";
+            const month1 = job1Data ? job1Data.label : "Data Lama";
+            const month2 = job2Data ? job2Data.label : "Data Baru";
 
             // Build sections for each platform
             const sections = Object.entries(groupedByPlatform).map(([platform, platformRows]) => ({

@@ -26,10 +26,22 @@ interface CombinedReportConfig {
     generatedAt: string;
     includeCover?: boolean;
     customTitle?: string;
+    sourceMetadata?: {
+        month1SourceLabel?: string;
+        month2SourceLabel?: string;
+    };
 }
 
 export function generateCombinedReportHtmlV2(config: CombinedReportConfig): string {
-    const { sections, month1, month2, generatedAt, includeCover = true, customTitle } = config;
+    const {
+        sections,
+        month1,
+        month2,
+        generatedAt,
+        includeCover = true,
+        customTitle,
+        sourceMetadata,
+    } = config;
 
     const formatNumberDots = (n: number) => {
         if (n === -1) return "N/A";
@@ -282,6 +294,11 @@ export function generateCombinedReportHtmlV2(config: CombinedReportConfig): stri
             <div class="main-title">${customTitle || "Laporan<br/>Social Media"}</div>
             <div class="main-subtitle">Edisi ${month2}</div>
             <div class="main-platforms">Platform: ${platformList}</div>
+            ${
+                sourceMetadata
+                    ? `<div class="main-platforms" style="margin-top: 12px; font-size: 13px;">Sumber: ${month1} (${sourceMetadata.month1SourceLabel || "Auto from completion month"}) vs ${month2} (${sourceMetadata.month2SourceLabel || "Auto from completion month"})</div>`
+                    : ""
+            }
         </div>
         `
                 : ""

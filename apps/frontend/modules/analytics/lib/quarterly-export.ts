@@ -20,6 +20,11 @@ export interface QuarterlyExportData {
         totalAccounts: number;
         warnings: string[];
         methodologyNote: string | null;
+        sourceMonths: Array<{
+            label: string;
+            sourceLabel: string;
+        }>;
+        baselineSourceLabel: string;
         platformHighlights: Array<{
             platform: string;
             netFollowerGrowth: number;
@@ -115,6 +120,11 @@ export function buildQuarterlyExportData({
             totalAccounts: preview.status.coverage.totalAccounts,
             warnings: preview.status.warnings,
             methodologyNote: preview.methodologyNote,
+            sourceMonths: preview.status.sourceMonths.map((month) => ({
+                label: month.label,
+                sourceLabel: month.sourceLabel || "Missing anchor",
+            })),
+            baselineSourceLabel: preview.status.baseline.sourceLabel || "Baseline unavailable",
             platformHighlights: selectedSummaries.map((summary) => ({
                 platform: platformLabel(summary.platform),
                 netFollowerGrowth: summary.netFollowerGrowth,

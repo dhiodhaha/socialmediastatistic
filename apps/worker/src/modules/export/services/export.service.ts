@@ -30,6 +30,10 @@ interface CombinedExportData {
     month2: string;
     includeCover?: boolean;
     customTitle?: string;
+    sourceMetadata?: {
+        month1SourceLabel?: string;
+        month2SourceLabel?: string;
+    };
 }
 
 interface QuarterlyExportData {
@@ -45,6 +49,11 @@ interface QuarterlyExportData {
         fullQuarterCoverageLabel: string;
         totalAccounts: number;
         warnings: string[];
+        sourceMonths: Array<{
+            label: string;
+            sourceLabel: string;
+        }>;
+        baselineSourceLabel: string;
         platformHighlights: Array<{
             platform: string;
             netFollowerGrowth: number;

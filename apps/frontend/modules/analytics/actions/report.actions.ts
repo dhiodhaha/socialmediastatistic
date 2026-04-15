@@ -2,6 +2,7 @@
 
 import { type Platform, prisma } from "@repo/database";
 import { endOfDay, endOfMonth, format, startOfDay, startOfMonth, subMonths } from "date-fns";
+import { resolveMonthlyReportingAnchors } from "@/modules/analytics/lib/monthly-reporting";
 import type { QuarterlyExportData } from "@/modules/analytics/lib/quarterly-export";
 import {
     buildQuarterlyPlatformPreview,
@@ -235,6 +236,8 @@ export async function getQuarterlyOptions(): Promise<QuarterlyOption[]> {
             id: true,
             createdAt: true,
             completedAt: true,
+            reportingYear: true,
+            reportingMonth: true,
         },
     });
 
@@ -276,6 +279,8 @@ export async function getQuarterlyStatus(
                 id: true,
                 createdAt: true,
                 completedAt: true,
+                reportingYear: true,
+                reportingMonth: true,
             },
         }),
         prisma.account.findMany({
@@ -344,6 +349,8 @@ export async function getQuarterlyPreviewData(
                 id: true,
                 createdAt: true,
                 completedAt: true,
+                reportingYear: true,
+                reportingMonth: true,
             },
         }),
         prisma.account.findMany({
@@ -424,7 +431,7 @@ export async function getScrapingJobsForReport() {
         throw new Error("Unauthorized");
     }
 
-    return prisma.scrapingJob.findMany({
+    const jobs = await prisma.scrapingJob.findMany({
         where: {
             status: "COMPLETED",
         },
@@ -436,8 +443,12 @@ export async function getScrapingJobsForReport() {
             createdAt: true,
             completedAt: true,
             totalAccounts: true,
+            reportingYear: true,
+            reportingMonth: true,
         },
     });
+
+    return resolveMonthlyReportingAnchors(jobs);
 }
 
 interface ExportData {
@@ -461,6 +472,10 @@ interface ExportData {
     month2: string;
     includeCover?: boolean;
     customTitle?: string;
+    sourceMetadata?: {
+        month1SourceLabel?: string;
+        month2SourceLabel?: string;
+    };
 }
 
 /**

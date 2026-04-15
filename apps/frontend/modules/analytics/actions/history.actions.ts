@@ -1,6 +1,8 @@
 "use server";
 
 import { type JobStatus, type Platform, type Prisma, prisma } from "@repo/database";
+import { revalidatePath } from "next/cache";
+import { validateReportingMonthAssignment } from "@/modules/analytics/lib/reporting-month-assignment";
 import { auth } from "@/shared/lib/auth";
 import { logger } from "@/shared/lib/logger";
 
@@ -14,6 +16,13 @@ export interface HistoryFilters {
     endDate?: Date | null;
     status?: string | null;
     platform?: Platform | null;
+}
+
+export interface AssignReportingMonthInput {
+    jobId: string;
+    reportingYear: number;
+    reportingMonth: number;
+    reason: string;
 }
 
 export async function getScrapingHistory(page = 1, limit = 10, filters?: HistoryFilters) {
@@ -208,6 +217,76 @@ export async function deleteScrapingJob(jobId: string) {
     } catch (error) {
         logger.error({ error }, "Failed to delete scraping job");
         return { success: false, error: "Failed to delete scraping job" };
+    }
+}
+
+export async function assignReportingMonth(input: AssignReportingMonthInput) {
+    try {
+        const session = await auth();
+        if (!session) {
+            return { success: false, error: "Unauthorized" };
+        }
+
+        const job = await prisma.scrapingJob.findUnique({
+            where: { id: input.jobId },
+            select: {
+                id: true,
+                status: true,
+                createdAt: true,
+                completedAt: true,
+                reportingYear: true,
+                reportingMonth: true,
+            },
+        });
+
+        if (!job) {
+            return { success: false, error: "Job not found" };
+        }
+
+        const validation = validateReportingMonthAssignment(
+            job,
+            input.reportingYear,
+            input.reportingMonth,
+            input.reason,
+        );
+
+        if (!validation.valid) {
+            return { success: false, error: validation.error };
+        }
+
+        await prisma.$transaction(async (tx) => {
+            await tx.scrapingJob.updateMany({
+                where: {
+                    id: { not: input.jobId },
+                    reportingYear: input.reportingYear,
+                    reportingMonth: input.reportingMonth,
+                },
+                data: {
+                    reportingYear: null,
+                    reportingMonth: null,
+                    reportingReason: null,
+                    reportingAssignedAt: null,
+                },
+            });
+
+            await tx.scrapingJob.update({
+                where: { id: input.jobId },
+                data: {
+                    reportingYear: input.reportingYear,
+                    reportingMonth: input.reportingMonth,
+                    reportingReason: input.reason.trim(),
+                    reportingAssignedAt: new Date(),
+                },
+            });
+        });
+
+        revalidatePath("/history");
+        revalidatePath("/reports");
+
+        return { success: true };
+    } catch (error) {
+        logger.error({ error, input }, "Failed to assign reporting month");
+        return { success: false, error: "Failed to assign reporting month" };
     }
 }
 

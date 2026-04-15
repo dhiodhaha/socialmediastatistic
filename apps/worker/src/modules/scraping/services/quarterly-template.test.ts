@@ -18,6 +18,12 @@ test("generateQuarterlyReportHtml renders executive summary and platform section
             totalAccounts: 10,
             methodologyNote: "Category-filtered quarterly views use current category membership.",
             warnings: ["Missing supporting month snapshots: Feb 2026."],
+            sourceMonths: [
+                { label: "Jan 2026", sourceLabel: "Auto from completion month" },
+                { label: "Feb 2026", sourceLabel: "Auto from completion month" },
+                { label: "Mar 2026", sourceLabel: "Manual reporting month" },
+            ],
+            baselineSourceLabel: "Auto from completion month",
             platformHighlights: [
                 {
                     platform: "Instagram",
@@ -77,6 +83,7 @@ test("generateQuarterlyReportHtml renders executive summary and platform section
     assert.match(html, /Quarter-End Coverage/);
     assert.match(html, /current category membership/);
     assert.match(html, /Shared/);
+    assert.match(html, /Manual reporting month/);
     assert.match(html, /Instagram/);
     assert.match(html, /Kemdikbud/);
 });
