@@ -231,6 +231,10 @@ export function ReportsClient({
                 month2: selectedPeriod.label,
                 customTitle: `${selectedPlatform}<br/>Laporan Pertumbuhan`,
                 includeCover: true,
+                sourceMetadata: {
+                    month1SourceLabel: selectedComparison.sub,
+                    month2SourceLabel: selectedPeriod.sub,
+                },
                 sections: [
                     {
                         platform: selectedPlatform,
@@ -324,6 +328,10 @@ export function ReportsClient({
                 month2: selectedPeriod.label,
                 customTitle: `Analisis Performa Media Sosial<br/>${selectedCategory.label}`,
                 includeCover: true,
+                sourceMetadata: {
+                    month1SourceLabel: selectedComparison.sub,
+                    month2SourceLabel: selectedPeriod.sub,
+                },
                 sections,
             });
 

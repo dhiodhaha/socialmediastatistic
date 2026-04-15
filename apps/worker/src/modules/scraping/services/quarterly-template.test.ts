@@ -17,6 +17,12 @@ test("generateQuarterlyReportHtml renders executive summary and platform section
             fullQuarterCoverageLabel: "6/10",
             totalAccounts: 10,
             warnings: ["Missing supporting month snapshots: Feb 2026."],
+            sourceMonths: [
+                { label: "Jan 2026", sourceLabel: "Auto from completion month" },
+                { label: "Feb 2026", sourceLabel: "Auto from completion month" },
+                { label: "Mar 2026", sourceLabel: "Manual reporting month" },
+            ],
+            baselineSourceLabel: "Auto from completion month",
             platformHighlights: [
                 {
                     platform: "Instagram",
@@ -73,6 +79,7 @@ test("generateQuarterlyReportHtml renders executive summary and platform section
     assert.match(html, /Executive Summary/);
     assert.match(html, /Q1 2026/);
     assert.match(html, /Quarter-End Coverage/);
+    assert.match(html, /Manual reporting month/);
     assert.match(html, /Instagram/);
     assert.match(html, /Kemdikbud/);
 });

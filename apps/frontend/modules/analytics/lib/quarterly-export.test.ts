@@ -174,6 +174,11 @@ describe("buildQuarterlyExportData", () => {
         expect(result.periodLabel).toBe("Q1 2026");
         expect(result.executiveSummary.headlineValue).toBe(20);
         expect(result.executiveSummary.quarterEndCoverageLabel).toBe("8/10");
+        expect(result.executiveSummary.sourceMonths).toContainEqual({
+            label: "Mar 2026",
+            sourceLabel: "Manual reporting month",
+        });
+        expect(result.executiveSummary.baselineSourceLabel).toBe("Auto from completion month");
         expect(result.sections).toHaveLength(2);
         expect(result.sections[0]?.platform).toBe("Instagram");
     });
