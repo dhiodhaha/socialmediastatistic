@@ -5,6 +5,7 @@ vi.mock("@/modules/analytics/actions/report.actions", () => ({
     getComparisonData: vi.fn(),
     getQuarterlyPreviewData: vi.fn(),
     exportComparisonPdfV2: vi.fn(),
+    exportQuarterlyPdf: vi.fn(),
     exportLatestPdf: vi.fn(),
 }));
 

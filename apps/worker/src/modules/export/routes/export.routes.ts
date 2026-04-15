@@ -104,4 +104,31 @@ router.post("/latest-pdf", async (req, res) => {
     }
 });
 
+/**
+ * Generate Quarterly PDF Export
+ * POST /export/quarterly-pdf
+ * Body: quarterly executive export payload
+ */
+router.post("/quarterly-pdf", async (req, res) => {
+    try {
+        const exportData = req.body;
+        logger.info(
+            {
+                scope: exportData.scope,
+                sections: exportData.sections?.length,
+            },
+            "Quarterly PDF export requested",
+        );
+
+        const pdfBuffer = await ExportService.generateQuarterlyPdf(exportData);
+
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader("Content-Disposition", `attachment; filename=quarterly-${Date.now()}.pdf`);
+        res.send(pdfBuffer);
+    } catch (error) {
+        logger.error({ error }, "Failed to generate quarterly PDF");
+        res.status(500).json({ success: false, error: "Failed to generate quarterly PDF report" });
+    }
+});
+
 export default router;

@@ -31,25 +31,26 @@ export function ReportHeader({
     const exportOptions: SelectOption[] = [
         {
             id: "current",
-            label: isQuarterly ? "Quarterly Export Soon" : "Export this Data",
-            desc: isQuarterly ? "Quarterly PDF is built in the next slice" : "Current view",
+            label: isQuarterly ? "Export Platform PDF" : "Export this Data",
+            desc: isQuarterly ? "Selected platform executive report" : "Current view",
             icon: FileText,
             group: "Single Files",
         },
         {
             id: "latest",
-            label: isQuarterly ? "Executive Export Soon" : "Export Standard Data",
+            label: isQuarterly ? "Reserved" : "Export Standard Data",
             desc: isQuarterly
-                ? "Executive quarterly output is not wired yet"
+                ? "Quarterly export uses platform and all-platform variants"
                 : "Overview Standard Data",
             icon: Clock,
             group: "Single Files",
+            disabled: isQuarterly,
         },
         {
             id: "full",
-            label: isQuarterly ? "All Platform Export Soon" : "Export Full Data",
+            label: isQuarterly ? "Export All Platforms PDF" : "Export Full Data",
             desc: isQuarterly
-                ? "Combined quarterly export lands later"
+                ? "Combined executive quarterly package"
                 : "Full Data with Comparison",
             icon: Layers,
             group: "Comprehensive",
@@ -75,7 +76,7 @@ export function ReportHeader({
                 </h1>
                 <Text className="mt-2 max-w-2xl">
                     {isQuarterly
-                        ? "Persiapkan shell laporan triwulanan untuk review per kuartal sebelum PDF executive diaktifkan."
+                        ? "Tinjau performa triwulanan per platform lalu ekspor PDF executive per platform atau seluruh platform."
                         : "Monitoring performa akun resmi pemerintahan. Data diambil setiap akhir bulan."}
                 </Text>
             </div>
@@ -90,7 +91,7 @@ export function ReportHeader({
                     value={{ id: "trigger", label: "Export Options" }}
                     onChange={handleExportChange}
                     options={exportOptions}
-                    disabled={!hasViewed || isQuarterly}
+                    disabled={!hasViewed}
                     loading={isExporting}
                 />
             </div>
