@@ -16,6 +16,7 @@ test("generateQuarterlyReportHtml renders executive summary and platform section
             quarterEndCoverageLabel: "8/10",
             fullQuarterCoverageLabel: "6/10",
             totalAccounts: 10,
+            methodologyNote: "Category-filtered quarterly views use current category membership.",
             warnings: ["Missing supporting month snapshots: Feb 2026."],
             sourceMonths: [
                 { label: "Jan 2026", sourceLabel: "Auto from completion month" },
@@ -57,6 +58,7 @@ test("generateQuarterlyReportHtml renders executive summary and platform section
                         accountName: "Kemdikbud",
                         handle: "@kemdikbud",
                         category: "Pendidikan",
+                        sharedAccount: true,
                         isRanked: true,
                         performanceIssue: false,
                         dataQualityIssue: false,
@@ -79,6 +81,8 @@ test("generateQuarterlyReportHtml renders executive summary and platform section
     assert.match(html, /Executive Summary/);
     assert.match(html, /Q1 2026/);
     assert.match(html, /Quarter-End Coverage/);
+    assert.match(html, /current category membership/);
+    assert.match(html, /Shared/);
     assert.match(html, /Manual reporting month/);
     assert.match(html, /Instagram/);
     assert.match(html, /Kemdikbud/);

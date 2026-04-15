@@ -59,6 +59,8 @@ const preview: QuarterlyPlatformPreview = {
         },
         warnings: ["Missing supporting month snapshots: Feb 2026."],
     },
+    methodologyNote:
+        "Category-filtered quarterly views use current category membership for Komunikasi.",
     rows: [
         {
             accountId: "1",
@@ -66,6 +68,7 @@ const preview: QuarterlyPlatformPreview = {
             handle: "kemdikbud",
             category: "Pendidikan",
             platform: "INSTAGRAM",
+            sharedAccount: false,
             rankingEligible: true,
             hasQuarterEndData: true,
             performanceIssue: false,
@@ -90,6 +93,7 @@ const preview: QuarterlyPlatformPreview = {
             handle: "kominfo",
             category: "Komunikasi",
             platform: "TIKTOK",
+            sharedAccount: true,
             rankingEligible: true,
             hasQuarterEndData: true,
             performanceIssue: true,
@@ -174,6 +178,7 @@ describe("buildQuarterlyExportData", () => {
         expect(result.periodLabel).toBe("Q1 2026");
         expect(result.executiveSummary.headlineValue).toBe(20);
         expect(result.executiveSummary.quarterEndCoverageLabel).toBe("8/10");
+        expect(result.executiveSummary.methodologyNote).toContain("current category membership");
         expect(result.executiveSummary.sourceMonths).toContainEqual({
             label: "Mar 2026",
             sourceLabel: "Manual reporting month",
@@ -181,6 +186,7 @@ describe("buildQuarterlyExportData", () => {
         expect(result.executiveSummary.baselineSourceLabel).toBe("Auto from completion month");
         expect(result.sections).toHaveLength(2);
         expect(result.sections[0]?.platform).toBe("Instagram");
+        expect(result.sections[1]?.rows[0]?.sharedAccount).toBe(true);
     });
 
     it("builds per-platform quarterly export data", () => {

@@ -14,6 +14,8 @@ interface QuarterlyMover {
 
 interface QuarterlyPlatformSummaryProps {
     platform: Platform;
+    categoryLabel: string;
+    methodologyNote?: string | null;
     summary: {
         totalAccounts: number;
         rankingEligibleCount: number;
@@ -25,7 +27,12 @@ interface QuarterlyPlatformSummaryProps {
     };
 }
 
-export function QuarterlyPlatformSummary({ platform, summary }: QuarterlyPlatformSummaryProps) {
+export function QuarterlyPlatformSummary({
+    platform,
+    categoryLabel,
+    methodologyNote,
+    summary,
+}: QuarterlyPlatformSummaryProps) {
     return (
         <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
             <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -38,6 +45,9 @@ export function QuarterlyPlatformSummary({ platform, summary }: QuarterlyPlatfor
                     </h3>
                     <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
                         Review eligible rankings, issues, and supporting evidence before export.
+                    </p>
+                    <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
+                        Scope: {categoryLabel}
                     </p>
                 </div>
 
@@ -79,6 +89,15 @@ export function QuarterlyPlatformSummary({ platform, summary }: QuarterlyPlatfor
                     tone="rose"
                 />
             </div>
+
+            {methodologyNote && (
+                <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-200">
+                    <div className="mb-1 text-xs font-semibold uppercase tracking-wide">
+                        Category Methodology
+                    </div>
+                    <p>{methodologyNote}</p>
+                </div>
+            )}
         </div>
     );
 }

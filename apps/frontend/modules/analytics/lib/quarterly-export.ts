@@ -19,6 +19,7 @@ export interface QuarterlyExportData {
         fullQuarterCoverageLabel: string;
         totalAccounts: number;
         warnings: string[];
+        methodologyNote: string | null;
         sourceMonths: Array<{
             label: string;
             sourceLabel: string;
@@ -57,6 +58,7 @@ export interface QuarterlyExportData {
             accountName: string;
             handle: string;
             category: string;
+            sharedAccount: boolean;
             isRanked: boolean;
             performanceIssue: boolean;
             dataQualityIssue: boolean;
@@ -117,6 +119,7 @@ export function buildQuarterlyExportData({
             fullQuarterCoverageLabel,
             totalAccounts: preview.status.coverage.totalAccounts,
             warnings: preview.status.warnings,
+            methodologyNote: preview.methodologyNote,
             sourceMonths: preview.status.sourceMonths.map((month) => ({
                 label: month.label,
                 sourceLabel: month.sourceLabel || "Missing anchor",
@@ -163,6 +166,7 @@ function mapExportRow(row: QuarterlyPreviewRow) {
         accountName: row.accountName,
         handle: `@${row.handle}`,
         category: row.category,
+        sharedAccount: row.sharedAccount,
         isRanked: row.rankingEligible,
         performanceIssue: row.performanceIssue,
         dataQualityIssue: row.dataQualityIssue,
