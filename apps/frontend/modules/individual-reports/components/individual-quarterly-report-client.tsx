@@ -6,6 +6,8 @@ import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { prepareIndividualQuarterlyReportDraft } from "@/modules/individual-reports/actions/individual-report.actions";
 import {
+    DEFAULT_INDIVIDUAL_ENRICHED_CONTENT_LIMIT,
+    DEFAULT_INDIVIDUAL_LISTING_PAGE_LIMIT,
     estimateIndividualReportCredits,
     type IndividualReportRequest,
 } from "@/modules/individual-reports/lib/individual-quarterly-report";
@@ -51,8 +53,8 @@ export function IndividualQuarterlyReportClient({
 
     const selectedAccount = accounts.find((account) => account.id === accountId) || null;
     const estimate = estimateIndividualReportCredits({
-        listingPageLimit: 3,
-        detailedContentLimit: 0,
+        listingPageLimit: DEFAULT_INDIVIDUAL_LISTING_PAGE_LIMIT,
+        detailedContentLimit: DEFAULT_INDIVIDUAL_ENRICHED_CONTENT_LIMIT,
     });
 
     const handlePrepare = () => {
@@ -210,6 +212,32 @@ export function IndividualQuarterlyReportClient({
                             {draft.data.report.warnings.join(" ")}
                         </div>
                     )}
+
+                    <div className="mt-5 rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
+                        <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                            Future Content-Level Plan
+                        </div>
+                        <div className="mt-3 grid gap-3 md:grid-cols-2">
+                            {draft.data.contentLevelPlan.outputSections.map((section) => (
+                                <div
+                                    key={section.id}
+                                    className="rounded-lg bg-zinc-50 p-3 text-sm dark:bg-zinc-950"
+                                >
+                                    <div className="font-semibold text-zinc-950 dark:text-white">
+                                        {section.title}
+                                    </div>
+                                    <p className="mt-1 text-zinc-500">{section.description}</p>
+                                </div>
+                            ))}
+                        </div>
+                        <p className="mt-3 text-sm text-zinc-500">
+                            Plan only: fetch up to{" "}
+                            {draft.data.contentLevelPlan.reconstruction.listingPageLimit} listing
+                            pages, then enrich up to{" "}
+                            {draft.data.contentLevelPlan.enrichment.maxItems} selected posts. No
+                            live scraping is executed from this draft.
+                        </p>
+                    </div>
                 </section>
             )}
         </div>

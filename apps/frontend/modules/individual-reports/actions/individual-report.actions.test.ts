@@ -43,10 +43,14 @@ describe("individual report actions", () => {
 
         expect(result.success).toBe(true);
         if (result.success) {
-            expect(result.data.creditEstimate.totalCredits).toBe(4);
+            expect(result.data.creditEstimate.totalCredits).toBe(10);
             expect(result.data.report.sections[0]).toMatchObject({
                 id: "official-snapshot-summary",
                 status: "ready",
+            });
+            expect(result.data.contentLevelPlan.enrichment).toMatchObject({
+                mode: "selected-subset",
+                maxItems: 6,
             });
             expect(result.data.executionModel.liveScrapingEnabled).toBe(false);
         }
