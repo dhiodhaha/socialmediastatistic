@@ -155,20 +155,14 @@ export function getQuarterlyAnchorJobIds({
     year,
     quarter,
     jobs,
-    includeBaseline = false,
 }: {
     year: number;
     quarter: number;
     jobs: QuarterlyJobReference[];
-    includeBaseline?: boolean;
 }) {
     const jobsByMonth = latestCompletedJobByMonth(jobs);
-    const quarterMonths = quarterMonthStarts(year, quarter);
-    const months = includeBaseline
-        ? [new Date(year, (quarter - 1) * 3 - 3, 1), ...quarterMonths]
-        : quarterMonths;
 
-    return months
+    return quarterMonthStarts(year, quarter)
         .map((month) => jobsByMonth.get(monthKey(month))?.id || null)
         .filter((jobId): jobId is string => !!jobId);
 }
@@ -186,8 +180,8 @@ export function buildQuarterlyStatus({
 }): QuarterlyStatus {
     const jobsByMonth = latestCompletedJobByMonth(jobs);
     const quarterMonths = quarterMonthStarts(year, quarter);
+    const baselineMonth = quarterMonths[0];
     const quarterEndMonth = quarterMonths[2];
-    const baselineMonth = new Date(year, (quarter - 1) * 3 - 3, 1);
 
     const sourceMonths = quarterMonths.map((month) => {
         const key = monthKey(month);
@@ -263,7 +257,7 @@ export function buildQuarterlyStatus({
 
     if (!baselineJob) {
         warnings.push(
-            `Previous quarter baseline unavailable for ${monthLabel(baselineMonth)}. Quarter-over-quarter comparison will degrade gracefully.`,
+            `Quarter-start baseline unavailable for ${monthLabel(baselineMonth)}. Within-quarter growth comparison will degrade gracefully.`,
         );
     }
 

@@ -406,7 +406,7 @@ export function generateQuarterlyReportHtml(config: QuarterlyReportConfig): stri
                     <div class="section-header">
                         <div>
                             <h2>${periodLabel}</h2>
-                            <p>Quarter-end vs previous quarter-end baseline: ${baselineLabel}</p>
+                            <p>Quarter-end vs quarter-start baseline: ${baselineLabel}</p>
                         </div>
                     </div>
 
@@ -441,7 +441,7 @@ export function generateQuarterlyReportHtml(config: QuarterlyReportConfig): stri
                             )
                             .join("")}
                         <div class="source-card">
-                            <strong>Baseline ${baselineLabel}</strong>
+                            <strong>Quarter-start ${baselineLabel}</strong>
                             ${executiveSummary.baselineSourceLabel}
                         </div>
                     </div>

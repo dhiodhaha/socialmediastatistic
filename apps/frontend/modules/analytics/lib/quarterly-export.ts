@@ -1,8 +1,4 @@
-import type {
-    QuarterlyPlatformPreview,
-    QuarterlyPlatformSummary,
-    QuarterlyPreviewRow,
-} from "./quarterly-platform-preview";
+import type { QuarterlyPlatformPreview, QuarterlyPreviewRow } from "./quarterly-platform-preview";
 
 export type QuarterlyExportScope = "PLATFORM" | "ALL";
 

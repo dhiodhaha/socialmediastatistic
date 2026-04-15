@@ -41,10 +41,10 @@ const preview: QuarterlyPlatformPreview = {
             sourceLabel: "Manual reporting month",
         },
         baseline: {
-            key: "2025-12",
-            label: "Dec 2025",
+            key: "2026-01",
+            label: "Jan 2026",
             hasAnchor: true,
-            anchorJobId: "dec",
+            anchorJobId: "jan",
             source: "inferred",
             sourceLabel: "Auto from completion month",
         },

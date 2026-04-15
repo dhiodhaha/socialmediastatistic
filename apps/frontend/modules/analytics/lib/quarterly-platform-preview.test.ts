@@ -40,10 +40,10 @@ const baseStatus: QuarterlyStatus = {
         sourceLabel: "Manual reporting month",
     },
     baseline: {
-        key: "2025-12",
-        label: "Dec 2025",
+        key: "2026-01",
+        label: "Jan 2026",
         hasAnchor: true,
-        anchorJobId: "dec",
+        anchorJobId: "jan",
         source: "inferred",
         sourceLabel: "Auto from completion month",
     },
@@ -77,7 +77,7 @@ describe("buildQuarterlyPlatformPreview", () => {
                             followers: 100,
                             posts: 10,
                             likes: null,
-                            scrapedAt: new Date("2025-12-31T10:00:00.000Z"),
+                            scrapedAt: new Date("2026-01-31T10:00:00.000Z"),
                         },
                         {
                             platform: "INSTAGRAM",
@@ -97,7 +97,7 @@ describe("buildQuarterlyPlatformPreview", () => {
         expect(preview.summaries[0]?.rankingEligibleCount).toBe(0);
     });
 
-    it("marks negative quarter-over-quarter follower growth as a performance issue", () => {
+    it("marks negative within-quarter follower growth as a performance issue", () => {
         const preview = buildQuarterlyPlatformPreview({
             status: baseStatus,
             accounts: [
@@ -114,7 +114,7 @@ describe("buildQuarterlyPlatformPreview", () => {
                             followers: 200,
                             posts: 20,
                             likes: null,
-                            scrapedAt: new Date("2025-12-31T10:00:00.000Z"),
+                            scrapedAt: new Date("2026-01-31T10:00:00.000Z"),
                         },
                         {
                             platform: "INSTAGRAM",
@@ -152,7 +152,7 @@ describe("buildQuarterlyPlatformPreview", () => {
                             posts: 10,
                             likes: null,
                             scrapedAt: new Date("2026-01-02T10:00:00.000Z"),
-                            jobId: "dec",
+                            jobId: "jan",
                         },
                         {
                             platform: "INSTAGRAM",
@@ -199,7 +199,7 @@ describe("buildQuarterlyPlatformPreview", () => {
                             followers: 100,
                             posts: 10,
                             likes: null,
-                            scrapedAt: new Date("2025-12-31T10:00:00.000Z"),
+                            scrapedAt: new Date("2026-01-31T10:00:00.000Z"),
                         },
                         {
                             platform: "INSTAGRAM",
@@ -247,7 +247,7 @@ describe("buildQuarterlyPlatformPreview", () => {
                             followers: 100,
                             posts: 10,
                             likes: null,
-                            scrapedAt: new Date("2025-12-31T10:00:00.000Z"),
+                            scrapedAt: new Date("2026-01-31T10:00:00.000Z"),
                         },
                         {
                             platform: "INSTAGRAM",

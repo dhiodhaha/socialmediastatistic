@@ -5,7 +5,7 @@ import { generateQuarterlyReportHtml } from "./quarterly-template";
 test("generateQuarterlyReportHtml renders executive summary and platform sections", () => {
     const html = generateQuarterlyReportHtml({
         periodLabel: "Q1 2026",
-        baselineLabel: "Dec 2025",
+        baselineLabel: "Jan 2026",
         generatedAt: "15/04/2026 10:00",
         scope: "ALL",
         includeCover: true,
