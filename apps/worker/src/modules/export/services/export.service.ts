@@ -105,6 +105,64 @@ interface QuarterlyExportData {
     }>;
 }
 
+interface IndividualQuarterlyExportData {
+    account: {
+        id: string;
+        username: string;
+    };
+    request: {
+        platforms: string[];
+        year: number;
+        quarter: number;
+        listingPageLimit: number;
+        enrichedContentLimit: number;
+    };
+    estimatedCredits: {
+        totalCredits: number;
+    };
+    actualCreditsUsed: number;
+    results: Array<{
+        platform: string;
+        handle: string;
+        success: boolean;
+        error?: string;
+        creditsUsed: number;
+        rawItemsFetched: number;
+        fetchedDateRange?: {
+            earliest: string | null;
+            latest: string | null;
+        };
+        diagnostics?: string[];
+        coverage: {
+            status: string;
+            totalContentItems: number;
+            listingPagesFetched: number;
+            reachedQuarterStart: boolean;
+            months: Array<{
+                key: string;
+                label: string;
+                contentCount: number;
+            }>;
+            note: string;
+        };
+        enrichedItems: Array<{
+            id: string;
+            url?: string | null;
+            publishedAt: string;
+            textExcerpt?: string | null;
+            engagementScore?: number;
+            selectionReason?: string;
+            metrics: {
+                likes?: number | null;
+                comments?: number | null;
+                views?: number | null;
+                shares?: number | null;
+            };
+        }>;
+    }>;
+    methodologyNotes: string[];
+}
+
 export class ExportService {
     static async generatePdf(filters: ExportFilters): Promise<Buffer> {
         const { startDate, endDate, status } = filters;
@@ -295,6 +353,40 @@ export class ExportService {
             const pdfBuffer = await page.pdf({
                 format: "A4",
                 landscape: true,
+                printBackground: true,
+                margin: { top: "0", right: "0", bottom: "0", left: "0" },
+            });
+
+            return Buffer.from(pdfBuffer);
+        } finally {
+            await browser.close();
+        }
+    }
+
+    static async generateIndividualQuarterlyPdf(
+        exportData: IndividualQuarterlyExportData,
+    ): Promise<Buffer> {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const {
+            generateIndividualQuarterlyReportHtml,
+        } = require("../../individual-reports/services/individual-quarterly-template");
+
+        const html = generateIndividualQuarterlyReportHtml({
+            data: exportData,
+            generatedAt: new Date().toLocaleString("id-ID"),
+        });
+
+        const browser = await puppeteer.launch({
+            headless: true,
+            args: ["--no-sandbox", "--disable-setuid-sandbox"],
+        });
+
+        try {
+            const page = await browser.newPage();
+            await page.setContent(html, { waitUntil: "networkidle0" });
+
+            const pdfBuffer = await page.pdf({
+                format: "A4",
                 printBackground: true,
                 margin: { top: "0", right: "0", bottom: "0", left: "0" },
             });

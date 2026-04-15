@@ -38,6 +38,7 @@ interface ListingPageResult {
     items: ReconstructedContentItem[];
     nextCursor: string | null;
     hasMore: boolean;
+    diagnostics?: string[];
 }
 
 export async function fetchCreditBalance() {
@@ -59,7 +60,7 @@ export async function runLivePlatformReview(
     input: LiveReviewPlatformInput,
 ): Promise<LiveReviewPlatformResult> {
     try {
-        const { items, listingPagesFetched, reachedQuarterStart } =
+        const { items, listingPagesFetched, reachedQuarterStart, parserDiagnostics } =
             await fetchQuarterListings(input);
         const coverageDiagnostics = buildCoverageDiagnostics({
             items,
@@ -69,6 +70,12 @@ export async function runLivePlatformReview(
             listingPagesFetched,
             reachedQuarterStart,
         });
+        const diagnostics = [...parserDiagnostics, ...coverageDiagnostics];
+        if (input.platform === "TWITTER") {
+            diagnostics.unshift(
+                "ScrapeCreators Twitter user-tweets returns up to 100 popular public tweets, not a chronological latest feed; quarter coverage can be empty even when the account posted in the quarter.",
+            );
+        }
         const coverage = calculateReconstructionCoverage({
             year: input.year,
             quarter: input.quarter,
@@ -89,7 +96,7 @@ export async function runLivePlatformReview(
             creditsUsed: listingPagesFetched,
             rawItemsFetched: items.length,
             fetchedDateRange: fetchedDateRange(items),
-            diagnostics: coverageDiagnostics,
+            diagnostics,
             coverage,
             enrichedItems,
             output: buildContentLevelOutput({ coverage, enrichedItems }),
@@ -129,6 +136,7 @@ export async function runLivePlatformReview(
 
 async function fetchQuarterListings(input: LiveReviewPlatformInput) {
     const items: ReconstructedContentItem[] = [];
+    const parserDiagnostics: string[] = [];
     let cursor: string | null = null;
     let listingPagesFetched = 0;
     let reachedQuarterStart = false;
@@ -138,6 +146,7 @@ async function fetchQuarterListings(input: LiveReviewPlatformInput) {
         const result = await fetchListingPage(input.platform, input.handle, cursor);
         listingPagesFetched++;
         items.push(...result.items);
+        parserDiagnostics.push(...(result.diagnostics || []));
 
         if (result.items.some((item) => item.publishedAt < quarterStart)) {
             reachedQuarterStart = true;
@@ -151,7 +160,7 @@ async function fetchQuarterListings(input: LiveReviewPlatformInput) {
         cursor = result.nextCursor;
     }
 
-    return { items, listingPagesFetched, reachedQuarterStart };
+    return { items, listingPagesFetched, reachedQuarterStart, parserDiagnostics };
 }
 
 async function fetchListingPage(
@@ -235,6 +244,7 @@ export function parseInstagramListing(data: unknown): ListingPageResult {
         items,
         nextCursor: readString(record, ["next_max_id"]),
         hasMore: Boolean(record.more_available),
+        diagnostics: items.length === 0 ? [responseShapeDiagnostic("Instagram", record)] : [],
     };
 }
 
@@ -270,29 +280,39 @@ export function parseTikTokListing(data: unknown): ListingPageResult {
         items,
         nextCursor: readString(record, ["max_cursor"]),
         hasMore: Boolean(record.has_more),
+        diagnostics: items.length === 0 ? [responseShapeDiagnostic("TikTok", record)] : [],
     };
 }
 
 export function parseTwitterListing(data: unknown): ListingPageResult {
     const record = asRecord(data);
-    const items = asArray(record.tweets).flatMap((item) => {
+    const rawTweets = extractTwitterTweetCandidates(record);
+    const items = rawTweets.flatMap((item) => {
         const entry = asRecord(item);
         const legacy = asRecord(entry.legacy);
         const publishedRaw =
-            readString(legacy, ["created_at"]) || readString(entry, ["created_at"]);
+            readString(legacy, ["created_at"]) ||
+            readString(entry, ["created_at"]) ||
+            readString(entry, ["createdAt"]) ||
+            readString(asRecord(entry.tweet), ["created_at"]);
         const publishedAt = publishedRaw ? new Date(publishedRaw) : null;
         if (!publishedAt || Number.isNaN(publishedAt.getTime())) return [];
 
+        const views = asRecord(entry.views);
         return [
             {
                 id: String(entry.rest_id || legacy.id_str || entry.id || crypto.randomUUID()),
                 url: readString(entry, ["url"]),
                 publishedAt,
-                textExcerpt: readString(legacy, ["full_text"]) || readString(entry, ["text"]),
+                textExcerpt:
+                    readString(legacy, ["full_text"]) ||
+                    readString(legacy, ["text"]) ||
+                    readString(entry, ["text"]) ||
+                    readString(entry, ["full_text"]),
                 metrics: {
                     likes: readNumber(legacy, ["favorite_count"]),
                     comments: readNumber(legacy, ["reply_count"]),
-                    views: readNumber(asRecord(entry.views), ["count"]),
+                    views: readNumber(views, ["count"]),
                     shares:
                         (readNumber(legacy, ["retweet_count"]) || 0) +
                         (readNumber(legacy, ["quote_count"]) || 0),
@@ -305,7 +325,64 @@ export function parseTwitterListing(data: unknown): ListingPageResult {
         items,
         nextCursor: null,
         hasMore: false,
+        diagnostics:
+            items.length === 0
+                ? [
+                      responseShapeDiagnostic("Twitter", record),
+                      `Twitter parser found ${rawTweets.length} candidate tweet object(s), but none had a parseable created_at date.`,
+                  ]
+                : [],
     };
+}
+
+function extractTwitterTweetCandidates(record: Record<string, unknown>) {
+    const directArrays = [
+        asArray(record.tweets),
+        asArray(record.data),
+        asArray(record.items),
+        asArray(record.results),
+    ].find((items) => items.length > 0);
+
+    if (directArrays) {
+        return directArrays;
+    }
+
+    const candidates: unknown[] = [];
+    collectTwitterCandidates(record, candidates, 0);
+    return candidates;
+}
+
+function collectTwitterCandidates(value: unknown, candidates: unknown[], depth: number) {
+    if (depth > 8 || !value || typeof value !== "object") return;
+
+    if (Array.isArray(value)) {
+        for (const item of value) collectTwitterCandidates(item, candidates, depth + 1);
+        return;
+    }
+
+    const record = value as Record<string, unknown>;
+    const legacy = asRecord(record.legacy);
+    const looksLikeTweet =
+        record.__typename === "Tweet" ||
+        !!record.tweet_results ||
+        !!record.rest_id ||
+        !!readString(legacy, ["full_text"]) ||
+        !!readString(legacy, ["created_at"]);
+
+    if (looksLikeTweet) {
+        const tweetResult = asRecord(record.tweet_results);
+        const result = asRecord(tweetResult.result);
+        candidates.push(Object.keys(result).length > 0 ? result : record);
+    }
+
+    for (const child of Object.values(record)) {
+        collectTwitterCandidates(child, candidates, depth + 1);
+    }
+}
+
+function responseShapeDiagnostic(platform: string, record: Record<string, unknown>) {
+    const keys = Object.keys(record).slice(0, 12);
+    return `${platform} parser did not find parseable listing items. Response keys: ${keys.length > 0 ? keys.join(", ") : "none"}.`;
 }
 
 function buildInstagramUrl(code: string | null) {

@@ -1,6 +1,6 @@
 "use server";
 
-import { type Platform, prisma } from "@repo/database";
+import { type Platform, type Prisma, prisma } from "@repo/database";
 import type {
     calculateReconstructionCoverage,
     selectContentForEnrichment,
@@ -48,6 +48,25 @@ interface WorkerLiveReviewResult {
     diagnostics: string[];
     coverage: ReturnType<typeof calculateReconstructionCoverage>;
     enrichedItems: ReturnType<typeof selectContentForEnrichment>;
+}
+
+interface IndividualReportRunData {
+    account: {
+        id: string;
+        username: string;
+    };
+    request: {
+        accountId: string;
+        platforms: Platform[];
+        year: number;
+        quarter: number;
+        listingPageLimit: number;
+        enrichedContentLimit: number;
+    };
+    estimatedCredits: ReturnType<typeof estimateIndividualReportCredits>;
+    actualCreditsUsed: number;
+    results: WorkerLiveReviewResult[];
+    methodologyNotes: string[];
 }
 
 export async function getIndividualReportAccountOptions() {
@@ -259,31 +278,135 @@ export async function runIndividualQuarterlyLiveReview(input: IndividualLiveRevi
         detailedContentLimit: 0,
     });
 
+    const runData: IndividualReportRunData = {
+        account: {
+            id: account.id,
+            username: account.username,
+        },
+        request: {
+            accountId: input.accountId,
+            platforms: runnablePlatforms.map((entry) => entry.platform),
+            year: input.year,
+            quarter: input.quarter,
+            listingPageLimit,
+            enrichedContentLimit,
+        },
+        estimatedCredits,
+        actualCreditsUsed: results.reduce((total, result) => total + result.creditsUsed, 0),
+        results,
+        methodologyNotes: [
+            "Live content reconstruction uses ScrapeCreators listing endpoints only in this release.",
+            "Returned items are filtered into the selected quarter before coverage and enrichment selection.",
+            "Selected content inspection is objective ranking from listing metrics; detail endpoints are not called yet.",
+            "Twitter / X coverage is limited by ScrapeCreators' public user-tweets endpoint and may return popular tweets rather than a chronological quarterly feed.",
+        ],
+    };
+
+    const savedRun = await prisma.individualReportRun.create({
+        data: {
+            accountId: account.id,
+            year: input.year,
+            quarter: input.quarter,
+            platforms: runData.request.platforms,
+            status: results.every((result) => result.success) ? "COMPLETED" : "FAILED",
+            estimatedCredits: estimatedCredits.totalCredits,
+            actualCreditsUsed: runData.actualCreditsUsed,
+            resultJson: toPrismaJson(runData),
+        },
+        select: {
+            id: true,
+            createdAt: true,
+        },
+    });
+
     return {
         success: true as const,
         data: {
-            account: {
-                id: account.id,
-                username: account.username,
+            ...runData,
+            run: {
+                id: savedRun.id,
+                createdAt: savedRun.createdAt.toISOString(),
             },
-            request: {
-                accountId: input.accountId,
-                platforms: runnablePlatforms.map((entry) => entry.platform),
-                year: input.year,
-                quarter: input.quarter,
-                listingPageLimit,
-                enrichedContentLimit,
-            },
-            estimatedCredits,
-            actualCreditsUsed: results.reduce((total, result) => total + result.creditsUsed, 0),
-            results,
-            methodologyNotes: [
-                "Live content reconstruction uses ScrapeCreators listing endpoints only in this release.",
-                "Returned items are filtered into the selected quarter before coverage and enrichment selection.",
-                "Selected content inspection is objective ranking from listing metrics; detail endpoints are not called yet.",
-            ],
         },
     };
+}
+
+export async function getSavedIndividualReportRuns(accountId?: string) {
+    const session = await auth();
+    if (!session) {
+        throw new Error("Unauthorized");
+    }
+
+    const runs = await prisma.individualReportRun.findMany({
+        where: accountId ? { accountId } : undefined,
+        orderBy: { createdAt: "desc" },
+        take: 12,
+        select: {
+            id: true,
+            accountId: true,
+            year: true,
+            quarter: true,
+            platforms: true,
+            status: true,
+            estimatedCredits: true,
+            actualCreditsUsed: true,
+            resultJson: true,
+            createdAt: true,
+            account: {
+                select: {
+                    username: true,
+                },
+            },
+        },
+    });
+
+    return runs.map((run) => ({
+        id: run.id,
+        accountId: run.accountId,
+        accountName: run.account.username,
+        year: run.year,
+        quarter: run.quarter,
+        platforms: parsePlatformList(run.platforms),
+        status: run.status,
+        estimatedCredits: run.estimatedCredits,
+        actualCreditsUsed: run.actualCreditsUsed,
+        createdAt: run.createdAt.toISOString(),
+        result: run.resultJson as unknown as IndividualReportRunData,
+    }));
+}
+
+export async function exportIndividualQuarterlyReportPdf(runId: string) {
+    const session = await auth();
+    if (!session) {
+        throw new Error("Unauthorized");
+    }
+
+    const run = await prisma.individualReportRun.findUnique({
+        where: { id: runId },
+        select: {
+            resultJson: true,
+        },
+    });
+
+    if (!run) {
+        return { success: false as const, error: "Saved individual report run not found." };
+    }
+
+    try {
+        const base64 = await callWorkerPdfBase64(
+            "/export/individual-quarterly-pdf",
+            run.resultJson,
+        );
+        return { success: true as const, data: base64 };
+    } catch (error) {
+        return {
+            success: false as const,
+            error:
+                error instanceof Error
+                    ? error.message
+                    : "Failed to export individual quarterly PDF.",
+        };
+    }
 }
 
 async function callWorkerJson<T>(path: string, init: RequestInit): Promise<T> {
@@ -316,6 +439,32 @@ async function callWorkerJson<T>(path: string, init: RequestInit): Promise<T> {
     return payload?.data as T;
 }
 
+async function callWorkerPdfBase64(path: string, body: unknown): Promise<string> {
+    const workerUrl = process.env.WORKER_URL || "http://localhost:4000";
+    const workerSecret = process.env.WORKER_SECRET;
+
+    if (!workerSecret) {
+        throw new Error("WORKER_SECRET not configured.");
+    }
+
+    const response = await fetch(`${workerUrl}${path}`, {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer ${workerSecret}`,
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`PDF export failed: ${response.status} - ${text.slice(0, 180)}`);
+    }
+
+    const buffer = await response.arrayBuffer();
+    return Buffer.from(buffer).toString("base64");
+}
+
 function platformHandle(
     account: { instagram: string | null; tiktok: string | null; twitter: string | null },
     platform: Platform,
@@ -323,4 +472,16 @@ function platformHandle(
     if (platform === "INSTAGRAM") return account.instagram;
     if (platform === "TIKTOK") return account.tiktok;
     return account.twitter;
+}
+
+function toPrismaJson(value: unknown): Prisma.InputJsonValue {
+    return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
+}
+
+function parsePlatformList(value: Prisma.JsonValue): Platform[] {
+    return Array.isArray(value)
+        ? value.filter((platform): platform is Platform =>
+              ["INSTAGRAM", "TIKTOK", "TWITTER"].includes(String(platform)),
+          )
+        : [];
 }

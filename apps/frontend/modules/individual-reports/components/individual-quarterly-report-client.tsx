@@ -1,11 +1,13 @@
 "use client";
 
 import type { Platform } from "@repo/database";
-import { Loader2, Search } from "lucide-react";
-import { useState, useTransition } from "react";
+import { Download, Loader2, Search } from "lucide-react";
+import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import {
+    exportIndividualQuarterlyReportPdf,
     getIndividualReportCreditBalance,
+    getSavedIndividualReportRuns,
     prepareIndividualQuarterlyReportDraft,
     runIndividualQuarterlyLiveReview,
 } from "@/modules/individual-reports/actions/individual-report.actions";
@@ -38,6 +40,7 @@ interface IndividualQuarterlyReportClientProps {
 type DraftResult = Awaited<ReturnType<typeof prepareIndividualQuarterlyReportDraft>>;
 type LiveReviewResult = Awaited<ReturnType<typeof runIndividualQuarterlyLiveReview>>;
 type CreditBalanceResult = Awaited<ReturnType<typeof getIndividualReportCreditBalance>>;
+type SavedRunsResult = Awaited<ReturnType<typeof getSavedIndividualReportRuns>>;
 
 const PLATFORM_OPTIONS: Array<{ id: Platform; label: string }> = [
     { id: "INSTAGRAM", label: "Instagram" },
@@ -58,6 +61,8 @@ export function IndividualQuarterlyReportClient({
     const [draft, setDraft] = useState<DraftResult | null>(null);
     const [liveReview, setLiveReview] = useState<LiveReviewResult | null>(null);
     const [creditBalance, setCreditBalance] = useState<CreditBalanceResult | null>(null);
+    const [savedRuns, setSavedRuns] = useState<SavedRunsResult>([]);
+    const [exportingRunId, setExportingRunId] = useState<string | null>(null);
     const [isPending, startTransition] = useTransition();
 
     const selectedAccount = accounts.find((account) => account.id === accountId) || null;
@@ -73,6 +78,22 @@ export function IndividualQuarterlyReportClient({
         listingPageLimit: DEFAULT_INDIVIDUAL_LIVE_LISTING_PAGE_LIMIT * availablePlatforms.length,
         detailedContentLimit: 0,
     });
+
+    useEffect(() => {
+        if (!accountId) {
+            setSavedRuns([]);
+            return;
+        }
+
+        let cancelled = false;
+        getSavedIndividualReportRuns(accountId).then((runs) => {
+            if (!cancelled) setSavedRuns(runs);
+        });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [accountId]);
 
     const handlePrepare = () => {
         const request: IndividualReportRequest = {
@@ -119,11 +140,36 @@ export function IndividualQuarterlyReportClient({
             });
             setLiveReview(result);
             if (result.success) {
+                const runs = await getSavedIndividualReportRuns(accountId);
+                setSavedRuns(runs);
                 toast.success("Live individual review completed");
                 return;
             }
             toast.error(result.error);
         });
+    };
+
+    const handleExportPdf = async (runId: string) => {
+        setExportingRunId(runId);
+        try {
+            const result = await exportIndividualQuarterlyReportPdf(runId);
+            if (!result.success) {
+                toast.error(result.error);
+                return;
+            }
+
+            const link = document.createElement("a");
+            link.href = `data:application/pdf;base64,${result.data}`;
+            link.download = `individual-quarterly-report-${Date.now()}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            toast.success("Individual quarterly PDF exported");
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : "Export failed");
+        } finally {
+            setExportingRunId(null);
+        }
     };
 
     return (
@@ -343,7 +389,27 @@ export function IndividualQuarterlyReportClient({
                     <p className="mt-1 text-sm text-zinc-500">
                         Used {liveReview.data.actualCreditsUsed} listing credit(s). Estimated max:{" "}
                         {liveReview.data.estimatedCredits.totalCredits}.
+                        {"run" in liveReview.data && liveReview.data.run
+                            ? ` Saved run ${liveReview.data.run.id}.`
+                            : ""}
                     </p>
+                    {"run" in liveReview.data && liveReview.data.run && (
+                        <div className="mt-4">
+                            <Button
+                                type="button"
+                                outline
+                                onClick={() => handleExportPdf(liveReview.data.run.id)}
+                                disabled={exportingRunId === liveReview.data.run.id}
+                            >
+                                {exportingRunId === liveReview.data.run.id ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" data-slot="icon" />
+                                ) : (
+                                    <Download className="h-4 w-4" data-slot="icon" />
+                                )}
+                                Export Individual PDF
+                            </Button>
+                        </div>
+                    )}
 
                     <div className="mt-5 grid gap-4 lg:grid-cols-3">
                         {liveReview.data.results.map((result) => {
@@ -440,6 +506,48 @@ export function IndividualQuarterlyReportClient({
                                 </div>
                             );
                         })}
+                    </div>
+                </section>
+            )}
+
+            {savedRuns.length > 0 && (
+                <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                        Saved Individual Review Runs
+                    </div>
+                    <div className="mt-4 space-y-3">
+                        {savedRuns.map((run) => (
+                            <div
+                                key={run.id}
+                                className="flex flex-col gap-3 rounded-xl border border-zinc-200 p-4 dark:border-zinc-800 md:flex-row md:items-center md:justify-between"
+                            >
+                                <div>
+                                    <div className="font-semibold text-zinc-950 dark:text-white">
+                                        {run.accountName} Q{run.quarter} {run.year}
+                                    </div>
+                                    <div className="text-sm text-zinc-500">
+                                        {run.platforms.join(", ")} • {run.actualCreditsUsed}{" "}
+                                        credit(s) used • {new Date(run.createdAt).toLocaleString()}
+                                    </div>
+                                </div>
+                                <Button
+                                    type="button"
+                                    outline
+                                    onClick={() => handleExportPdf(run.id)}
+                                    disabled={exportingRunId === run.id}
+                                >
+                                    {exportingRunId === run.id ? (
+                                        <Loader2
+                                            className="h-4 w-4 animate-spin"
+                                            data-slot="icon"
+                                        />
+                                    ) : (
+                                        <Download className="h-4 w-4" data-slot="icon" />
+                                    )}
+                                    Export PDF
+                                </Button>
+                            </div>
+                        ))}
                     </div>
                 </section>
             )}

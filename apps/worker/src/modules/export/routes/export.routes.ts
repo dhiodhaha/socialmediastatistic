@@ -131,4 +131,37 @@ router.post("/quarterly-pdf", async (req, res) => {
     }
 });
 
+/**
+ * Generate Individual Quarterly PDF Export
+ * POST /export/individual-quarterly-pdf
+ * Body: saved individual review payload
+ */
+router.post("/individual-quarterly-pdf", async (req, res) => {
+    try {
+        const exportData = req.body;
+        logger.info(
+            {
+                account: exportData.account?.username,
+                platforms: exportData.request?.platforms?.length,
+            },
+            "Individual quarterly PDF export requested",
+        );
+
+        const pdfBuffer = await ExportService.generateIndividualQuarterlyPdf(exportData);
+
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader(
+            "Content-Disposition",
+            `attachment; filename=individual-quarterly-${Date.now()}.pdf`,
+        );
+        res.send(pdfBuffer);
+    } catch (error) {
+        logger.error({ error }, "Failed to generate individual quarterly PDF");
+        res.status(500).json({
+            success: false,
+            error: "Failed to generate individual quarterly PDF report",
+        });
+    }
+});
+
 export default router;
