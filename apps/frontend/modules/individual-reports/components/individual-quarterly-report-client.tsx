@@ -4,7 +4,11 @@ import type { Platform } from "@repo/database";
 import { Loader2, Search } from "lucide-react";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { prepareIndividualQuarterlyReportDraft } from "@/modules/individual-reports/actions/individual-report.actions";
+import {
+    getIndividualReportCreditBalance,
+    prepareIndividualQuarterlyReportDraft,
+    runIndividualQuarterlyLiveReview,
+} from "@/modules/individual-reports/actions/individual-report.actions";
 import {
     DEFAULT_INDIVIDUAL_ENRICHED_CONTENT_LIMIT,
     DEFAULT_INDIVIDUAL_LISTING_PAGE_LIMIT,
@@ -31,6 +35,8 @@ interface IndividualQuarterlyReportClientProps {
 }
 
 type DraftResult = Awaited<ReturnType<typeof prepareIndividualQuarterlyReportDraft>>;
+type LiveReviewResult = Awaited<ReturnType<typeof runIndividualQuarterlyLiveReview>>;
+type CreditBalanceResult = Awaited<ReturnType<typeof getIndividualReportCreditBalance>>;
 
 const PLATFORM_OPTIONS: Array<{ id: Platform; label: string }> = [
     { id: "INSTAGRAM", label: "Instagram" },
@@ -49,12 +55,22 @@ export function IndividualQuarterlyReportClient({
     const [year, setYear] = useState(String(currentYear));
     const [quarter, setQuarter] = useState("1");
     const [draft, setDraft] = useState<DraftResult | null>(null);
+    const [liveReview, setLiveReview] = useState<LiveReviewResult | null>(null);
+    const [creditBalance, setCreditBalance] = useState<CreditBalanceResult | null>(null);
     const [isPending, startTransition] = useTransition();
 
     const selectedAccount = accounts.find((account) => account.id === accountId) || null;
+    const availablePlatforms = PLATFORM_OPTIONS.filter(
+        (option) => !!selectedAccount?.handles[option.id],
+    );
     const estimate = estimateIndividualReportCredits({
         listingPageLimit: DEFAULT_INDIVIDUAL_LISTING_PAGE_LIMIT,
         detailedContentLimit: DEFAULT_INDIVIDUAL_ENRICHED_CONTENT_LIMIT,
+    });
+    const allPlatformsEstimate = estimateIndividualReportCredits({
+        includeProfileRequest: false,
+        listingPageLimit: DEFAULT_INDIVIDUAL_LISTING_PAGE_LIMIT * availablePlatforms.length,
+        detailedContentLimit: 0,
     });
 
     const handlePrepare = () => {
@@ -70,6 +86,39 @@ export function IndividualQuarterlyReportClient({
             setDraft(result);
             if (result.success) {
                 toast.success("Individual quarterly draft prepared");
+                return;
+            }
+            toast.error(result.error);
+        });
+    };
+
+    const handleCheckCredits = () => {
+        startTransition(async () => {
+            const result = await getIndividualReportCreditBalance();
+            setCreditBalance(result);
+            if (result.success) {
+                toast.success("ScrapeCreators balance checked");
+                return;
+            }
+            toast.error(result.error);
+        });
+    };
+
+    const handleLiveReview = (platforms: Platform[]) => {
+        if (!selectedAccount) return;
+
+        startTransition(async () => {
+            const result = await runIndividualQuarterlyLiveReview({
+                accountId,
+                platforms,
+                year: Number(year),
+                quarter: Number(quarter),
+                listingPageLimit: DEFAULT_INDIVIDUAL_LISTING_PAGE_LIMIT,
+                enrichedContentLimit: DEFAULT_INDIVIDUAL_ENRICHED_CONTENT_LIMIT,
+            });
+            setLiveReview(result);
+            if (result.success) {
+                toast.success("Live individual review completed");
                 return;
             }
             toast.error(result.error);
@@ -165,19 +214,58 @@ export function IndividualQuarterlyReportClient({
                             {estimate.breakdown.listingCredits}, detail{" "}
                             {estimate.breakdown.detailCredits}.
                         </div>
-                    </div>
-                    <Button
-                        type="button"
-                        onClick={handlePrepare}
-                        disabled={isPending || !selectedAccount}
-                    >
-                        {isPending ? (
-                            <Loader2 className="h-4 w-4 animate-spin" data-slot="icon" />
-                        ) : (
-                            <Search className="h-4 w-4" data-slot="icon" />
+                        <div className="mt-1 text-xs">
+                            All available platforms listing-only estimate:{" "}
+                            {allPlatformsEstimate.totalCredits} credits across{" "}
+                            {availablePlatforms.length} platform(s).
+                        </div>
+                        {creditBalance?.success && (
+                            <div className="mt-1 text-xs">
+                                Current balance: {creditBalance.data.credits ?? "unknown"} credits.
+                            </div>
                         )}
-                        Prepare Draft
-                    </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                        <Button
+                            type="button"
+                            outline
+                            onClick={handleCheckCredits}
+                            disabled={isPending}
+                        >
+                            Check Credits
+                        </Button>
+                        <Button
+                            type="button"
+                            outline
+                            onClick={handlePrepare}
+                            disabled={isPending || !selectedAccount}
+                        >
+                            {isPending ? (
+                                <Loader2 className="h-4 w-4 animate-spin" data-slot="icon" />
+                            ) : (
+                                <Search className="h-4 w-4" data-slot="icon" />
+                            )}
+                            Prepare Draft
+                        </Button>
+                        <Button
+                            type="button"
+                            onClick={() => handleLiveReview([platform])}
+                            disabled={isPending || !selectedAccount}
+                        >
+                            Scrape Selected
+                        </Button>
+                        <Button
+                            type="button"
+                            onClick={() =>
+                                handleLiveReview(availablePlatforms.map((option) => option.id))
+                            }
+                            disabled={
+                                isPending || !selectedAccount || availablePlatforms.length === 0
+                            }
+                        >
+                            Scrape 3 Platforms
+                        </Button>
+                    </div>
                 </div>
             </section>
 
@@ -240,6 +328,106 @@ export function IndividualQuarterlyReportClient({
                     </div>
                 </section>
             )}
+
+            {liveReview?.success && (
+                <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                        Live Individual In-Depth Review
+                    </div>
+                    <h2 className="mt-2 text-2xl font-semibold text-zinc-950 dark:text-white">
+                        {liveReview.data.account.username} Q{liveReview.data.request.quarter}{" "}
+                        {liveReview.data.request.year}
+                    </h2>
+                    <p className="mt-1 text-sm text-zinc-500">
+                        Used {liveReview.data.actualCreditsUsed} listing credit(s). Estimated max:{" "}
+                        {liveReview.data.estimatedCredits.totalCredits}.
+                    </p>
+
+                    <div className="mt-5 grid gap-4 lg:grid-cols-3">
+                        {liveReview.data.results.map((result) => (
+                            <div
+                                key={result.platform}
+                                className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800"
+                            >
+                                <div className="flex items-start justify-between gap-3">
+                                    <div>
+                                        <div className="font-semibold">{result.platform}</div>
+                                        <div className="text-sm text-zinc-500">
+                                            @{result.handle}
+                                        </div>
+                                    </div>
+                                    <div className="rounded-full bg-zinc-100 px-2 py-1 text-xs text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
+                                        {result.success ? result.coverage.status : "failed"}
+                                    </div>
+                                </div>
+                                {result.error ? (
+                                    <p className="mt-3 text-sm text-rose-600">{result.error}</p>
+                                ) : (
+                                    <>
+                                        <div className="mt-4 grid grid-cols-3 gap-2 text-sm">
+                                            <Metric
+                                                label="Quarter Items"
+                                                value={result.coverage.totalContentItems}
+                                            />
+                                            <Metric
+                                                label="Pages"
+                                                value={result.coverage.listingPagesFetched}
+                                            />
+                                            <Metric
+                                                label="Selected"
+                                                value={result.enrichedItems.length}
+                                            />
+                                        </div>
+                                        <div className="mt-4 space-y-2">
+                                            {result.coverage.months.map((month) => (
+                                                <div
+                                                    key={month.key}
+                                                    className="flex justify-between text-sm"
+                                                >
+                                                    <span className="text-zinc-500">
+                                                        {month.label}
+                                                    </span>
+                                                    <span>{month.contentCount} items</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <div className="mt-4 border-t border-zinc-200 pt-3 dark:border-zinc-800">
+                                            <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                                                Selected Content
+                                            </div>
+                                            <div className="mt-2 space-y-2">
+                                                {result.enrichedItems.slice(0, 3).map((item) => (
+                                                    <div key={item.id} className="text-sm">
+                                                        <div className="font-medium">
+                                                            {new Date(item.publishedAt)
+                                                                .toISOString()
+                                                                .slice(0, 10)}
+                                                        </div>
+                                                        <div className="line-clamp-2 text-zinc-500">
+                                                            {item.textExcerpt ||
+                                                                item.url ||
+                                                                item.id}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </section>
+            )}
+        </div>
+    );
+}
+
+function Metric({ label, value }: { label: string; value: number }) {
+    return (
+        <div className="rounded-lg bg-zinc-50 p-2 dark:bg-zinc-950">
+            <div className="text-xs text-zinc-500">{label}</div>
+            <div className="font-semibold text-zinc-950 dark:text-white">{value}</div>
         </div>
     );
 }

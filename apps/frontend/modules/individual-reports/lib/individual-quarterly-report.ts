@@ -92,7 +92,7 @@ export function buildIndividualQuarterlySnapshotSummary(input: IndividualSnapsho
 
     const warnings: string[] = [];
     if (!baselineSnapshot) {
-        warnings.push(`Previous quarter baseline unavailable for ${baselineLabel}.`);
+        warnings.push(`Quarter-start baseline unavailable for ${baselineLabel}.`);
     }
     if (!quarterEndSnapshot) {
         warnings.push(`Quarter-end snapshot unavailable for ${quarterEndLabel}.`);
@@ -145,7 +145,7 @@ export function quarterEndMonthIndex(quarter: number) {
 }
 
 export function baselineMonthIndex(quarter: number) {
-    return quarter * 3 - 4;
+    return (quarter - 1) * 3;
 }
 
 export function monthKey(date: Date) {
