@@ -24,6 +24,11 @@ export interface LiveReviewPlatformResult {
     error?: string;
     creditsUsed: number;
     rawItemsFetched: number;
+    fetchedDateRange: {
+        earliest: string | null;
+        latest: string | null;
+    };
+    diagnostics: string[];
     coverage: ReturnType<typeof calculateReconstructionCoverage>;
     enrichedItems: ReturnType<typeof selectContentForEnrichment>;
     output: ReturnType<typeof buildContentLevelOutput>;
@@ -56,6 +61,14 @@ export async function runLivePlatformReview(
     try {
         const { items, listingPagesFetched, reachedQuarterStart } =
             await fetchQuarterListings(input);
+        const coverageDiagnostics = buildCoverageDiagnostics({
+            items,
+            year: input.year,
+            quarter: input.quarter,
+            listingPageLimit: input.listingPageLimit,
+            listingPagesFetched,
+            reachedQuarterStart,
+        });
         const coverage = calculateReconstructionCoverage({
             year: input.year,
             quarter: input.quarter,
@@ -75,6 +88,8 @@ export async function runLivePlatformReview(
             success: true,
             creditsUsed: listingPagesFetched,
             rawItemsFetched: items.length,
+            fetchedDateRange: fetchedDateRange(items),
+            diagnostics: coverageDiagnostics,
             coverage,
             enrichedItems,
             output: buildContentLevelOutput({ coverage, enrichedItems }),
@@ -100,6 +115,11 @@ export async function runLivePlatformReview(
             error: error instanceof Error ? error.message : "Unknown ScrapeCreators error",
             creditsUsed: 0,
             rawItemsFetched: 0,
+            fetchedDateRange: {
+                earliest: null,
+                latest: null,
+            },
+            diagnostics: [],
             coverage,
             enrichedItems,
             output: buildContentLevelOutput({ coverage, enrichedItems }),
@@ -290,6 +310,67 @@ export function parseTwitterListing(data: unknown): ListingPageResult {
 
 function buildInstagramUrl(code: string | null) {
     return code ? `https://www.instagram.com/p/${code}/` : null;
+}
+
+function fetchedDateRange(items: ReconstructedContentItem[]) {
+    if (items.length === 0) {
+        return { earliest: null, latest: null };
+    }
+
+    const sorted = [...items].sort(
+        (left, right) => left.publishedAt.getTime() - right.publishedAt.getTime(),
+    );
+
+    return {
+        earliest: sorted[0]?.publishedAt.toISOString() || null,
+        latest: sorted[sorted.length - 1]?.publishedAt.toISOString() || null,
+    };
+}
+
+function buildCoverageDiagnostics({
+    items,
+    year,
+    quarter,
+    listingPageLimit,
+    listingPagesFetched,
+    reachedQuarterStart,
+}: {
+    items: ReconstructedContentItem[];
+    year: number;
+    quarter: number;
+    listingPageLimit: number;
+    listingPagesFetched: number;
+    reachedQuarterStart: boolean;
+}) {
+    const quarterItems = items.filter((item) => isInQuarter(item.publishedAt, year, quarter));
+    const diagnostics: string[] = [];
+
+    if (items.length === 0) {
+        diagnostics.push("ScrapeCreators returned no parseable listing items.");
+        return diagnostics;
+    }
+
+    if (quarterItems.length === 0) {
+        diagnostics.push(
+            `Fetched ${items.length} listing item(s), but none were inside Q${quarter} ${year}.`,
+        );
+    }
+
+    if (!reachedQuarterStart && listingPagesFetched >= listingPageLimit) {
+        diagnostics.push(
+            "The listing page limit was reached before an item older than the quarter start was found. Increase page depth for high-volume accounts.",
+        );
+    }
+
+    return diagnostics;
+}
+
+function isInQuarter(date: Date, year: number, quarter: number) {
+    const startMonth = (quarter - 1) * 3;
+    const start = new Date(year, startMonth, 1, 0, 0, 0, 0);
+    const end = new Date(year, startMonth + 3, 0, 23, 59, 59, 999);
+
+    return date >= start && date <= end;
 }
 
 function asRecord(value: unknown): Record<string, unknown> {

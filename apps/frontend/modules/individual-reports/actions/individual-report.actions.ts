@@ -11,6 +11,7 @@ import {
     buildIndividualQuarterlySnapshotSummary,
     DEFAULT_INDIVIDUAL_ENRICHED_CONTENT_LIMIT,
     DEFAULT_INDIVIDUAL_LISTING_PAGE_LIMIT,
+    DEFAULT_INDIVIDUAL_LIVE_LISTING_PAGE_LIMIT,
     estimateIndividualReportCredits,
     type IndividualReportRequest,
     monthKey,
@@ -40,6 +41,11 @@ interface WorkerLiveReviewResult {
     error?: string;
     creditsUsed: number;
     rawItemsFetched: number;
+    fetchedDateRange: {
+        earliest: string | null;
+        latest: string | null;
+    };
+    diagnostics: string[];
     coverage: ReturnType<typeof calculateReconstructionCoverage>;
     enrichedItems: ReturnType<typeof selectContentForEnrichment>;
 }
@@ -180,7 +186,7 @@ export async function runIndividualQuarterlyLiveReview(input: IndividualLiveRevi
         throw new Error("Unauthorized");
     }
 
-    const listingPageLimit = input.listingPageLimit ?? DEFAULT_INDIVIDUAL_LISTING_PAGE_LIMIT;
+    const listingPageLimit = input.listingPageLimit ?? DEFAULT_INDIVIDUAL_LIVE_LISTING_PAGE_LIMIT;
     const enrichedContentLimit =
         input.enrichedContentLimit ?? DEFAULT_INDIVIDUAL_ENRICHED_CONTENT_LIMIT;
     const platforms = Array.from(new Set(input.platforms));

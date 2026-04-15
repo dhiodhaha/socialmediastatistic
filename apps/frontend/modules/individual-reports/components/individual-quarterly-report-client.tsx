@@ -12,6 +12,7 @@ import {
 import {
     DEFAULT_INDIVIDUAL_ENRICHED_CONTENT_LIMIT,
     DEFAULT_INDIVIDUAL_LISTING_PAGE_LIMIT,
+    DEFAULT_INDIVIDUAL_LIVE_LISTING_PAGE_LIMIT,
     estimateIndividualReportCredits,
     type IndividualReportRequest,
 } from "@/modules/individual-reports/lib/individual-quarterly-report";
@@ -69,7 +70,7 @@ export function IndividualQuarterlyReportClient({
     });
     const allPlatformsEstimate = estimateIndividualReportCredits({
         includeProfileRequest: false,
-        listingPageLimit: DEFAULT_INDIVIDUAL_LISTING_PAGE_LIMIT * availablePlatforms.length,
+        listingPageLimit: DEFAULT_INDIVIDUAL_LIVE_LISTING_PAGE_LIMIT * availablePlatforms.length,
         detailedContentLimit: 0,
     });
 
@@ -113,7 +114,7 @@ export function IndividualQuarterlyReportClient({
                 platforms,
                 year: Number(year),
                 quarter: Number(quarter),
-                listingPageLimit: DEFAULT_INDIVIDUAL_LISTING_PAGE_LIMIT,
+                listingPageLimit: DEFAULT_INDIVIDUAL_LIVE_LISTING_PAGE_LIMIT,
                 enrichedContentLimit: DEFAULT_INDIVIDUAL_ENRICHED_CONTENT_LIMIT,
             });
             setLiveReview(result);
@@ -217,7 +218,8 @@ export function IndividualQuarterlyReportClient({
                         <div className="mt-1 text-xs">
                             All available platforms listing-only estimate:{" "}
                             {allPlatformsEstimate.totalCredits} credits across{" "}
-                            {availablePlatforms.length} platform(s).
+                            {availablePlatforms.length} platform(s), up to{" "}
+                            {DEFAULT_INDIVIDUAL_LIVE_LISTING_PAGE_LIMIT} pages each.
                         </div>
                         {creditBalance?.success && (
                             <div className="mt-1 text-xs">
@@ -370,14 +372,26 @@ export function IndividualQuarterlyReportClient({
                                                 value={result.coverage.totalContentItems}
                                             />
                                             <Metric
+                                                label="Fetched"
+                                                value={result.rawItemsFetched}
+                                            />
+                                            <Metric
                                                 label="Pages"
                                                 value={result.coverage.listingPagesFetched}
                                             />
-                                            <Metric
-                                                label="Selected"
-                                                value={result.enrichedItems.length}
-                                            />
                                         </div>
+                                        {result.fetchedDateRange.earliest && (
+                                            <p className="mt-3 text-xs text-zinc-500">
+                                                Fetched range:{" "}
+                                                {result.fetchedDateRange.earliest.slice(0, 10)} to{" "}
+                                                {result.fetchedDateRange.latest?.slice(0, 10)}
+                                            </p>
+                                        )}
+                                        {result.diagnostics.length > 0 && (
+                                            <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200">
+                                                {result.diagnostics.join(" ")}
+                                            </div>
+                                        )}
                                         <div className="mt-4 space-y-2">
                                             {result.coverage.months.map((month) => (
                                                 <div
