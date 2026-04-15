@@ -2,6 +2,8 @@ import type { Platform } from "@repo/database";
 import { calculateGrowth } from "@/modules/analytics/lib/report-metrics";
 
 export const INDIVIDUAL_REPORT_PLATFORMS = ["INSTAGRAM", "TIKTOK", "TWITTER"] as const;
+export const DEFAULT_INDIVIDUAL_LISTING_PAGE_LIMIT = 3;
+export const DEFAULT_INDIVIDUAL_ENRICHED_CONTENT_LIMIT = 6;
 
 export interface IndividualReportRequest {
     accountId: string;

@@ -1,9 +1,12 @@
 "use server";
 
 import { type Platform, prisma } from "@repo/database";
+import { buildContentLevelPlan } from "@/modules/individual-reports/lib/content-reconstruction";
 import {
     baselineMonthKey,
     buildIndividualQuarterlySnapshotSummary,
+    DEFAULT_INDIVIDUAL_ENRICHED_CONTENT_LIMIT,
+    DEFAULT_INDIVIDUAL_LISTING_PAGE_LIMIT,
     estimateIndividualReportCredits,
     type IndividualReportRequest,
     monthKey,
@@ -95,8 +98,8 @@ export async function prepareIndividualQuarterlyReportDraft(input: IndividualRep
         data: {
             request: input,
             creditEstimate: estimateIndividualReportCredits({
-                listingPageLimit: 3,
-                detailedContentLimit: 0,
+                listingPageLimit: DEFAULT_INDIVIDUAL_LISTING_PAGE_LIMIT,
+                detailedContentLimit: DEFAULT_INDIVIDUAL_ENRICHED_CONTENT_LIMIT,
             }),
             report: buildIndividualQuarterlySnapshotSummary({
                 accountName: account.username,
@@ -106,6 +109,10 @@ export async function prepareIndividualQuarterlyReportDraft(input: IndividualRep
                 quarter: input.quarter,
                 baselineSnapshot,
                 quarterEndSnapshot,
+            }),
+            contentLevelPlan: buildContentLevelPlan({
+                listingPageLimit: DEFAULT_INDIVIDUAL_LISTING_PAGE_LIMIT,
+                detailedContentLimit: DEFAULT_INDIVIDUAL_ENRICHED_CONTENT_LIMIT,
             }),
             executionModel: {
                 mode: "manual-local-first",
