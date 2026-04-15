@@ -1,0 +1,217 @@
+"use client";
+
+import type { Platform } from "@repo/database";
+import { Loader2, Search } from "lucide-react";
+import { useState, useTransition } from "react";
+import { toast } from "sonner";
+import { prepareIndividualQuarterlyReportDraft } from "@/modules/individual-reports/actions/individual-report.actions";
+import {
+    estimateIndividualReportCredits,
+    type IndividualReportRequest,
+} from "@/modules/individual-reports/lib/individual-quarterly-report";
+import { Button } from "@/shared/components/catalyst/button";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/shared/components/ui/select";
+
+interface AccountOption {
+    id: string;
+    username: string;
+    handles: Record<Platform, string | null>;
+}
+
+interface IndividualQuarterlyReportClientProps {
+    accounts: AccountOption[];
+}
+
+type DraftResult = Awaited<ReturnType<typeof prepareIndividualQuarterlyReportDraft>>;
+
+const PLATFORM_OPTIONS: Array<{ id: Platform; label: string }> = [
+    { id: "INSTAGRAM", label: "Instagram" },
+    { id: "TIKTOK", label: "TikTok" },
+    { id: "TWITTER", label: "Twitter / X" },
+];
+
+const QUARTER_OPTIONS = [1, 2, 3, 4];
+
+export function IndividualQuarterlyReportClient({
+    accounts,
+}: IndividualQuarterlyReportClientProps) {
+    const currentYear = new Date().getFullYear();
+    const [accountId, setAccountId] = useState(accounts[0]?.id || "");
+    const [platform, setPlatform] = useState<Platform>("INSTAGRAM");
+    const [year, setYear] = useState(String(currentYear));
+    const [quarter, setQuarter] = useState("1");
+    const [draft, setDraft] = useState<DraftResult | null>(null);
+    const [isPending, startTransition] = useTransition();
+
+    const selectedAccount = accounts.find((account) => account.id === accountId) || null;
+    const estimate = estimateIndividualReportCredits({
+        listingPageLimit: 3,
+        detailedContentLimit: 0,
+    });
+
+    const handlePrepare = () => {
+        const request: IndividualReportRequest = {
+            accountId,
+            platform,
+            year: Number(year),
+            quarter: Number(quarter),
+        };
+
+        startTransition(async () => {
+            const result = await prepareIndividualQuarterlyReportDraft(request);
+            setDraft(result);
+            if (result.success) {
+                toast.success("Individual quarterly draft prepared");
+                return;
+            }
+            toast.error(result.error);
+        });
+    };
+
+    return (
+        <div className="space-y-6">
+            <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                <div className="grid gap-4 lg:grid-cols-4">
+                    <div className="space-y-2">
+                        <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                            Account
+                        </div>
+                        <Select value={accountId} onValueChange={setAccountId}>
+                            <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Choose account" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {accounts.map((account) => (
+                                    <SelectItem key={account.id} value={account.id}>
+                                        {account.username}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                        <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                            Platform
+                        </div>
+                        <Select
+                            value={platform}
+                            onValueChange={(value) => setPlatform(value as Platform)}
+                        >
+                            <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Choose platform" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {PLATFORM_OPTIONS.map((option) => (
+                                    <SelectItem key={option.id} value={option.id}>
+                                        {option.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                        <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                            Year
+                        </div>
+                        <Select value={year} onValueChange={setYear}>
+                            <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Choose year" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {[currentYear, currentYear - 1, currentYear - 2].map((value) => (
+                                    <SelectItem key={value} value={String(value)}>
+                                        {value}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                        <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                            Quarter
+                        </div>
+                        <Select value={quarter} onValueChange={setQuarter}>
+                            <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Choose quarter" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {QUARTER_OPTIONS.map((value) => (
+                                    <SelectItem key={value} value={String(value)}>
+                                        Q{value}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+
+                <div className="mt-5 flex flex-col gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-200 md:flex-row md:items-center md:justify-between">
+                    <div>
+                        <div className="font-semibold">Estimated ScrapeCreators usage</div>
+                        <div>
+                            {estimate.totalCredits} credits before execution: profile{" "}
+                            {estimate.breakdown.profileCredits}, listing{" "}
+                            {estimate.breakdown.listingCredits}, detail{" "}
+                            {estimate.breakdown.detailCredits}.
+                        </div>
+                    </div>
+                    <Button
+                        type="button"
+                        onClick={handlePrepare}
+                        disabled={isPending || !selectedAccount}
+                    >
+                        {isPending ? (
+                            <Loader2 className="h-4 w-4 animate-spin" data-slot="icon" />
+                        ) : (
+                            <Search className="h-4 w-4" data-slot="icon" />
+                        )}
+                        Prepare Draft
+                    </Button>
+                </div>
+            </section>
+
+            {draft?.success && (
+                <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                        Objective Report Skeleton
+                    </div>
+                    <h2 className="mt-2 text-2xl font-semibold text-zinc-950 dark:text-white">
+                        {draft.data.report.title}
+                    </h2>
+                    <p className="mt-1 text-sm text-zinc-500">
+                        {draft.data.report.periodLabel} • {draft.data.report.handle}
+                    </p>
+
+                    <div className="mt-5 grid gap-3 md:grid-cols-3">
+                        {draft.data.report.sections.map((section) => (
+                            <div
+                                key={section.id}
+                                className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800"
+                            >
+                                <div className="font-semibold">{section.title}</div>
+                                <div className="mt-2 text-xs uppercase tracking-wide text-zinc-500">
+                                    {section.status}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {draft.data.report.warnings.length > 0 && (
+                        <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200">
+                            {draft.data.report.warnings.join(" ")}
+                        </div>
+                    )}
+                </section>
+            )}
+        </div>
+    );
+}

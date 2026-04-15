@@ -7,6 +7,7 @@ import {
     Cog6ToothIcon,
     FolderIcon,
     HomeIcon,
+    PresentationChartLineIcon,
     SwatchIcon,
     UsersIcon,
 } from "@heroicons/react/20/solid";
@@ -61,6 +62,13 @@ export function DashboardSidebar() {
                 <SidebarItem href="/reports" current={pathname === "/reports"}>
                     <ChartBarIcon />
                     <SidebarLabel>Reports</SidebarLabel>
+                </SidebarItem>
+                <SidebarItem
+                    href="/individual-reports"
+                    current={pathname === "/individual-reports"}
+                >
+                    <PresentationChartLineIcon />
+                    <SidebarLabel>Individual Reports</SidebarLabel>
                 </SidebarItem>
                 <SidebarDivider />
                 <SidebarItem href="/docs" current={pathname === "/docs"}>
