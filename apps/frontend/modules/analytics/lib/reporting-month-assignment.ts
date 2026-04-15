@@ -17,7 +17,6 @@ export interface ReportingPeriodOption extends ReportingPeriod {
     key: string;
     label: string;
 }
-
 export function reportingMonthKey(year: number, month: number) {
     return `${year}-${String(month).padStart(2, "0")}`;
 }
@@ -33,10 +32,6 @@ export function inferReportingPeriod(referenceDate: Date): ReportingPeriod {
     };
 }
 
-export function resolveAssignmentReferenceDate(job: ReportingMonthAssignmentJob) {
-    return job.completedAt || job.createdAt;
-}
-
 export function getAssignableReportingPeriods(referenceDate: Date): ReportingPeriodOption[] {
     const current = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), 1);
     const previous = new Date(referenceDate.getFullYear(), referenceDate.getMonth() - 1, 1);
@@ -50,6 +45,10 @@ export function getAssignableReportingPeriods(referenceDate: Date): ReportingPer
             label: formatReportingPeriodLabel(period.year, period.month),
         };
     });
+}
+
+export function resolveAssignmentReferenceDate(job: ReportingMonthAssignmentJob) {
+    return job.completedAt || job.createdAt;
 }
 
 export function getAssignedReportingPeriod(
