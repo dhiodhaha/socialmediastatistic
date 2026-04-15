@@ -1,10 +1,10 @@
-import type { Platform } from "@repo/database";
+import type { Platform } from "@repo/types";
 import {
     buildContentLevelOutput,
     calculateReconstructionCoverage,
     type ReconstructedContentItem,
     selectContentForEnrichment,
-} from "@/modules/individual-reports/lib/content-reconstruction";
+} from "../lib/content-reconstruction";
 
 const SCRAPECREATORS_BASE_URL = "https://api.scrapecreators.com";
 
