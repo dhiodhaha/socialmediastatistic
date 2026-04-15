@@ -1,7 +1,7 @@
 "use server";
 
 import { type Platform, prisma } from "@repo/database";
-import { endOfDay, endOfMonth, format, startOfDay, startOfMonth, subMonths } from "date-fns";
+import { endOfDay, endOfMonth, startOfDay, startOfMonth, subMonths } from "date-fns";
 import { resolveMonthlyReportingAnchors } from "@/modules/analytics/lib/monthly-reporting";
 import type { QuarterlyExportData } from "@/modules/analytics/lib/quarterly-export";
 import {
@@ -11,6 +11,7 @@ import {
 import {
     buildQuarterlyStatus,
     deriveQuarterlyOptions,
+    getQuarterlyAnchorJobIds,
     type QuarterlyOption,
     type QuarterlyStatus,
 } from "@/modules/analytics/lib/quarterly-reporting";
@@ -268,42 +269,56 @@ export async function getQuarterlyStatus(
     const quarterStartMonth = new Date(year, (quarter - 1) * 3, 1);
     const quarterEndMonth = new Date(year, (quarter - 1) * 3 + 2, 1);
 
-    const [jobs, accounts] = await Promise.all([
-        prisma.scrapingJob.findMany({
-            where: {
-                status: "COMPLETED",
-                completedAt: { not: null },
-            },
-            orderBy: { completedAt: "desc" },
-            select: {
-                id: true,
-                createdAt: true,
-                completedAt: true,
-                reportingYear: true,
-                reportingMonth: true,
-            },
-        }),
-        prisma.account.findMany({
-            where: whereClause,
-            select: {
-                instagram: true,
-                tiktok: true,
-                twitter: true,
-                snapshots: {
-                    where: {
-                        scrapedAt: {
-                            gte: startOfMonth(quarterStartMonth),
-                            lte: endOfMonth(quarterEndMonth),
+    const jobs = await prisma.scrapingJob.findMany({
+        where: {
+            status: "COMPLETED",
+            completedAt: { not: null },
+        },
+        orderBy: { completedAt: "desc" },
+        select: {
+            id: true,
+            createdAt: true,
+            completedAt: true,
+            reportingYear: true,
+            reportingMonth: true,
+        },
+    });
+    const anchorJobIds = getQuarterlyAnchorJobIds({ year, quarter, jobs });
+
+    const accounts = await prisma.account.findMany({
+        where: whereClause,
+        select: {
+            instagram: true,
+            tiktok: true,
+            twitter: true,
+            snapshots: {
+                where: {
+                    OR: [
+                        {
+                            scrapedAt: {
+                                gte: startOfMonth(quarterStartMonth),
+                                lte: endOfMonth(quarterEndMonth),
+                            },
                         },
-                    },
-                    select: {
-                        platform: true,
-                        scrapedAt: true,
-                    },
+                        ...(anchorJobIds.length > 0
+                            ? [
+                                  {
+                                      jobId: {
+                                          in: anchorJobIds,
+                                      },
+                                  },
+                              ]
+                            : []),
+                    ],
+                },
+                select: {
+                    platform: true,
+                    scrapedAt: true,
+                    jobId: true,
                 },
             },
-        }),
-    ]);
+        },
+    });
 
     return buildQuarterlyStatus({
         year,
@@ -338,21 +353,23 @@ export async function getQuarterlyPreviewData(
           }
         : { isActive: true };
 
-    const [jobs, accounts, selectedCategory] = await Promise.all([
-        prisma.scrapingJob.findMany({
-            where: {
-                status: "COMPLETED",
-                completedAt: { not: null },
-            },
-            orderBy: { completedAt: "desc" },
-            select: {
-                id: true,
-                createdAt: true,
-                completedAt: true,
-                reportingYear: true,
-                reportingMonth: true,
-            },
-        }),
+    const jobs = await prisma.scrapingJob.findMany({
+        where: {
+            status: "COMPLETED",
+            completedAt: { not: null },
+        },
+        orderBy: { completedAt: "desc" },
+        select: {
+            id: true,
+            createdAt: true,
+            completedAt: true,
+            reportingYear: true,
+            reportingMonth: true,
+        },
+    });
+    const anchorJobIds = getQuarterlyAnchorJobIds({ year, quarter, jobs, includeBaseline: true });
+
+    const [accounts, selectedCategory] = await Promise.all([
         prisma.account.findMany({
             where: whereClause,
             select: {
@@ -368,10 +385,23 @@ export async function getQuarterlyPreviewData(
                 },
                 snapshots: {
                     where: {
-                        scrapedAt: {
-                            gte: startOfMonth(baselineMonth),
-                            lte: endOfMonth(quarterEndMonth),
-                        },
+                        OR: [
+                            {
+                                scrapedAt: {
+                                    gte: startOfMonth(baselineMonth),
+                                    lte: endOfMonth(quarterEndMonth),
+                                },
+                            },
+                            ...(anchorJobIds.length > 0
+                                ? [
+                                      {
+                                          jobId: {
+                                              in: anchorJobIds,
+                                          },
+                                      },
+                                  ]
+                                : []),
+                        ],
                     },
                     orderBy: { scrapedAt: "desc" },
                     select: {
@@ -380,6 +410,7 @@ export async function getQuarterlyPreviewData(
                         posts: true,
                         likes: true,
                         scrapedAt: true,
+                        jobId: true,
                     },
                 },
             },
@@ -403,6 +434,7 @@ export async function getQuarterlyPreviewData(
             snapshots: account.snapshots.map((snapshot) => ({
                 platform: snapshot.platform,
                 scrapedAt: snapshot.scrapedAt,
+                jobId: snapshot.jobId,
             })),
         })),
     });

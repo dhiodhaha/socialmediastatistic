@@ -8,6 +8,7 @@ export interface QuarterlyPreviewSnapshot {
     posts: number | null;
     likes: number | null;
     scrapedAt: Date;
+    jobId?: string | null;
 }
 
 export interface QuarterlyPreviewAccount {
@@ -84,7 +85,6 @@ export function buildQuarterlyPlatformPreview({
     categoryFilterLabel?: string | null;
 }): QuarterlyPlatformPreview {
     const rows: QuarterlyPreviewRow[] = [];
-    const quarterMonthKeys = new Set(status.sourceMonths.map((month) => month.key));
 
     for (const account of accounts) {
         const category =
@@ -105,20 +105,26 @@ export function buildQuarterlyPlatformPreview({
                 (snapshot) => snapshot.platform === platformEntry.platform,
             );
 
-            const baselineSnapshot =
-                platformSnapshots.find(
-                    (snapshot) => monthString(snapshot.scrapedAt) === status.baseline.key,
-                ) || null;
-            const quarterEndSnapshot =
-                platformSnapshots.find(
-                    (snapshot) => monthString(snapshot.scrapedAt) === status.quarterEnd.key,
-                ) || null;
+            const baselineSnapshot = findSnapshotForAnchor(platformSnapshots, {
+                key: status.baseline.key,
+                anchorJobId: status.baseline.anchorJobId,
+            });
+            const quarterEndSnapshot = findSnapshotForAnchor(platformSnapshots, {
+                key: status.quarterEnd.key,
+                anchorJobId: status.quarterEnd.anchorJobId,
+            });
 
-            const coveredMonths = new Set(
-                platformSnapshots
-                    .filter((snapshot) => quarterMonthKeys.has(monthString(snapshot.scrapedAt)))
-                    .map((snapshot) => monthString(snapshot.scrapedAt)),
-            );
+            const coveredMonths = new Set<string>();
+            for (const month of status.sourceMonths) {
+                if (
+                    findSnapshotForAnchor(platformSnapshots, {
+                        key: month.key,
+                        anchorJobId: month.anchorJobId,
+                    })
+                ) {
+                    coveredMonths.add(month.key);
+                }
+            }
 
             const missingMonths = status.sourceMonths
                 .filter((month) => !coveredMonths.has(month.key))
@@ -244,6 +250,18 @@ function toQuarterlyMover(row: QuarterlyPreviewRow): QuarterlyMover {
         followerGrowthValue: row.delta.followersVal || 0,
         detailNote: row.detailNote,
     };
+}
+
+function findSnapshotForAnchor(
+    snapshots: QuarterlyPreviewSnapshot[],
+    anchor: { key: string; anchorJobId: string | null },
+) {
+    if (anchor.anchorJobId) {
+        const snapshotByJob = snapshots.find((snapshot) => snapshot.jobId === anchor.anchorJobId);
+        if (snapshotByJob) return snapshotByJob;
+    }
+
+    return snapshots.find((snapshot) => monthString(snapshot.scrapedAt) === anchor.key) || null;
 }
 
 function monthString(date: Date) {

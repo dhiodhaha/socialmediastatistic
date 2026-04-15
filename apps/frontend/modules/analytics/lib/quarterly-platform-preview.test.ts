@@ -134,6 +134,54 @@ describe("buildQuarterlyPlatformPreview", () => {
         expect(preview.summaries[0]?.topDecliners[0]?.accountId).toBe("acc-2");
     });
 
+    it("uses reporting anchor job ids when assigned snapshots were scraped in another calendar month", () => {
+        const preview = buildQuarterlyPlatformPreview({
+            status: baseStatus,
+            accounts: [
+                {
+                    id: "acc-anchor",
+                    username: "Kemenkes",
+                    instagram: "kemenkes",
+                    tiktok: null,
+                    twitter: null,
+                    categoryNames: ["Kesehatan"],
+                    snapshots: [
+                        {
+                            platform: "INSTAGRAM",
+                            followers: 100,
+                            posts: 10,
+                            likes: null,
+                            scrapedAt: new Date("2026-01-02T10:00:00.000Z"),
+                            jobId: "dec",
+                        },
+                        {
+                            platform: "INSTAGRAM",
+                            followers: 150,
+                            posts: 17,
+                            likes: null,
+                            scrapedAt: new Date("2026-04-02T10:00:00.000Z"),
+                            jobId: "mar",
+                        },
+                    ],
+                },
+            ],
+        });
+
+        expect(preview.rows[0]).toMatchObject({
+            rankingEligible: true,
+            hasQuarterEndData: true,
+            oldStats: { followers: 100, posts: 10 },
+            newStats: { followers: 150, posts: 17 },
+            delta: {
+                followersVal: 50,
+                followersPct: 50,
+                postsVal: 7,
+                postsPct: 70,
+            },
+        });
+        expect(preview.summaries[0]?.netFollowerGrowth).toBe(50);
+    });
+
     it("keeps accounts with missing internal months eligible when anchor months exist and adds a note", () => {
         const preview = buildQuarterlyPlatformPreview({
             status: baseStatus,
