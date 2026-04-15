@@ -302,21 +302,15 @@ export async function runIndividualQuarterlyLiveReview(input: IndividualLiveRevi
         ],
     };
 
-    const savedRun = await prisma.individualReportRun.create({
-        data: {
-            accountId: account.id,
-            year: input.year,
-            quarter: input.quarter,
-            platforms: runData.request.platforms,
-            status: results.every((result) => result.success) ? "COMPLETED" : "FAILED",
-            estimatedCredits: estimatedCredits.totalCredits,
-            actualCreditsUsed: runData.actualCreditsUsed,
-            resultJson: toPrismaJson(runData),
-        },
-        select: {
-            id: true,
-            createdAt: true,
-        },
+    const savedRun = await createIndividualReportRun({
+        accountId: account.id,
+        year: input.year,
+        quarter: input.quarter,
+        platforms: runData.request.platforms,
+        status: results.every((result) => result.success) ? "COMPLETED" : "FAILED",
+        estimatedCredits: estimatedCredits.totalCredits,
+        actualCreditsUsed: runData.actualCreditsUsed,
+        resultJson: runData,
     });
 
     return {
@@ -337,42 +331,7 @@ export async function getSavedIndividualReportRuns(accountId?: string) {
         throw new Error("Unauthorized");
     }
 
-    const runs = await prisma.individualReportRun.findMany({
-        where: accountId ? { accountId } : undefined,
-        orderBy: { createdAt: "desc" },
-        take: 12,
-        select: {
-            id: true,
-            accountId: true,
-            year: true,
-            quarter: true,
-            platforms: true,
-            status: true,
-            estimatedCredits: true,
-            actualCreditsUsed: true,
-            resultJson: true,
-            createdAt: true,
-            account: {
-                select: {
-                    username: true,
-                },
-            },
-        },
-    });
-
-    return runs.map((run) => ({
-        id: run.id,
-        accountId: run.accountId,
-        accountName: run.account.username,
-        year: run.year,
-        quarter: run.quarter,
-        platforms: parsePlatformList(run.platforms),
-        status: run.status,
-        estimatedCredits: run.estimatedCredits,
-        actualCreditsUsed: run.actualCreditsUsed,
-        createdAt: run.createdAt.toISOString(),
-        result: run.resultJson as unknown as IndividualReportRunData,
-    }));
+    return findIndividualReportRuns(accountId);
 }
 
 export async function exportIndividualQuarterlyReportPdf(runId: string) {
@@ -381,12 +340,7 @@ export async function exportIndividualQuarterlyReportPdf(runId: string) {
         throw new Error("Unauthorized");
     }
 
-    const run = await prisma.individualReportRun.findUnique({
-        where: { id: runId },
-        select: {
-            resultJson: true,
-        },
-    });
+    const run = await findIndividualReportRunForExport(runId);
 
     if (!run) {
         return { success: false as const, error: "Saved individual report run not found." };
@@ -484,4 +438,209 @@ function parsePlatformList(value: Prisma.JsonValue): Platform[] {
               ["INSTAGRAM", "TIKTOK", "TWITTER"].includes(String(platform)),
           )
         : [];
+}
+
+function individualReportRunDelegate() {
+    return (
+        prisma as typeof prisma & {
+            individualReportRun?: typeof prisma.individualReportRun;
+        }
+    ).individualReportRun;
+}
+
+async function createIndividualReportRun(input: {
+    accountId: string;
+    year: number;
+    quarter: number;
+    platforms: Platform[];
+    status: "COMPLETED" | "FAILED";
+    estimatedCredits: number;
+    actualCreditsUsed: number;
+    resultJson: IndividualReportRunData;
+}) {
+    const delegate = individualReportRunDelegate();
+    if (delegate) {
+        return delegate.create({
+            data: {
+                accountId: input.accountId,
+                year: input.year,
+                quarter: input.quarter,
+                platforms: input.platforms,
+                status: input.status,
+                estimatedCredits: input.estimatedCredits,
+                actualCreditsUsed: input.actualCreditsUsed,
+                resultJson: toPrismaJson(input.resultJson),
+            },
+            select: {
+                id: true,
+                createdAt: true,
+            },
+        });
+    }
+
+    const rows = await prisma.$queryRawUnsafe<Array<{ id: string; createdAt: Date }>>(
+        `
+        INSERT INTO "IndividualReportRun" (
+            "id",
+            "accountId",
+            "year",
+            "quarter",
+            "platforms",
+            "status",
+            "estimatedCredits",
+            "actualCreditsUsed",
+            "resultJson",
+            "createdAt",
+            "updatedAt"
+        )
+        VALUES (
+            $1,
+            $2,
+            $3,
+            $4,
+            $5::jsonb,
+            $6::"IndividualReportStatus",
+            $7,
+            $8,
+            $9::jsonb,
+            NOW(),
+            NOW()
+        )
+        RETURNING "id", "createdAt"
+    `,
+        crypto.randomUUID(),
+        input.accountId,
+        input.year,
+        input.quarter,
+        JSON.stringify(input.platforms),
+        input.status,
+        input.estimatedCredits,
+        input.actualCreditsUsed,
+        JSON.stringify(input.resultJson),
+    );
+
+    const savedRun = rows[0];
+    if (!savedRun) {
+        throw new Error("Failed to save individual report run.");
+    }
+
+    return savedRun;
+}
+
+async function findIndividualReportRuns(accountId?: string) {
+    const delegate = individualReportRunDelegate();
+    if (delegate) {
+        const runs = await delegate.findMany({
+            where: accountId ? { accountId } : undefined,
+            orderBy: { createdAt: "desc" },
+            take: 12,
+            select: {
+                id: true,
+                accountId: true,
+                year: true,
+                quarter: true,
+                platforms: true,
+                status: true,
+                estimatedCredits: true,
+                actualCreditsUsed: true,
+                resultJson: true,
+                createdAt: true,
+                account: {
+                    select: {
+                        username: true,
+                    },
+                },
+            },
+        });
+
+        return runs.map((run) => ({
+            id: run.id,
+            accountId: run.accountId,
+            accountName: run.account.username,
+            year: run.year,
+            quarter: run.quarter,
+            platforms: parsePlatformList(run.platforms),
+            status: run.status,
+            estimatedCredits: run.estimatedCredits,
+            actualCreditsUsed: run.actualCreditsUsed,
+            createdAt: run.createdAt.toISOString(),
+            result: run.resultJson as unknown as IndividualReportRunData,
+        }));
+    }
+
+    const rows = await prisma.$queryRawUnsafe<
+        Array<{
+            id: string;
+            accountId: string;
+            accountName: string;
+            year: number;
+            quarter: number;
+            platforms: Prisma.JsonValue;
+            status: string;
+            estimatedCredits: number;
+            actualCreditsUsed: number;
+            resultJson: Prisma.JsonValue;
+            createdAt: Date;
+        }>
+    >(
+        `
+        SELECT
+            r."id",
+            r."accountId",
+            a."username" AS "accountName",
+            r."year",
+            r."quarter",
+            r."platforms",
+            r."status"::text AS "status",
+            r."estimatedCredits",
+            r."actualCreditsUsed",
+            r."resultJson",
+            r."createdAt"
+        FROM "IndividualReportRun" r
+        JOIN "Account" a ON a."id" = r."accountId"
+        WHERE ($1::text IS NULL OR r."accountId" = $2)
+        ORDER BY r."createdAt" DESC
+        LIMIT 12
+    `,
+        accountId ?? null,
+        accountId ?? null,
+    );
+
+    return rows.map((run) => ({
+        id: run.id,
+        accountId: run.accountId,
+        accountName: run.accountName,
+        year: run.year,
+        quarter: run.quarter,
+        platforms: parsePlatformList(run.platforms),
+        status: run.status,
+        estimatedCredits: run.estimatedCredits,
+        actualCreditsUsed: run.actualCreditsUsed,
+        createdAt: run.createdAt.toISOString(),
+        result: run.resultJson as unknown as IndividualReportRunData,
+    }));
+}
+
+async function findIndividualReportRunForExport(runId: string) {
+    const delegate = individualReportRunDelegate();
+    if (delegate) {
+        return delegate.findUnique({
+            where: { id: runId },
+            select: {
+                resultJson: true,
+            },
+        });
+    }
+
+    const rows = await prisma.$queryRawUnsafe<Array<{ resultJson: Prisma.JsonValue }>>(
+        `
+        SELECT "resultJson"
+        FROM "IndividualReportRun"
+        WHERE "id" = $1
+        LIMIT 1
+    `,
+        runId,
+    );
+
+    return rows[0] || null;
 }
