@@ -61,23 +61,29 @@ model Snapshot {
 }
 
 model ScrapingJob {
-  id             String     @id @default(cuid())
-  status         JobStatus  @default(PENDING)
-  totalAccounts  Int
-  completedCount Int        @default(0)
-  failedCount    Int        @default(0)
-  errors         Json? // Array of { accountId, error, platform }
-  startedAt      DateTime?
-  completedAt    DateTime?
-  createdAt      DateTime   @default(now())
-  snapshots      Snapshot[]
+  id                  String     @id @default(cuid())
+  status              JobStatus  @default(PENDING)
+  totalAccounts       Int
+  completedCount      Int        @default(0)
+  failedCount         Int        @default(0)
+  errors              Json? // Array of { accountId, error, platform }
+  startedAt           DateTime?
+  completedAt         DateTime?
+  createdAt           DateTime   @default(now())
+  reportingYear       Int?
+  reportingMonth      Int?
+  reportingReason     String?
+  reportingAssignedAt DateTime?
+  snapshots           Snapshot[]
 
   categoryId String?
   category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
+  @@unique([reportingYear, reportingMonth])
   @@index([status])
   @@index([createdAt])
   @@index([categoryId])
+  @@index([reportingYear, reportingMonth])
 }
 
 model Category {

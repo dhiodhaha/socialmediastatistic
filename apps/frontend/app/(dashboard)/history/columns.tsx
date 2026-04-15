@@ -1,10 +1,20 @@
 "use client";
 import type { ColumnDef } from "@tanstack/react-table";
 import { format, formatDistance, formatDistanceToNow } from "date-fns";
-import { CheckCircle, Clock, MoreHorizontal, Play, Trash2, XCircle } from "lucide-react";
+import {
+    CheckCircle,
+    Clock,
+    MoreHorizontal,
+    PencilLine,
+    Play,
+    Trash2,
+    XCircle,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { deleteScrapingJob } from "@/modules/analytics/actions/history.actions";
+import { ReportingMonthDialog } from "@/modules/analytics/components/reporting-month-dialog";
+import { describeReportingAssignment } from "@/modules/analytics/lib/reporting-month-assignment";
 import { Badge } from "@/shared/components/catalyst/badge";
 import {
     Dropdown,
@@ -24,6 +34,9 @@ interface ScrapingJob {
     startedAt: Date | string | null;
     completedAt: Date | string | null;
     createdAt: Date | string;
+    reportingYear?: number | null;
+    reportingMonth?: number | null;
+    reportingReason?: string | null;
 }
 
 function calculateDuration(start: Date | string | null, end: Date | string | null) {
@@ -33,13 +46,13 @@ function calculateDuration(start: Date | string | null, end: Date | string | nul
     return formatDistance(endTime, startTime);
 }
 
-function ActionMenu({ jobId }: { jobId: string }) {
+function ActionMenu({ job }: { job: ScrapingJob }) {
     const router = useRouter();
 
     const handleDelete = async () => {
         if (!confirm("Delete this job and all associated snapshot data?")) return;
 
-        const result = await deleteScrapingJob(jobId);
+        const result = await deleteScrapingJob(job.id);
         if (result.success) {
             toast.success("Job deleted successfully");
             router.refresh();
@@ -54,6 +67,17 @@ function ActionMenu({ jobId }: { jobId: string }) {
                 <MoreHorizontal className="w-4 h-4" data-slot="icon" />
             </DropdownButton>
             <DropdownMenu>
+                {job.status === "COMPLETED" && (
+                    <ReportingMonthDialog
+                        job={job}
+                        trigger={
+                            <DropdownItem>
+                                <PencilLine className="w-4 h-4 ml-auto" data-slot="icon" />
+                                Assign Reporting Month
+                            </DropdownItem>
+                        }
+                    />
+                )}
                 <DropdownItem onClick={handleDelete} className="text-red-600 dark:text-red-500">
                     <Trash2 className="w-4 h-4 ml-auto" data-slot="icon" />
                     Delete Job
@@ -196,8 +220,36 @@ export const columns: ColumnDef<ScrapingJob>[] = [
         },
     },
     {
+        id: "reporting",
+        header: "REPORTING",
+        cell: ({ row }) => {
+            const reporting = describeReportingAssignment({
+                status: row.original.status,
+                createdAt: new Date(row.original.createdAt),
+                completedAt: row.original.completedAt ? new Date(row.original.completedAt) : null,
+                reportingYear: row.original.reportingYear,
+                reportingMonth: row.original.reportingMonth,
+            });
+
+            if (row.original.status !== "COMPLETED") {
+                return <Text className="text-muted-foreground">Available after completion</Text>;
+            }
+
+            return (
+                <div className="flex flex-col">
+                    <Strong>{reporting.label}</Strong>
+                    <Text>
+                        {reporting.source === "manual"
+                            ? "Manual reporting month"
+                            : "Auto from completion month"}
+                    </Text>
+                </div>
+            );
+        },
+    },
+    {
         id: "actions",
         header: "ACTIONS",
-        cell: ({ row }) => <ActionMenu jobId={row.original.id} />,
+        cell: ({ row }) => <ActionMenu job={row.original} />,
     },
 ];
