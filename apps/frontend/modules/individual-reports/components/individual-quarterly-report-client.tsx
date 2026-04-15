@@ -346,90 +346,100 @@ export function IndividualQuarterlyReportClient({
                     </p>
 
                     <div className="mt-5 grid gap-4 lg:grid-cols-3">
-                        {liveReview.data.results.map((result) => (
-                            <div
-                                key={result.platform}
-                                className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800"
-                            >
-                                <div className="flex items-start justify-between gap-3">
-                                    <div>
-                                        <div className="font-semibold">{result.platform}</div>
-                                        <div className="text-sm text-zinc-500">
-                                            @{result.handle}
-                                        </div>
-                                    </div>
-                                    <div className="rounded-full bg-zinc-100 px-2 py-1 text-xs text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
-                                        {result.success ? result.coverage.status : "failed"}
-                                    </div>
-                                </div>
-                                {result.error ? (
-                                    <p className="mt-3 text-sm text-rose-600">{result.error}</p>
-                                ) : (
-                                    <>
-                                        <div className="mt-4 grid grid-cols-3 gap-2 text-sm">
-                                            <Metric
-                                                label="Quarter Items"
-                                                value={result.coverage.totalContentItems}
-                                            />
-                                            <Metric
-                                                label="Fetched"
-                                                value={result.rawItemsFetched}
-                                            />
-                                            <Metric
-                                                label="Pages"
-                                                value={result.coverage.listingPagesFetched}
-                                            />
-                                        </div>
-                                        {result.fetchedDateRange.earliest && (
-                                            <p className="mt-3 text-xs text-zinc-500">
-                                                Fetched range:{" "}
-                                                {result.fetchedDateRange.earliest.slice(0, 10)} to{" "}
-                                                {result.fetchedDateRange.latest?.slice(0, 10)}
-                                            </p>
-                                        )}
-                                        {result.diagnostics.length > 0 && (
-                                            <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200">
-                                                {result.diagnostics.join(" ")}
+                        {liveReview.data.results.map((result) => {
+                            const fetchedDateRange = result.fetchedDateRange || {
+                                earliest: null,
+                                latest: null,
+                            };
+                            const diagnostics = result.diagnostics || [];
+
+                            return (
+                                <div
+                                    key={result.platform}
+                                    className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800"
+                                >
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div>
+                                            <div className="font-semibold">{result.platform}</div>
+                                            <div className="text-sm text-zinc-500">
+                                                @{result.handle}
                                             </div>
-                                        )}
-                                        <div className="mt-4 space-y-2">
-                                            {result.coverage.months.map((month) => (
-                                                <div
-                                                    key={month.key}
-                                                    className="flex justify-between text-sm"
-                                                >
-                                                    <span className="text-zinc-500">
-                                                        {month.label}
-                                                    </span>
-                                                    <span>{month.contentCount} items</span>
+                                        </div>
+                                        <div className="rounded-full bg-zinc-100 px-2 py-1 text-xs text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
+                                            {result.success ? result.coverage.status : "failed"}
+                                        </div>
+                                    </div>
+                                    {result.error ? (
+                                        <p className="mt-3 text-sm text-rose-600">{result.error}</p>
+                                    ) : (
+                                        <>
+                                            <div className="mt-4 grid grid-cols-3 gap-2 text-sm">
+                                                <Metric
+                                                    label="Quarter Items"
+                                                    value={result.coverage.totalContentItems}
+                                                />
+                                                <Metric
+                                                    label="Fetched"
+                                                    value={result.rawItemsFetched}
+                                                />
+                                                <Metric
+                                                    label="Pages"
+                                                    value={result.coverage.listingPagesFetched}
+                                                />
+                                            </div>
+                                            {fetchedDateRange.earliest && (
+                                                <p className="mt-3 text-xs text-zinc-500">
+                                                    Fetched range:{" "}
+                                                    {fetchedDateRange.earliest.slice(0, 10)} to{" "}
+                                                    {fetchedDateRange.latest?.slice(0, 10)}
+                                                </p>
+                                            )}
+                                            {diagnostics.length > 0 && (
+                                                <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200">
+                                                    {diagnostics.join(" ")}
                                                 </div>
-                                            ))}
-                                        </div>
-                                        <div className="mt-4 border-t border-zinc-200 pt-3 dark:border-zinc-800">
-                                            <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                                                Selected Content
-                                            </div>
-                                            <div className="mt-2 space-y-2">
-                                                {result.enrichedItems.slice(0, 3).map((item) => (
-                                                    <div key={item.id} className="text-sm">
-                                                        <div className="font-medium">
-                                                            {new Date(item.publishedAt)
-                                                                .toISOString()
-                                                                .slice(0, 10)}
-                                                        </div>
-                                                        <div className="line-clamp-2 text-zinc-500">
-                                                            {item.textExcerpt ||
-                                                                item.url ||
-                                                                item.id}
-                                                        </div>
+                                            )}
+                                            <div className="mt-4 space-y-2">
+                                                {result.coverage.months.map((month) => (
+                                                    <div
+                                                        key={month.key}
+                                                        className="flex justify-between text-sm"
+                                                    >
+                                                        <span className="text-zinc-500">
+                                                            {month.label}
+                                                        </span>
+                                                        <span>{month.contentCount} items</span>
                                                     </div>
                                                 ))}
                                             </div>
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-                        ))}
+                                            <div className="mt-4 border-t border-zinc-200 pt-3 dark:border-zinc-800">
+                                                <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                                                    Selected Content
+                                                </div>
+                                                <div className="mt-2 space-y-2">
+                                                    {result.enrichedItems
+                                                        .slice(0, 3)
+                                                        .map((item) => (
+                                                            <div key={item.id} className="text-sm">
+                                                                <div className="font-medium">
+                                                                    {new Date(item.publishedAt)
+                                                                        .toISOString()
+                                                                        .slice(0, 10)}
+                                                                </div>
+                                                                <div className="line-clamp-2 text-zinc-500">
+                                                                    {item.textExcerpt ||
+                                                                        item.url ||
+                                                                        item.id}
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
                 </section>
             )}
