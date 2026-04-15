@@ -71,6 +71,7 @@ export interface QuarterlyCoverageAccount {
     snapshots: Array<{
         platform: "INSTAGRAM" | "TIKTOK" | "TWITTER";
         scrapedAt: Date;
+        jobId?: string | null;
     }>;
 }
 
@@ -150,6 +151,28 @@ export function deriveQuarterlyOptions(jobs: QuarterlyJobReference[]): Quarterly
     );
 }
 
+export function getQuarterlyAnchorJobIds({
+    year,
+    quarter,
+    jobs,
+    includeBaseline = false,
+}: {
+    year: number;
+    quarter: number;
+    jobs: QuarterlyJobReference[];
+    includeBaseline?: boolean;
+}) {
+    const jobsByMonth = latestCompletedJobByMonth(jobs);
+    const quarterMonths = quarterMonthStarts(year, quarter);
+    const months = includeBaseline
+        ? [new Date(year, (quarter - 1) * 3 - 3, 1), ...quarterMonths]
+        : quarterMonths;
+
+    return months
+        .map((month) => jobsByMonth.get(monthKey(month))?.id || null)
+        .filter((jobId): jobId is string => !!jobId);
+}
+
 export function buildQuarterlyStatus({
     year,
     quarter,
@@ -193,24 +216,34 @@ export function buildQuarterlyStatus({
             account.instagram ? "INSTAGRAM" : null,
             account.tiktok ? "TIKTOK" : null,
             account.twitter ? "TWITTER" : null,
-        ].filter(Boolean);
+        ].filter((platform): platform is "INSTAGRAM" | "TIKTOK" | "TWITTER" => !!platform);
 
-        const hasQuarterEnd = account.snapshots.some(
-            (snapshot) =>
-                snapshot.scrapedAt >= quarterEndMonth &&
-                monthKey(snapshot.scrapedAt) === quarterEndKey &&
-                accountPlatforms.includes(snapshot.platform),
+        const hasQuarterEnd = account.snapshots.some((snapshot) =>
+            snapshotMatchesAnchor(snapshot, {
+                key: quarterEndKey,
+                anchorJobId: quarterEndJob?.id || null,
+                accountPlatforms,
+            }),
         );
 
         if (hasQuarterEnd) {
             quarterEndCaptured++;
         }
 
-        const monthsCovered = new Set(
-            account.snapshots
-                .filter((snapshot) => accountPlatforms.includes(snapshot.platform))
-                .map((snapshot) => monthKey(snapshot.scrapedAt)),
-        );
+        const monthsCovered = new Set<string>();
+        for (const month of sourceMonths) {
+            const hasMonthSnapshot = account.snapshots.some((snapshot) =>
+                snapshotMatchesAnchor(snapshot, {
+                    key: month.key,
+                    anchorJobId: month.anchorJobId,
+                    accountPlatforms,
+                }),
+            );
+
+            if (hasMonthSnapshot) {
+                monthsCovered.add(month.key);
+            }
+        }
 
         if (quarterMonths.every((month) => monthsCovered.has(monthKey(month)))) {
             fullQuarterCaptured++;
@@ -272,4 +305,27 @@ export function buildQuarterlyStatus({
         },
         warnings,
     };
+}
+
+function snapshotMatchesAnchor(
+    snapshot: QuarterlyCoverageAccount["snapshots"][number],
+    {
+        key,
+        anchorJobId,
+        accountPlatforms,
+    }: {
+        key: string;
+        anchorJobId: string | null;
+        accountPlatforms: Array<"INSTAGRAM" | "TIKTOK" | "TWITTER">;
+    },
+) {
+    if (!accountPlatforms.includes(snapshot.platform)) {
+        return false;
+    }
+
+    if (anchorJobId && snapshot.jobId === anchorJobId) {
+        return true;
+    }
+
+    return monthKey(snapshot.scrapedAt) === key;
 }

@@ -104,6 +104,43 @@ describe("quarterly reporting actions", () => {
         );
     });
 
+    it("counts quarter-end coverage from a manually assigned anchor job even when scraped in April", async () => {
+        prismaMock.scrapingJob.findMany.mockResolvedValue([
+            {
+                id: "apr-job-assigned-mar",
+                createdAt: new Date("2026-04-02T10:00:00.000Z"),
+                completedAt: new Date("2026-04-02T10:00:00.000Z"),
+                reportingYear: 2026,
+                reportingMonth: 3,
+            },
+        ] as never);
+
+        prismaMock.account.findMany.mockResolvedValue([
+            {
+                id: "acc-1",
+                instagram: "kemdikbud",
+                tiktok: null,
+                twitter: null,
+                snapshots: [
+                    {
+                        platform: "INSTAGRAM",
+                        scrapedAt: new Date("2026-04-02T10:00:00.000Z"),
+                        jobId: "apr-job-assigned-mar",
+                    },
+                ],
+            },
+        ] as never);
+
+        const result = await getQuarterlyStatus(2026, 1);
+
+        expect(result.quarterEnd).toMatchObject({
+            key: "2026-03",
+            anchorJobId: "apr-job-assigned-mar",
+            source: "manual",
+        });
+        expect(result.coverage.quarterEndCaptured).toBe(1);
+    });
+
     it("marks a quarter unavailable when the quarter-end anchor is missing", async () => {
         prismaMock.scrapingJob.findMany.mockResolvedValue([
             {
