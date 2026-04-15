@@ -236,6 +236,8 @@ export async function getQuarterlyOptions(): Promise<QuarterlyOption[]> {
             id: true,
             createdAt: true,
             completedAt: true,
+            reportingYear: true,
+            reportingMonth: true,
         },
     });
 
@@ -277,6 +279,8 @@ export async function getQuarterlyStatus(
                 id: true,
                 createdAt: true,
                 completedAt: true,
+                reportingYear: true,
+                reportingMonth: true,
             },
         }),
         prisma.account.findMany({
@@ -345,6 +349,8 @@ export async function getQuarterlyPreviewData(
                 id: true,
                 createdAt: true,
                 completedAt: true,
+                reportingYear: true,
+                reportingMonth: true,
             },
         }),
         prisma.account.findMany({

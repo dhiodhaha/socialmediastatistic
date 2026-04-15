@@ -31,6 +31,33 @@ describe("quarterly reporting actions", () => {
         expect(q1?.desc).toContain("missing quarter-end snapshot");
     });
 
+    it("derives quarter availability from manually assigned reporting months", () => {
+        const options = deriveQuarterlyOptions([
+            {
+                id: "jan-job",
+                createdAt: new Date("2026-01-31T10:00:00.000Z"),
+                completedAt: new Date("2026-01-31T10:00:00.000Z"),
+            },
+            {
+                id: "feb-job",
+                createdAt: new Date("2026-02-28T10:00:00.000Z"),
+                completedAt: new Date("2026-02-28T10:00:00.000Z"),
+            },
+            {
+                id: "apr-job-assigned-mar",
+                createdAt: new Date("2026-04-02T10:00:00.000Z"),
+                completedAt: new Date("2026-04-02T10:00:00.000Z"),
+                reportingYear: 2026,
+                reportingMonth: 3,
+            },
+        ]);
+
+        const q1 = options.find((option) => option.id === "2026-Q1");
+
+        expect(q1?.disabled).toBe(false);
+        expect(q1?.desc).toBe("Jan 2026 - Mar 2026");
+    });
+
     it("returns warnings for missing internal months and missing baseline", async () => {
         prismaMock.scrapingJob.findMany.mockResolvedValue([
             {

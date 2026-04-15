@@ -1,9 +1,19 @@
 import { format } from "date-fns";
+import { resolveMonthlyReportingAnchors } from "@/modules/analytics/lib/monthly-reporting";
 
 export interface QuarterlyJobReference {
     id: string;
     createdAt: Date;
     completedAt: Date | null;
+    reportingYear?: number | null;
+    reportingMonth?: number | null;
+}
+
+interface QuarterlyResolvedAnchor extends QuarterlyJobReference {
+    reportingYear: number;
+    reportingMonth: number;
+    source: "manual" | "inferred";
+    sourceLabel: string;
 }
 
 export interface QuarterlyOption {
@@ -23,18 +33,24 @@ export interface QuarterlyStatus {
         label: string;
         hasAnchor: boolean;
         anchorJobId: string | null;
+        source: "manual" | "inferred" | null;
+        sourceLabel: string | null;
     }>;
     quarterEnd: {
         key: string;
         label: string;
         hasAnchor: boolean;
         anchorJobId: string | null;
+        source: "manual" | "inferred" | null;
+        sourceLabel: string | null;
     };
     baseline: {
         key: string;
         label: string;
         hasAnchor: boolean;
         anchorJobId: string | null;
+        source: "manual" | "inferred" | null;
+        sourceLabel: string | null;
     };
     availability: {
         isAvailable: boolean;
@@ -72,23 +88,25 @@ export function quarterMonthStarts(year: number, quarter: number) {
 }
 
 export function latestCompletedJobByMonth(jobs: QuarterlyJobReference[]) {
-    const map = new Map<string, QuarterlyJobReference>();
+    const map = new Map<string, QuarterlyResolvedAnchor>();
 
-    for (const job of jobs) {
-        const referenceDate = job.completedAt || job.createdAt;
-        const key = monthKey(referenceDate);
-        const existing = map.get(key);
-
-        if (
-            !existing ||
-            referenceDate.getTime() >
-                ((existing.completedAt || existing.createdAt) as Date).getTime()
-        ) {
-            map.set(key, job);
-        }
+    for (const anchor of resolveMonthlyReportingAnchors(jobs)) {
+        map.set(reportingPeriodKey(anchor.reportingYear, anchor.reportingMonth), {
+            id: anchor.id,
+            createdAt: anchor.createdAt,
+            completedAt: anchor.completedAt,
+            reportingYear: anchor.reportingYear,
+            reportingMonth: anchor.reportingMonth,
+            source: anchor.source,
+            sourceLabel: anchor.sourceLabel,
+        });
     }
 
     return map;
+}
+
+function reportingPeriodKey(year: number, month: number) {
+    return `${year}-${String(month).padStart(2, "0")}`;
 }
 
 function buildQuarterOption(
@@ -124,7 +142,7 @@ function buildQuarterOption(
 export function deriveQuarterlyOptions(jobs: QuarterlyJobReference[]): QuarterlyOption[] {
     const jobsByMonth = latestCompletedJobByMonth(jobs);
     const years = Array.from(
-        new Set(jobs.map((job) => (job.completedAt || job.createdAt).getFullYear())),
+        new Set(Array.from(jobsByMonth.values()).map((job) => job.reportingYear)),
     ).sort((a, b) => b - a);
 
     return years.flatMap((year) =>
@@ -157,6 +175,8 @@ export function buildQuarterlyStatus({
             label: monthLabel(month),
             hasAnchor: !!job,
             anchorJobId: job?.id || null,
+            source: job?.source || null,
+            sourceLabel: job?.sourceLabel || null,
         };
     });
 
@@ -223,12 +243,16 @@ export function buildQuarterlyStatus({
             label: monthLabel(quarterEndMonth),
             hasAnchor: !!quarterEndJob,
             anchorJobId: quarterEndJob?.id || null,
+            source: quarterEndJob?.source || null,
+            sourceLabel: quarterEndJob?.sourceLabel || null,
         },
         baseline: {
             key: baselineKey,
             label: monthLabel(baselineMonth),
             hasAnchor: !!baselineJob,
             anchorJobId: baselineJob?.id || null,
+            source: baselineJob?.source || null,
+            sourceLabel: baselineJob?.sourceLabel || null,
         },
         availability: quarterEndJob
             ? {
