@@ -1,6 +1,10 @@
 "use server";
 
 import { type Platform, prisma } from "@repo/database";
+import type {
+    calculateReconstructionCoverage,
+    selectContentForEnrichment,
+} from "@/modules/individual-reports/lib/content-reconstruction";
 import { buildContentLevelPlan } from "@/modules/individual-reports/lib/content-reconstruction";
 import {
     baselineMonthKey,
@@ -13,10 +17,6 @@ import {
     quarterEndMonthKey,
     validateIndividualReportRequest,
 } from "@/modules/individual-reports/lib/individual-quarterly-report";
-import {
-    fetchCreditBalance,
-    runLivePlatformReview,
-} from "@/modules/individual-reports/lib/scrapecreators-live";
 import { auth } from "@/shared/lib/auth";
 
 interface IndividualLiveReviewRequest {
@@ -26,6 +26,22 @@ interface IndividualLiveReviewRequest {
     quarter: number;
     listingPageLimit?: number;
     enrichedContentLimit?: number;
+}
+
+interface WorkerCreditBalance {
+    credits: number | null;
+    raw: unknown;
+}
+
+interface WorkerLiveReviewResult {
+    platform: Platform;
+    handle: string;
+    success: boolean;
+    error?: string;
+    creditsUsed: number;
+    rawItemsFetched: number;
+    coverage: ReturnType<typeof calculateReconstructionCoverage>;
+    enrichedItems: ReturnType<typeof selectContentForEnrichment>;
 }
 
 export async function getIndividualReportAccountOptions() {
@@ -143,7 +159,12 @@ export async function getIndividualReportCreditBalance() {
     }
 
     try {
-        const balance = await fetchCreditBalance();
+        const balance = await callWorkerJson<WorkerCreditBalance>(
+            "/individual-reports/credit-balance",
+            {
+                method: "GET",
+            },
+        );
         return { success: true as const, data: balance };
     } catch (error) {
         return {
@@ -209,16 +230,21 @@ export async function runIndividualQuarterlyLiveReview(input: IndividualLiveRevi
 
     const results = [];
     for (const entry of runnablePlatforms) {
-        results.push(
-            await runLivePlatformReview({
-                platform: entry.platform,
-                handle: entry.handle,
-                year: input.year,
-                quarter: input.quarter,
-                listingPageLimit,
-                enrichedContentLimit,
-            }),
+        const result = await callWorkerJson<WorkerLiveReviewResult>(
+            "/individual-reports/live-review",
+            {
+                method: "POST",
+                body: JSON.stringify({
+                    platform: entry.platform,
+                    handle: entry.handle,
+                    year: input.year,
+                    quarter: input.quarter,
+                    listingPageLimit,
+                    enrichedContentLimit,
+                }),
+            },
         );
+        results.push(result);
     }
 
     const estimatedCredits = estimateIndividualReportCredits({
@@ -252,6 +278,36 @@ export async function runIndividualQuarterlyLiveReview(input: IndividualLiveRevi
             ],
         },
     };
+}
+
+async function callWorkerJson<T>(path: string, init: RequestInit): Promise<T> {
+    const workerUrl = process.env.WORKER_URL || "http://localhost:4000";
+    const workerSecret = process.env.WORKER_SECRET;
+
+    if (!workerSecret) {
+        throw new Error("WORKER_SECRET not configured.");
+    }
+
+    const response = await fetch(`${workerUrl}${path}`, {
+        ...init,
+        headers: {
+            Authorization: `Bearer ${workerSecret}`,
+            "Content-Type": "application/json",
+            ...init.headers,
+        },
+    });
+
+    const payload = (await response.json().catch(() => null)) as {
+        success?: boolean;
+        data?: unknown;
+        error?: string;
+    } | null;
+
+    if (!response.ok || payload?.success === false) {
+        throw new Error(payload?.error || `Worker request failed: ${response.status}`);
+    }
+
+    return payload?.data as T;
 }
 
 function platformHandle(
