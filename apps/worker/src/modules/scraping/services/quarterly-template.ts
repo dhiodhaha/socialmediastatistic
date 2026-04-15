@@ -12,6 +12,11 @@ interface QuarterlyReportConfig {
         fullQuarterCoverageLabel: string;
         totalAccounts: number;
         warnings: string[];
+        sourceMonths: Array<{
+            label: string;
+            sourceLabel: string;
+        }>;
+        baselineSourceLabel: string;
         platformHighlights: Array<{
             platform: string;
             netFollowerGrowth: number;
@@ -345,6 +350,26 @@ export function generateQuarterlyReportHtml(config: QuarterlyReportConfig): stri
                         color: #9a3412;
                         font-size: 12px;
                     }
+                    .source-grid {
+                        display: grid;
+                        grid-template-columns: repeat(4, minmax(0, 1fr));
+                        gap: 10px;
+                        margin-top: 18px;
+                    }
+                    .source-card {
+                        border-radius: 14px;
+                        background: #eff6ff;
+                        border: 1px solid #bfdbfe;
+                        padding: 12px 14px;
+                        font-size: 11px;
+                        color: #1e40af;
+                    }
+                    .source-card strong {
+                        display: block;
+                        margin-bottom: 4px;
+                        color: #0f172a;
+                        font-size: 12px;
+                    }
                 </style>
             </head>
             <body>
@@ -386,6 +411,23 @@ export function generateQuarterlyReportHtml(config: QuarterlyReportConfig): stri
                         <div class="metric-card">
                             <span class="metric-label">Tracked Accounts</span>
                             <strong class="metric-value">${executiveSummary.totalAccounts}</strong>
+                        </div>
+                    </div>
+
+                    <div class="source-grid">
+                        ${executiveSummary.sourceMonths
+                            .map(
+                                (month) => `
+                                <div class="source-card">
+                                    <strong>${month.label}</strong>
+                                    ${month.sourceLabel}
+                                </div>
+                            `,
+                            )
+                            .join("")}
+                        <div class="source-card">
+                            <strong>Baseline ${baselineLabel}</strong>
+                            ${executiveSummary.baselineSourceLabel}
                         </div>
                     </div>
 

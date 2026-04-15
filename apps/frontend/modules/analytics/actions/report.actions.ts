@@ -465,6 +465,10 @@ interface ExportData {
     month2: string;
     includeCover?: boolean;
     customTitle?: string;
+    sourceMetadata?: {
+        month1SourceLabel?: string;
+        month2SourceLabel?: string;
+    };
 }
 
 /**
