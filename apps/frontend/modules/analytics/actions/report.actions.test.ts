@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { deriveQuarterlyOptions } from "@/modules/analytics/lib/quarterly-reporting";
 import { prismaMock, resetMocks } from "@/test/utils";
-import { getQuarterlyStatus } from "./report.actions";
+import { getQuarterlyStatus, getScrapingJobsForReport } from "./report.actions";
 
 vi.mock("@/shared/lib/auth", () => ({
     auth: vi.fn(async () => ({ user: { id: "user-1" } })),
@@ -92,5 +92,52 @@ describe("quarterly reporting actions", () => {
 
         expect(result.availability.isAvailable).toBe(false);
         expect(result.availability.reason).toContain("missing quarter-end snapshot");
+    });
+
+    it("resolves monthly job options from assigned reporting months first", async () => {
+        prismaMock.scrapingJob.findMany.mockResolvedValue([
+            {
+                id: "job-apr-auto",
+                createdAt: new Date("2026-04-01T10:00:00.000Z"),
+                completedAt: new Date("2026-04-01T10:00:00.000Z"),
+                totalAccounts: 10,
+                reportingYear: null,
+                reportingMonth: null,
+                status: "COMPLETED",
+            },
+            {
+                id: "job-apr-manual-mar",
+                createdAt: new Date("2026-04-02T10:00:00.000Z"),
+                completedAt: new Date("2026-04-02T10:00:00.000Z"),
+                totalAccounts: 10,
+                reportingYear: 2026,
+                reportingMonth: 3,
+                status: "COMPLETED",
+            },
+            {
+                id: "job-mar-auto",
+                createdAt: new Date("2026-03-31T10:00:00.000Z"),
+                completedAt: new Date("2026-03-31T10:00:00.000Z"),
+                totalAccounts: 10,
+                reportingYear: null,
+                reportingMonth: null,
+                status: "COMPLETED",
+            },
+        ] as never);
+
+        const jobs = await getScrapingJobsForReport();
+
+        expect(jobs).toEqual([
+            expect.objectContaining({
+                id: "job-apr-auto",
+                label: "April 2026",
+                source: "inferred",
+            }),
+            expect.objectContaining({
+                id: "job-apr-manual-mar",
+                label: "March 2026",
+                source: "manual",
+            }),
+        ]);
     });
 });

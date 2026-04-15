@@ -8,18 +8,15 @@ export interface ReportingMonthAssignmentJob {
     reportingMonth?: number | null;
 }
 
-export interface ReportingPeriodOption {
-    year: number;
-    month: number;
-    key: string;
-    label: string;
-}
-
 export interface ReportingPeriod {
     year: number;
     month: number;
 }
 
+export interface ReportingPeriodOption extends ReportingPeriod {
+    key: string;
+    label: string;
+}
 export function reportingMonthKey(year: number, month: number) {
     return `${year}-${String(month).padStart(2, "0")}`;
 }
@@ -39,8 +36,8 @@ export function getAssignableReportingPeriods(referenceDate: Date): ReportingPer
     const current = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), 1);
     const previous = new Date(referenceDate.getFullYear(), referenceDate.getMonth() - 1, 1);
 
-    return [current, previous].map((value) => {
-        const period = inferReportingPeriod(value);
+    return [current, previous].map((date) => {
+        const period = inferReportingPeriod(date);
 
         return {
             ...period,
