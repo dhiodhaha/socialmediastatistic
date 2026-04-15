@@ -13,7 +13,20 @@ import {
     quarterEndMonthKey,
     validateIndividualReportRequest,
 } from "@/modules/individual-reports/lib/individual-quarterly-report";
+import {
+    fetchCreditBalance,
+    runLivePlatformReview,
+} from "@/modules/individual-reports/lib/scrapecreators-live";
 import { auth } from "@/shared/lib/auth";
+
+interface IndividualLiveReviewRequest {
+    accountId: string;
+    platforms: Platform[];
+    year: number;
+    quarter: number;
+    listingPageLimit?: number;
+    enrichedContentLimit?: number;
+}
 
 export async function getIndividualReportAccountOptions() {
     const session = await auth();
@@ -119,6 +132,124 @@ export async function prepareIndividualQuarterlyReportDraft(input: IndividualRep
                 liveScrapingEnabled: false,
                 note: "This foundation workflow prepares an objective draft only. Future content reconstruction will require explicit operator confirmation before live ScrapeCreators calls.",
             },
+        },
+    };
+}
+
+export async function getIndividualReportCreditBalance() {
+    const session = await auth();
+    if (!session) {
+        throw new Error("Unauthorized");
+    }
+
+    try {
+        const balance = await fetchCreditBalance();
+        return { success: true as const, data: balance };
+    } catch (error) {
+        return {
+            success: false as const,
+            error: error instanceof Error ? error.message : "Failed to fetch credit balance.",
+        };
+    }
+}
+
+export async function runIndividualQuarterlyLiveReview(input: IndividualLiveReviewRequest) {
+    const session = await auth();
+    if (!session) {
+        throw new Error("Unauthorized");
+    }
+
+    const listingPageLimit = input.listingPageLimit ?? DEFAULT_INDIVIDUAL_LISTING_PAGE_LIMIT;
+    const enrichedContentLimit =
+        input.enrichedContentLimit ?? DEFAULT_INDIVIDUAL_ENRICHED_CONTENT_LIMIT;
+    const platforms = Array.from(new Set(input.platforms));
+
+    if (platforms.length === 0) {
+        return { success: false as const, error: "Select at least one platform." };
+    }
+
+    for (const platform of platforms) {
+        const validation = validateIndividualReportRequest({
+            accountId: input.accountId,
+            platform,
+            year: input.year,
+            quarter: input.quarter,
+        });
+
+        if (!validation.valid) {
+            return { success: false as const, error: validation.error };
+        }
+    }
+
+    const account = await prisma.account.findUnique({
+        where: { id: input.accountId },
+        select: {
+            id: true,
+            username: true,
+            instagram: true,
+            tiktok: true,
+            twitter: true,
+        },
+    });
+
+    if (!account) {
+        return { success: false as const, error: "Account not found." };
+    }
+
+    const runnablePlatforms = platforms
+        .map((platform) => ({ platform, handle: platformHandle(account, platform) }))
+        .filter((entry): entry is { platform: Platform; handle: string } => !!entry.handle);
+
+    if (runnablePlatforms.length === 0) {
+        return {
+            success: false as const,
+            error: "Selected account has no handles for the requested platform(s).",
+        };
+    }
+
+    const results = [];
+    for (const entry of runnablePlatforms) {
+        results.push(
+            await runLivePlatformReview({
+                platform: entry.platform,
+                handle: entry.handle,
+                year: input.year,
+                quarter: input.quarter,
+                listingPageLimit,
+                enrichedContentLimit,
+            }),
+        );
+    }
+
+    const estimatedCredits = estimateIndividualReportCredits({
+        includeProfileRequest: false,
+        listingPageLimit: listingPageLimit * runnablePlatforms.length,
+        detailedContentLimit: 0,
+    });
+
+    return {
+        success: true as const,
+        data: {
+            account: {
+                id: account.id,
+                username: account.username,
+            },
+            request: {
+                accountId: input.accountId,
+                platforms: runnablePlatforms.map((entry) => entry.platform),
+                year: input.year,
+                quarter: input.quarter,
+                listingPageLimit,
+                enrichedContentLimit,
+            },
+            estimatedCredits,
+            actualCreditsUsed: results.reduce((total, result) => total + result.creditsUsed, 0),
+            results,
+            methodologyNotes: [
+                "Live content reconstruction uses ScrapeCreators listing endpoints only in this release.",
+                "Returned items are filtered into the selected quarter before coverage and enrichment selection.",
+                "Selected content inspection is objective ranking from listing metrics; detail endpoints are not called yet.",
+            ],
         },
     };
 }

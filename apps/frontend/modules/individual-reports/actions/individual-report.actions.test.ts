@@ -29,7 +29,7 @@ describe("individual report actions", () => {
                     followers: 100,
                     posts: 10,
                     likes: null,
-                    scrapedAt: new Date("2025-12-31T10:00:00.000Z"),
+                    scrapedAt: new Date("2026-01-31T10:00:00.000Z"),
                 },
             ],
         } as never);

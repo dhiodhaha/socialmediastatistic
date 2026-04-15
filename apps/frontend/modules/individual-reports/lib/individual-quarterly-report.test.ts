@@ -65,7 +65,7 @@ describe("individual quarterly report foundation", () => {
                 followers: 100,
                 posts: 10,
                 likes: null,
-                scrapedAt: new Date("2025-12-31T10:00:00.000Z"),
+                scrapedAt: new Date("2026-01-31T10:00:00.000Z"),
             },
             quarterEndSnapshot: {
                 followers: 130,
@@ -94,6 +94,6 @@ describe("individual quarterly report foundation", () => {
 
     it("derives quarter-end and baseline month keys", () => {
         expect(quarterEndMonthKey(2026, 1)).toBe("2026-03");
-        expect(baselineMonthKey(2026, 1)).toBe("2025-12");
+        expect(baselineMonthKey(2026, 1)).toBe("2026-01");
     });
 });
