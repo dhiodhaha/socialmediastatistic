@@ -1,7 +1,7 @@
 "use server";
 
 import { type Platform, prisma } from "@repo/database";
-import { endOfDay, endOfMonth, startOfDay, startOfMonth, subMonths } from "date-fns";
+import { endOfDay, endOfMonth, startOfDay, startOfMonth } from "date-fns";
 import { resolveMonthlyReportingAnchors } from "@/modules/analytics/lib/monthly-reporting";
 import type { QuarterlyExportData } from "@/modules/analytics/lib/quarterly-export";
 import {
@@ -338,8 +338,8 @@ export async function getQuarterlyPreviewData(
         throw new Error("Unauthorized");
     }
 
+    const quarterStartMonth = new Date(year, (quarter - 1) * 3, 1);
     const quarterEndMonth = new Date(year, (quarter - 1) * 3 + 2, 1);
-    const baselineMonth = subMonths(quarterEndMonth, 3);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const whereClause: any = categoryId
@@ -367,7 +367,7 @@ export async function getQuarterlyPreviewData(
             reportingMonth: true,
         },
     });
-    const anchorJobIds = getQuarterlyAnchorJobIds({ year, quarter, jobs, includeBaseline: true });
+    const anchorJobIds = getQuarterlyAnchorJobIds({ year, quarter, jobs });
 
     const [accounts, selectedCategory] = await Promise.all([
         prisma.account.findMany({
@@ -388,7 +388,7 @@ export async function getQuarterlyPreviewData(
                         OR: [
                             {
                                 scrapedAt: {
-                                    gte: startOfMonth(baselineMonth),
+                                    gte: startOfMonth(quarterStartMonth),
                                     lte: endOfMonth(quarterEndMonth),
                                 },
                             },

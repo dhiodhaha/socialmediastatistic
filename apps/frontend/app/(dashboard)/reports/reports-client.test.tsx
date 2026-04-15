@@ -140,10 +140,10 @@ describe("ReportsClient", () => {
                     sourceLabel: "Manual reporting month",
                 },
                 baseline: {
-                    key: "2025-12",
-                    label: "Dec 2025",
+                    key: "2026-01",
+                    label: "Jan 2026",
                     hasAnchor: true,
-                    anchorJobId: "dec",
+                    anchorJobId: "jan",
                     source: "inferred",
                     sourceLabel: "Auto from completion month",
                 },
@@ -268,7 +268,7 @@ describe("ReportsClient", () => {
         expect(screen.getByText("Quarterly Review Status")).toBeTruthy();
         expect(screen.getByText("9/10")).toBeTruthy();
         expect(screen.getByText("6/10")).toBeTruthy();
-        expect(screen.getAllByText("Dec 2025").length).toBeGreaterThan(0);
+        expect(screen.getAllByText("Jan 2026").length).toBeGreaterThan(0);
         expect(screen.getByText("Quarterly Platform Summary")).toBeTruthy();
         expect(screen.getByText("Top Gainers")).toBeTruthy();
         expect(screen.getAllByText("Kemdikbud").length).toBeGreaterThan(0);

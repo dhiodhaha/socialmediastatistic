@@ -44,7 +44,7 @@ export function QuarterlyStatusSummary({ status }: QuarterlyStatusSummaryProps) 
                     />
                     <StatusCard
                         icon={ShieldCheck}
-                        label="Baseline"
+                        label="Quarter Start"
                         value={status.baseline.hasAnchor ? status.baseline.label : "Unavailable"}
                     />
                 </div>
@@ -80,15 +80,15 @@ export function QuarterlyStatusSummary({ status }: QuarterlyStatusSummaryProps) 
 
                 <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950/40">
                     <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                        Baseline
+                        Quarter-Start Baseline
                     </div>
                     <div className="mt-3 text-sm text-zinc-700 dark:text-zinc-300">
                         {status.baseline.label}
                     </div>
                     <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
                         {status.baseline.hasAnchor
-                            ? status.baseline.sourceLabel || "Baseline anchor available"
-                            : "Quarter report can still proceed without QoQ comparison"}
+                            ? status.baseline.sourceLabel || "Quarter-start anchor available"
+                            : "Quarter report can still proceed, but growth cannot be ranked without quarter-start data"}
                     </div>
                 </div>
             </div>

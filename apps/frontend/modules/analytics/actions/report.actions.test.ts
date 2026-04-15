@@ -58,7 +58,7 @@ describe("quarterly reporting actions", () => {
         expect(q1?.desc).toBe("Jan 2026 - Mar 2026");
     });
 
-    it("returns warnings for missing internal months and missing baseline", async () => {
+    it("returns warnings for missing internal months", async () => {
         prismaMock.scrapingJob.findMany.mockResolvedValue([
             {
                 id: "mar-job",
@@ -99,7 +99,6 @@ describe("quarterly reporting actions", () => {
         expect(result.warnings).toEqual(
             expect.arrayContaining([
                 expect.stringContaining("Missing supporting month snapshots: Feb 2026"),
-                expect.stringContaining("Previous quarter baseline unavailable"),
             ]),
         );
     });

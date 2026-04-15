@@ -78,7 +78,7 @@ export function QuarterlyPlatformSummary({
             <div className="mt-5 grid gap-4 lg:grid-cols-2">
                 <MoverList
                     title="Top Gainers"
-                    emptyLabel="No eligible QoQ rankings for this platform yet."
+                    emptyLabel="No eligible within-quarter rankings for this platform yet."
                     movers={summary.topGainers}
                     tone="emerald"
                 />

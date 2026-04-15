@@ -166,7 +166,7 @@ export function buildQuarterlyPlatformPreview({
             if (!quarterEndSnapshot) {
                 detailNote = "Missing quarter-end snapshot.";
             } else if (!baselineSnapshot) {
-                detailNote = "Previous quarter baseline unavailable.";
+                detailNote = "Quarter-start baseline unavailable.";
             } else if (missingMonths.length > 0) {
                 detailNote = `Missing supporting month snapshots: ${missingMonths.join(", ")}.`;
             }
