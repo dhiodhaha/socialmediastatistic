@@ -2,6 +2,7 @@
 
 import { type Platform, prisma } from "@repo/database";
 import { endOfDay, endOfMonth, format, startOfDay, startOfMonth, subMonths } from "date-fns";
+import type { QuarterlyExportData } from "@/modules/analytics/lib/quarterly-export";
 import {
     buildQuarterlyPlatformPreview,
     type QuarterlyPlatformPreview,
@@ -541,6 +542,41 @@ interface LatestExportData {
     month: string;
     includeCover?: boolean;
     customTitle?: string;
+}
+
+/**
+ * Export quarterly executive report as PDF via worker service.
+ * Returns base64 encoded PDF data.
+ */
+export async function exportQuarterlyPdf(exportData: QuarterlyExportData): Promise<string> {
+    const session = await auth();
+    if (!session) {
+        throw new Error("Unauthorized");
+    }
+
+    const workerUrl = process.env.WORKER_URL || "http://localhost:4000";
+    const workerSecret = process.env.WORKER_SECRET;
+
+    if (!workerSecret) {
+        throw new Error("WORKER_SECRET not configured");
+    }
+
+    const response = await fetch(`${workerUrl}/export/quarterly-pdf`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${workerSecret}`,
+        },
+        body: JSON.stringify(exportData),
+    });
+
+    if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`Quarterly export failed: ${response.status} - ${text}`);
+    }
+
+    const buffer = await response.arrayBuffer();
+    return Buffer.from(buffer).toString("base64");
 }
 
 /**

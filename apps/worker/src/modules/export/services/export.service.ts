@@ -32,6 +32,69 @@ interface CombinedExportData {
     customTitle?: string;
 }
 
+interface QuarterlyExportData {
+    periodLabel: string;
+    baselineLabel: string;
+    includeCover?: boolean;
+    customTitle?: string;
+    scope: "PLATFORM" | "ALL";
+    executiveSummary: {
+        headlineLabel: string;
+        headlineValue: number;
+        quarterEndCoverageLabel: string;
+        fullQuarterCoverageLabel: string;
+        totalAccounts: number;
+        warnings: string[];
+        platformHighlights: Array<{
+            platform: string;
+            netFollowerGrowth: number;
+            rankingEligibleCount: number;
+            performanceIssueCount: number;
+            dataQualityIssueCount: number;
+            topGainers: Array<{
+                accountName: string;
+                handle: string;
+                followerGrowthPct: number;
+                followerGrowthValue: number;
+            }>;
+            topDecliners: Array<{
+                accountName: string;
+                handle: string;
+                followerGrowthPct: number;
+                followerGrowthValue: number;
+            }>;
+        }>;
+    };
+    sections: Array<{
+        platform: string;
+        summary: {
+            netFollowerGrowth: number;
+            rankingEligibleCount: number;
+            totalAccounts: number;
+            performanceIssueCount: number;
+            dataQualityIssueCount: number;
+        };
+        rows: Array<{
+            accountName: string;
+            handle: string;
+            category: string;
+            isRanked: boolean;
+            performanceIssue: boolean;
+            dataQualityIssue: boolean;
+            detailNote: string | null;
+            oldFollowers: number | null;
+            newFollowers: number | null;
+            followersPct: number | null;
+            oldPosts: number | null;
+            newPosts: number | null;
+            postsPct: number | null;
+            oldLikes: number | null;
+            newLikes: number | null;
+            likesPct: number | null;
+        }>;
+    }>;
+}
+
 export class ExportService {
     static async generatePdf(filters: ExportFilters): Promise<Buffer> {
         const { startDate, endDate, status } = filters;
@@ -191,6 +254,39 @@ export class ExportService {
                 height: "1080px",
                 printBackground: true,
                 margin: { top: "0", right: "0", bottom: "0", left: "0" }, // Full bleed for 1920x1080 design
+            });
+
+            return Buffer.from(pdfBuffer);
+        } finally {
+            await browser.close();
+        }
+    }
+
+    static async generateQuarterlyPdf(exportData: QuarterlyExportData): Promise<Buffer> {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const {
+            generateQuarterlyReportHtml,
+        } = require("../../scraping/services/quarterly-template");
+
+        const html = generateQuarterlyReportHtml({
+            ...exportData,
+            generatedAt: new Date().toLocaleString("id-ID"),
+        });
+
+        const browser = await puppeteer.launch({
+            headless: true,
+            args: ["--no-sandbox", "--disable-setuid-sandbox"],
+        });
+
+        try {
+            const page = await browser.newPage();
+            await page.setContent(html, { waitUntil: "networkidle0" });
+
+            const pdfBuffer = await page.pdf({
+                format: "A4",
+                landscape: true,
+                printBackground: true,
+                margin: { top: "0", right: "0", bottom: "0", left: "0" },
             });
 
             return Buffer.from(pdfBuffer);

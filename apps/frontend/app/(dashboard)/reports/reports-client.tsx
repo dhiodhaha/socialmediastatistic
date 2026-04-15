@@ -9,6 +9,7 @@ import {
     type ComparisonRow,
     exportComparisonPdfV2,
     exportLatestPdf,
+    exportQuarterlyPdf,
     getComparisonData,
     getQuarterlyPreviewData,
 } from "@/modules/analytics/actions/report.actions";
@@ -23,6 +24,7 @@ import {
     ReportsControls,
 } from "@/modules/analytics/components/reports/reports-controls";
 import { ReportsTable } from "@/modules/analytics/components/reports/reports-table";
+import { buildQuarterlyExportData } from "@/modules/analytics/lib/quarterly-export";
 import type {
     QuarterlyPlatformPreview,
     QuarterlyPreviewRow,
@@ -190,6 +192,32 @@ export function ReportsClient({
     };
 
     const handleExportPdf = async () => {
+        if (reportMode === "QUARTERLY") {
+            if (!quarterlyPreview) return;
+            setExporting(true);
+            try {
+                const pdfBase64 = await exportQuarterlyPdf(
+                    buildQuarterlyExportData({
+                        preview: quarterlyPreview,
+                        categoryLabel: selectedCategory.label,
+                        scope: "PLATFORM",
+                        selectedPlatform,
+                    }),
+                );
+
+                downloadPdf(
+                    pdfBase64,
+                    `quarterly-${selectedPlatform.toLowerCase()}-${format(new Date(), "yyyyMMdd")}.pdf`,
+                );
+            } catch (error) {
+                console.error("Quarterly export failed:", error);
+                alert("Quarterly export failed. Please check console.");
+            } finally {
+                setExporting(false);
+            }
+            return;
+        }
+
         if (!selectedPeriod || !selectedComparison || comparisonData.length === 0) return;
         setExporting(true);
         try {
@@ -231,6 +259,28 @@ export function ReportsClient({
     };
 
     const handleExportAllPdf = async () => {
+        if (reportMode === "QUARTERLY") {
+            if (!quarterlyPreview) return;
+            setExportingAll(true);
+            try {
+                const pdfBase64 = await exportQuarterlyPdf(
+                    buildQuarterlyExportData({
+                        preview: quarterlyPreview,
+                        categoryLabel: selectedCategory.label,
+                        scope: "ALL",
+                    }),
+                );
+
+                downloadPdf(pdfBase64, `quarterly-all-${format(new Date(), "yyyyMMdd")}.pdf`);
+            } catch (error) {
+                console.error("Quarterly export all failed:", error);
+                alert("Quarterly export all failed. Please check console.");
+            } finally {
+                setExportingAll(false);
+            }
+            return;
+        }
+
         if (!selectedPeriod || !selectedComparison || rawData.length === 0) return;
         setExportingAll(true);
         try {
