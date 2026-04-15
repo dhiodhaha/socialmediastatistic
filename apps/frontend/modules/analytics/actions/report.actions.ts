@@ -2,6 +2,7 @@
 
 import { type Platform, prisma } from "@repo/database";
 import { endOfDay, endOfMonth, format, startOfDay, startOfMonth, subMonths } from "date-fns";
+import { resolveMonthlyReportingAnchors } from "@/modules/analytics/lib/monthly-reporting";
 import type { QuarterlyExportData } from "@/modules/analytics/lib/quarterly-export";
 import {
     buildQuarterlyPlatformPreview,
@@ -417,7 +418,7 @@ export async function getScrapingJobsForReport() {
         throw new Error("Unauthorized");
     }
 
-    return prisma.scrapingJob.findMany({
+    const jobs = await prisma.scrapingJob.findMany({
         where: {
             status: "COMPLETED",
         },
@@ -429,8 +430,12 @@ export async function getScrapingJobsForReport() {
             createdAt: true,
             completedAt: true,
             totalAccounts: true,
+            reportingYear: true,
+            reportingMonth: true,
         },
     });
+
+    return resolveMonthlyReportingAnchors(jobs);
 }
 
 interface ExportData {

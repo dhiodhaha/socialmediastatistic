@@ -15,10 +15,20 @@ describe("ReportsClient", () => {
     const initialJobs = [
         {
             id: "job-mar",
+            label: "March 2026",
+            sourceLabel: "Manual reporting month",
+            source: "manual" as const,
+            reportingYear: 2026,
+            reportingMonth: 3,
             createdAt: "2026-03-01T00:00:00.000Z",
         },
         {
             id: "job-feb",
+            label: "February 2026",
+            sourceLabel: "Auto from completion month",
+            source: "inferred" as const,
+            reportingYear: 2026,
+            reportingMonth: 2,
             createdAt: "2026-02-01T00:00:00.000Z",
         },
     ];
@@ -234,5 +244,44 @@ describe("ReportsClient", () => {
         expect(screen.getByText("Quarterly Platform Summary")).toBeTruthy();
         expect(screen.getByText("Top Gainers")).toBeTruthy();
         expect(screen.getAllByText("Kemdikbud").length).toBeGreaterThan(0);
+    });
+
+    it("shows monthly reporting source labels after viewing a monthly report", async () => {
+        const { getComparisonData } = await import("@/modules/analytics/actions/report.actions");
+        vi.mocked(getComparisonData).mockResolvedValue([
+            {
+                accountId: "acc-1",
+                accountName: "Kemdikbud",
+                handle: "kemdikbud",
+                category: "Pendidikan",
+                platform: "INSTAGRAM",
+                oldStats: { followers: 100, posts: 10, likes: 0 },
+                newStats: { followers: 120, posts: 12, likes: 0 },
+                delta: {
+                    followersVal: 20,
+                    followersPct: 20,
+                    postsVal: 2,
+                    postsPct: 20,
+                    likesVal: 0,
+                    likesPct: 0,
+                },
+            },
+        ]);
+
+        render(
+            <ReportsClient
+                initialJobs={initialJobs}
+                initialQuarterlyOptions={initialQuarterlyOptions}
+                initialCategories={initialCategories}
+            />,
+        );
+
+        fireEvent.click(screen.getByRole("button", { name: "View Report" }));
+
+        await waitFor(() => {
+            expect(screen.getByText("Monthly Reporting Sources")).toBeTruthy();
+            expect(screen.getByText("Manual reporting month")).toBeTruthy();
+            expect(screen.getByText("Auto from completion month")).toBeTruthy();
+        });
     });
 });
