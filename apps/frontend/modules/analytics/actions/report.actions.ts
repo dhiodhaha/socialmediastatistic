@@ -333,7 +333,7 @@ export async function getQuarterlyPreviewData(
           }
         : { isActive: true };
 
-    const [jobs, accounts] = await Promise.all([
+    const [jobs, accounts, selectedCategory] = await Promise.all([
         prisma.scrapingJob.findMany({
             where: {
                 status: "COMPLETED",
@@ -377,6 +377,12 @@ export async function getQuarterlyPreviewData(
                 },
             },
         }),
+        categoryId
+            ? prisma.category.findUnique({
+                  where: { id: categoryId },
+                  select: { name: true },
+              })
+            : Promise.resolve(null),
     ]);
 
     const status = buildQuarterlyStatus({
@@ -396,6 +402,7 @@ export async function getQuarterlyPreviewData(
 
     return buildQuarterlyPlatformPreview({
         status,
+        categoryFilterLabel: selectedCategory?.name || null,
         accounts: accounts.map((account) => ({
             id: account.id,
             username: account.username,

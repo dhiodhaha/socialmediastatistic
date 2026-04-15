@@ -12,6 +12,7 @@ interface QuarterlyReportConfig {
         fullQuarterCoverageLabel: string;
         totalAccounts: number;
         warnings: string[];
+        methodologyNote: string | null;
         platformHighlights: Array<{
             platform: string;
             netFollowerGrowth: number;
@@ -45,6 +46,7 @@ interface QuarterlyReportConfig {
             accountName: string;
             handle: string;
             category: string;
+            sharedAccount: boolean;
             isRanked: boolean;
             performanceIssue: boolean;
             dataQualityIssue: boolean;
@@ -322,6 +324,10 @@ export function generateQuarterlyReportHtml(config: QuarterlyReportConfig): stri
                         background: #fef3c7;
                         color: #b45309;
                     }
+                    .badge-shared {
+                        background: #dbeafe;
+                        color: #1d4ed8;
+                    }
                     .badge-unranked {
                         background: #e5e7eb;
                         color: #4b5563;
@@ -343,6 +349,15 @@ export function generateQuarterlyReportHtml(config: QuarterlyReportConfig): stri
                         background: #fff7ed;
                         border: 1px solid #fed7aa;
                         color: #9a3412;
+                        font-size: 12px;
+                    }
+                    .methodology-callout {
+                        margin-top: 16px;
+                        padding: 12px 14px;
+                        border-radius: 14px;
+                        background: #eff6ff;
+                        border: 1px solid #bfdbfe;
+                        color: #1d4ed8;
                         font-size: 12px;
                     }
                 </style>
@@ -428,6 +443,14 @@ export function generateQuarterlyReportHtml(config: QuarterlyReportConfig): stri
                     </div>
 
                     ${
+                        executiveSummary.methodologyNote
+                            ? `
+                        <div class="methodology-callout">${executiveSummary.methodologyNote}</div>
+                    `
+                            : ""
+                    }
+
+                    ${
                         executiveSummary.warnings.length > 0
                             ? `
                         <ul class="warning-list">
@@ -462,6 +485,9 @@ function renderBadges(row: QuarterlyReportConfig["sections"][number]["rows"][num
     }
     if (row.dataQualityIssue) {
         badges.push('<span class="badge badge-quality">Data quality</span>');
+    }
+    if (row.sharedAccount) {
+        badges.push('<span class="badge badge-shared">Shared</span>');
     }
     if (!row.isRanked) {
         badges.push('<span class="badge badge-unranked">Unranked</span>');

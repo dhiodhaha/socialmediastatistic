@@ -462,9 +462,11 @@ export function ReportsClient({
                 <QuarterlyStatusSummary status={quarterlyStatus} />
             )}
 
-            {reportMode === "QUARTERLY" && selectedQuarterSummary && (
+            {reportMode === "QUARTERLY" && quarterlyPreview && selectedQuarterSummary && (
                 <QuarterlyPlatformSummary
                     platform={selectedPlatform}
+                    categoryLabel={selectedCategory.label}
+                    methodologyNote={quarterlyPreview.methodologyNote}
                     summary={selectedQuarterSummary}
                 />
             )}
@@ -567,6 +569,7 @@ function mapQuarterlyRowsToDisplayRows(
             isNA: false,
             isRanked: row.rankingEligible,
             badges: [
+                ...(row.sharedAccount ? [{ label: "Shared", tone: "blue" as const }] : []),
                 ...(row.performanceIssue ? [{ label: "Performance", tone: "rose" as const }] : []),
                 ...(row.dataQualityIssue
                     ? [{ label: "Data quality", tone: "amber" as const }]

@@ -123,6 +123,8 @@ describe("ReportsClient", () => {
                 },
                 warnings: ["Missing supporting month snapshots: Feb 2026."],
             },
+            methodologyNote:
+                "Category-filtered quarterly views use current category membership for Kementerian.",
             rows: [
                 {
                     accountId: "acc-1",
@@ -130,6 +132,7 @@ describe("ReportsClient", () => {
                     handle: "kemdikbud",
                     category: "Pendidikan",
                     platform: "INSTAGRAM",
+                    sharedAccount: true,
                     rankingEligible: true,
                     hasQuarterEndData: true,
                     performanceIssue: false,
@@ -234,5 +237,6 @@ describe("ReportsClient", () => {
         expect(screen.getByText("Quarterly Platform Summary")).toBeTruthy();
         expect(screen.getByText("Top Gainers")).toBeTruthy();
         expect(screen.getAllByText("Kemdikbud").length).toBeGreaterThan(0);
+        expect(screen.getByText("Category Methodology")).toBeTruthy();
     });
 });

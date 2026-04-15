@@ -67,6 +67,7 @@ describe("buildQuarterlyPlatformPreview", () => {
         });
 
         expect(preview.rows[0]?.rankingEligible).toBe(false);
+        expect(preview.rows[0]?.sharedAccount).toBe(false);
         expect(preview.rows[0]?.dataQualityIssue).toBe(true);
         expect(preview.summaries[0]?.rankingEligibleCount).toBe(0);
     });
@@ -153,5 +154,43 @@ describe("buildQuarterlyPlatformPreview", () => {
         );
         expect(preview.summaries[0]?.rankingEligibleCount).toBe(1);
         expect(preview.summaries[0]?.topGainers[0]?.accountId).toBe("acc-3");
+    });
+
+    it("marks shared accounts and emits a methodology note for category-filtered views", () => {
+        const preview = buildQuarterlyPlatformPreview({
+            status: baseStatus,
+            categoryFilterLabel: "Komunikasi",
+            accounts: [
+                {
+                    id: "acc-4",
+                    username: "Kemlu",
+                    instagram: "kemlu",
+                    tiktok: null,
+                    twitter: null,
+                    categoryNames: ["Komunikasi", "Diplomasi"],
+                    snapshots: [
+                        {
+                            platform: "INSTAGRAM",
+                            followers: 100,
+                            posts: 10,
+                            likes: null,
+                            scrapedAt: new Date("2025-12-31T10:00:00.000Z"),
+                        },
+                        {
+                            platform: "INSTAGRAM",
+                            followers: 130,
+                            posts: 13,
+                            likes: null,
+                            scrapedAt: new Date("2026-03-31T10:00:00.000Z"),
+                        },
+                    ],
+                },
+            ],
+        });
+
+        expect(preview.rows[0]?.sharedAccount).toBe(true);
+        expect(preview.rows[0]?.category).toContain("Diplomasi");
+        expect(preview.methodologyNote).toContain("Komunikasi");
+        expect(preview.summaries[0]?.totalAccounts).toBe(1);
     });
 });

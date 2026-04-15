@@ -78,6 +78,7 @@ interface QuarterlyExportData {
             accountName: string;
             handle: string;
             category: string;
+            sharedAccount: boolean;
             isRanked: boolean;
             performanceIssue: boolean;
             dataQualityIssue: boolean;

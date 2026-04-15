@@ -19,6 +19,7 @@ export interface QuarterlyExportData {
         fullQuarterCoverageLabel: string;
         totalAccounts: number;
         warnings: string[];
+        methodologyNote: string | null;
         platformHighlights: Array<{
             platform: string;
             netFollowerGrowth: number;
@@ -52,6 +53,7 @@ export interface QuarterlyExportData {
             accountName: string;
             handle: string;
             category: string;
+            sharedAccount: boolean;
             isRanked: boolean;
             performanceIssue: boolean;
             dataQualityIssue: boolean;
@@ -112,6 +114,7 @@ export function buildQuarterlyExportData({
             fullQuarterCoverageLabel,
             totalAccounts: preview.status.coverage.totalAccounts,
             warnings: preview.status.warnings,
+            methodologyNote: preview.methodologyNote,
             platformHighlights: selectedSummaries.map((summary) => ({
                 platform: platformLabel(summary.platform),
                 netFollowerGrowth: summary.netFollowerGrowth,
@@ -153,6 +156,7 @@ function mapExportRow(row: QuarterlyPreviewRow) {
         accountName: row.accountName,
         handle: `@${row.handle}`,
         category: row.category,
+        sharedAccount: row.sharedAccount,
         isRanked: row.rankingEligible,
         performanceIssue: row.performanceIssue,
         dataQualityIssue: row.dataQualityIssue,

@@ -26,6 +26,7 @@ export interface QuarterlyPreviewRow {
     handle: string;
     category: string;
     platform: Platform;
+    sharedAccount: boolean;
     rankingEligible: boolean;
     hasQuarterEndData: boolean;
     performanceIssue: boolean;
@@ -68,6 +69,7 @@ export interface QuarterlyPlatformSummary {
 
 export interface QuarterlyPlatformPreview {
     status: QuarterlyStatus;
+    methodologyNote: string | null;
     rows: QuarterlyPreviewRow[];
     summaries: QuarterlyPlatformSummary[];
 }
@@ -75,9 +77,11 @@ export interface QuarterlyPlatformPreview {
 export function buildQuarterlyPlatformPreview({
     status,
     accounts,
+    categoryFilterLabel,
 }: {
     status: QuarterlyStatus;
     accounts: QuarterlyPreviewAccount[];
+    categoryFilterLabel?: string | null;
 }): QuarterlyPlatformPreview {
     const rows: QuarterlyPreviewRow[] = [];
     const quarterMonthKeys = new Set(status.sourceMonths.map((month) => month.key));
@@ -167,6 +171,7 @@ export function buildQuarterlyPlatformPreview({
                 handle: platformEntry.handle,
                 category,
                 platform: platformEntry.platform,
+                sharedAccount: account.categoryNames.length > 1,
                 rankingEligible,
                 hasQuarterEndData: !!quarterEndSnapshot,
                 performanceIssue,
@@ -198,6 +203,9 @@ export function buildQuarterlyPlatformPreview({
 
     return {
         status,
+        methodologyNote: categoryFilterLabel
+            ? `Category-filtered quarterly views use current category membership for ${categoryFilterLabel}. Shared accounts may appear in multiple reporting groups, and category totals should not be treated as additive rollups.`
+            : null,
         rows,
         summaries: buildPlatformSummaries(rows),
     };
