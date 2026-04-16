@@ -703,12 +703,52 @@ function extractInstagramThumbnail(
 
 function extractTikTokThumbnail(entry: Record<string, unknown>): string | null {
     const video = asRecord(entry.video);
-    const cover = asRecord(video.cover);
-    const urlList = asArray(cover.url_list);
-    if (urlList.length > 0) {
-        return typeof urlList[0] === "string" ? urlList[0] : null;
+
+    const candidates: unknown[] = [
+        video.cover,
+        video.origin_cover,
+        video.dynamic_cover,
+        video.cover_thumb,
+        video.cover_medium,
+        video.cover_large,
+    ];
+
+    for (const candidate of candidates) {
+        const normalized = normalizeTikTokThumbnailCandidate(candidate);
+        if (normalized) return normalized;
     }
+
     return null;
+}
+
+function normalizeTikTokThumbnailCandidate(candidate: unknown): string | null {
+    if (typeof candidate === "string") return normalizeExternalUrl(candidate);
+
+    const record = asRecord(candidate);
+    const urlList = asArray(record.url_list);
+    const urlFromList = urlList.find((value): value is string => typeof value === "string");
+    if (urlFromList) return normalizeExternalUrl(urlFromList);
+
+    return (
+        normalizeExternalUrl(readString(record, ["url"])) ??
+        normalizeExternalUrl(readString(record, ["uri"]))
+    );
+}
+
+function normalizeExternalUrl(url: string | null) {
+    if (!url) return null;
+
+    const trimmed = url.trim().replaceAll("&amp;", "&");
+    if (!trimmed) return null;
+    if (trimmed.startsWith("//")) return `https:${trimmed}`;
+
+    try {
+        const parsed = new URL(trimmed);
+        if (!["http:", "https:"].includes(parsed.protocol)) return null;
+        return parsed.toString();
+    } catch {
+        return null;
+    }
 }
 
 function responseShapeDiagnostic(platform: string, record: Record<string, unknown>) {

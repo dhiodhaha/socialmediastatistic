@@ -187,6 +187,7 @@ interface IndividualQuarterlyExportData {
         }>;
     }>;
     methodologyNotes: string[];
+    coverageLabel?: string;
     snapshotHistory?: Array<{
         platform: string;
         months: Array<{
@@ -471,27 +472,86 @@ export class ExportService {
     }
 
     private static async downloadThumbnailAsBase64(url: string): Promise<string | null> {
+        const normalizedUrl = ExportService.normalizeThumbnailUrl(url);
+        if (!normalizedUrl) return null;
+
+        let timeout: NodeJS.Timeout | null = null;
         try {
             const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), 5000);
+            timeout = setTimeout(() => controller.abort(), 5000);
 
-            const response = await fetch(url, {
+            const response = await fetch(normalizedUrl, {
                 signal: controller.signal,
                 headers: {
-                    "User-Agent": "Mozilla/5.0 (compatible; ReportBot/1.0)",
+                    "User-Agent":
+                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
                     Accept: "image/*",
+                    Referer: ExportService.thumbnailReferer(normalizedUrl),
                 },
             });
 
-            clearTimeout(timeout);
-
             if (!response.ok) return null;
 
-            const contentType = response.headers.get("content-type") || "image/jpeg";
             const buffer = Buffer.from(await response.arrayBuffer());
+            if (buffer.length === 0) return null;
+
+            const contentType = ExportService.thumbnailContentType(
+                response.headers.get("content-type"),
+                buffer,
+            );
             return `data:${contentType};base64,${buffer.toString("base64")}`;
         } catch {
             return null;
+        } finally {
+            if (timeout) clearTimeout(timeout);
         }
+    }
+
+    private static normalizeThumbnailUrl(url: string): string | null {
+        const trimmed = url.trim().replaceAll("&amp;", "&");
+        if (!trimmed || trimmed.startsWith("data:")) return null;
+        const candidate = trimmed.startsWith("//") ? `https:${trimmed}` : trimmed;
+
+        try {
+            const parsed = new URL(candidate);
+            if (!["http:", "https:"].includes(parsed.protocol)) return null;
+            return parsed.toString();
+        } catch {
+            return null;
+        }
+    }
+
+    private static thumbnailReferer(url: string) {
+        try {
+            const host = new URL(url).hostname;
+            if (host.includes("tiktok")) return "https://www.tiktok.com/";
+            if (host.includes("instagram") || host.includes("fbcdn")) {
+                return "https://www.instagram.com/";
+            }
+        } catch {
+            return "https://www.google.com/";
+        }
+
+        return "https://www.google.com/";
+    }
+
+    private static thumbnailContentType(contentType: string | null, buffer: Buffer) {
+        if (contentType?.startsWith("image/")) return contentType.split(";")[0] || "image/jpeg";
+        if (buffer.subarray(0, 3).equals(Buffer.from([0xff, 0xd8, 0xff]))) return "image/jpeg";
+        if (
+            buffer
+                .subarray(0, 8)
+                .equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))
+        ) {
+            return "image/png";
+        }
+        if (
+            buffer.subarray(0, 4).toString("ascii") === "RIFF" &&
+            buffer.subarray(8, 12).toString("ascii") === "WEBP"
+        ) {
+            return "image/webp";
+        }
+
+        return "image/jpeg";
     }
 }

@@ -84,6 +84,7 @@ interface IndividualQuarterlyPdfData {
         }>;
     }>;
     methodologyNotes: string[];
+    coverageLabel?: string;
     snapshotHistory?: Array<{
         platform: string;
         months: Array<{
@@ -432,6 +433,7 @@ export function generateIndividualQuarterlyReportHtml({
       </div>
     </div>
     <div class="cover-bottom">
+      ${data.coverageLabel ? `<div style="margin-bottom:16px;padding:10px 16px;background:rgba(255,255,255,0.15);border-radius:10px;font-size:13px;opacity:0.92;">${escapeHtml(data.coverageLabel)}</div>` : ""}
       <div class="cover-eyebrow">Dibuat pada</div>
       <div class="cover-date">${escapeHtml(generatedAt)}</div>
     </div>
