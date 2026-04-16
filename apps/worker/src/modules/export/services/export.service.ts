@@ -187,6 +187,7 @@ interface IndividualQuarterlyExportData {
         }>;
     }>;
     methodologyNotes: string[];
+    coverageLabel?: string;
     snapshotHistory?: Array<{
         platform: string;
         months: Array<{

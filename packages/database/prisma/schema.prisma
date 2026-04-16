@@ -97,22 +97,41 @@ model Category {
 }
 
 model IndividualReportRun {
-  id                String                 @id @default(cuid())
+  id                String                          @id @default(cuid())
   accountId         String
-  account           Account                @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  account           Account                         @relation(fields: [accountId], references: [id], onDelete: Cascade)
   year              Int
   quarter           Int
-  platforms         Json
-  status            IndividualReportStatus @default(COMPLETED)
+  status            IndividualReportStatus          @default(PARTIAL)
   estimatedCredits  Int
   actualCreditsUsed Int
-  resultJson        Json
-  createdAt         DateTime               @default(now())
-  updatedAt         DateTime               @updatedAt
+  createdAt         DateTime                        @default(now())
+  updatedAt         DateTime                        @updatedAt
+
+  platformResults   IndividualReportPlatformResult[]
 
   @@index([accountId])
   @@index([year, quarter])
   @@index([createdAt])
+}
+
+model IndividualReportPlatformResult {
+  id          String                          @id @default(cuid())
+  runId       String
+  run         IndividualReportRun             @relation(fields: [runId], references: [id], onDelete: Cascade)
+  platform    Platform
+  handle      String
+  status      IndividualReportPlatformStatus
+  creditsUsed Int                             @default(0)
+  resultJson  Json?
+  error       String?
+  scrapedAt   DateTime?
+  createdAt   DateTime                        @default(now())
+  updatedAt   DateTime                        @updatedAt
+
+  @@unique([runId, platform])
+  @@index([platform])
+  @@index([status])
 }
 
 enum Platform {
@@ -129,7 +148,14 @@ enum JobStatus {
 }
 
 enum IndividualReportStatus {
-  COMPLETED
+  COMPLETE
+  PARTIAL
+  FAILED
+}
+
+enum IndividualReportPlatformStatus {
+  PENDING
+  SUCCESS
   FAILED
 }
 
