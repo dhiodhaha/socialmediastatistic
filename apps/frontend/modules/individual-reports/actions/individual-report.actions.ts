@@ -34,6 +34,32 @@ interface WorkerCreditBalance {
     raw: unknown;
 }
 
+interface WorkerPlatformProfileStats {
+    followers: number | null;
+    following: number | null;
+    totalPosts: number | null;
+    isVerified: boolean | null;
+    displayName: string | null;
+}
+
+interface WorkerQuarterSummaryStats {
+    quarterItemCount: number;
+    totalLikes: number;
+    totalComments: number;
+    totalViews: number;
+    avgLikes: number | null;
+    avgComments: number | null;
+    avgViews: number | null;
+    avgEngagementRate: number | null;
+    topPost: {
+        url: string | null;
+        likes: number | null;
+        publishedAt: string;
+    } | null;
+    contentTypeBreakdown: Record<string, number>;
+    isPopularMode: boolean;
+}
+
 interface WorkerLiveReviewResult {
     platform: Platform;
     handle: string;
@@ -48,6 +74,8 @@ interface WorkerLiveReviewResult {
     diagnostics: string[];
     coverage: ReturnType<typeof calculateReconstructionCoverage>;
     enrichedItems: ReturnType<typeof selectContentForEnrichment>;
+    profileStats?: WorkerPlatformProfileStats | null;
+    quarterSummary?: WorkerQuarterSummaryStats | null;
 }
 
 interface IndividualReportRunData {
@@ -171,7 +199,7 @@ export async function prepareIndividualQuarterlyReportDraft(input: IndividualRep
             executionModel: {
                 mode: "manual-local-first",
                 liveScrapingEnabled: false,
-                note: "This foundation workflow prepares an objective draft only. Future content reconstruction will require explicit operator confirmation before live ScrapeCreators calls.",
+                note: "This foundation workflow prepares an objective draft only. Future content reconstruction will require explicit operator confirmation before external API calls.",
             },
         },
     };
@@ -295,10 +323,10 @@ export async function runIndividualQuarterlyLiveReview(input: IndividualLiveRevi
         actualCreditsUsed: results.reduce((total, result) => total + result.creditsUsed, 0),
         results,
         methodologyNotes: [
-            "Live content reconstruction uses ScrapeCreators listing endpoints only in this release.",
-            "Returned items are filtered into the selected quarter before coverage and enrichment selection.",
-            "Selected content inspection is objective ranking from listing metrics; detail endpoints are not called yet.",
-            "Twitter / X coverage is limited by ScrapeCreators' public user-tweets endpoint and may return popular tweets rather than a chronological quarterly feed.",
+            "Rekonstruksi konten menggunakan endpoint daftar dari setiap platform yang dipilih.",
+            "Data yang dikembalikan difilter ke kuartal yang dipilih sebelum analisis cakupan dan pemilihan konten.",
+            "Konten terpilih diurutkan secara objektif berdasarkan metrik keterlibatan dari data daftar.",
+            "Data Twitter menampilkan tweet terpopuler karena keterbatasan platform, bukan urutan kronologis kuartal.",
         ],
     };
 
@@ -347,10 +375,19 @@ export async function exportIndividualQuarterlyReportPdf(runId: string) {
     }
 
     try {
-        const base64 = await callWorkerPdfBase64(
-            "/export/individual-quarterly-pdf",
-            run.resultJson,
+        const snapshotHistory = await buildSnapshotHistoryForExport(
+            run.accountId,
+            run.year,
+            run.quarter,
+            run.platforms,
         );
+
+        const payload = {
+            ...(run.resultJson as Record<string, unknown>),
+            snapshotHistory,
+        };
+
+        const base64 = await callWorkerPdfBase64("/export/individual-quarterly-pdf", payload);
         return { success: true as const, data: base64 };
     } catch (error) {
         return {
@@ -624,17 +661,34 @@ async function findIndividualReportRuns(accountId?: string) {
 async function findIndividualReportRunForExport(runId: string) {
     const delegate = individualReportRunDelegate();
     if (delegate) {
-        return delegate.findUnique({
+        const row = await delegate.findUnique({
             where: { id: runId },
             select: {
+                accountId: true,
+                year: true,
+                quarter: true,
+                platforms: true,
                 resultJson: true,
             },
         });
+        if (!row) return null;
+        return {
+            ...row,
+            platforms: parsePlatformList(row.platforms),
+        };
     }
 
-    const rows = await prisma.$queryRawUnsafe<Array<{ resultJson: Prisma.JsonValue }>>(
+    const rows = await prisma.$queryRawUnsafe<
+        Array<{
+            accountId: string;
+            year: number;
+            quarter: number;
+            platforms: Prisma.JsonValue;
+            resultJson: Prisma.JsonValue;
+        }>
+    >(
         `
-        SELECT "resultJson"
+        SELECT "accountId", "year", "quarter", "platforms", "resultJson"
         FROM "IndividualReportRun"
         WHERE "id" = $1
         LIMIT 1
@@ -642,5 +696,84 @@ async function findIndividualReportRunForExport(runId: string) {
         runId,
     );
 
-    return rows[0] || null;
+    if (!rows[0]) return null;
+    return {
+        ...rows[0],
+        platforms: parsePlatformList(rows[0].platforms),
+    };
+}
+
+async function buildSnapshotHistoryForExport(
+    accountId: string,
+    year: number,
+    quarter: number,
+    platforms: Platform[],
+) {
+    // Quarter months: Q1 = Jan,Feb,Mar; Q2 = Apr,May,Jun; etc.
+    const startMonthIdx = (quarter - 1) * 3; // 0-indexed
+    const startDate = new Date(year, startMonthIdx, 1);
+    const endDate = new Date(year, startMonthIdx + 3, 0, 23, 59, 59); // last day of quarter
+
+    const snapshots = await prisma.$queryRawUnsafe<
+        Array<{
+            platform: string;
+            followers: number;
+            posts: number | null;
+            likes: number | null;
+            scrapedAt: Date;
+        }>
+    >(
+        `
+        SELECT s."platform", s."followers", s."posts", s."likes", s."scrapedAt"
+        FROM "Snapshot" s
+        WHERE s."accountId" = $1
+          AND s."platform" = ANY($2::"Platform"[])
+          AND s."scrapedAt" >= $3
+          AND s."scrapedAt" <= $4
+        ORDER BY s."scrapedAt" ASC
+        `,
+        accountId,
+        platforms,
+        startDate,
+        endDate,
+    );
+
+    // Group by platform, pick one snapshot per month (latest in that month)
+    const platformMap = new Map<
+        string,
+        Map<
+            string,
+            {
+                monthKey: string;
+                label: string;
+                followers: number;
+                posts: number | null;
+                likes: number | null;
+            }
+        >
+    >();
+
+    for (const snap of snapshots) {
+        if (!platformMap.has(snap.platform)) {
+            platformMap.set(snap.platform, new Map());
+        }
+        const monthMap = platformMap.get(snap.platform)!;
+        const d = new Date(snap.scrapedAt);
+        const mk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        const label = d.toLocaleString("id-ID", { month: "short", year: "numeric" });
+
+        // Keep the latest snapshot per month
+        monthMap.set(mk, {
+            monthKey: mk,
+            label,
+            followers: snap.followers,
+            posts: snap.posts,
+            likes: snap.likes,
+        });
+    }
+
+    return Array.from(platformMap.entries()).map(([platform, monthMap]) => ({
+        platform,
+        months: Array.from(monthMap.values()).sort((a, b) => a.monthKey.localeCompare(b.monthKey)),
+    }));
 }

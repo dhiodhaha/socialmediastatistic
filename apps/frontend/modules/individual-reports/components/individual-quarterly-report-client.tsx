@@ -119,7 +119,7 @@ export function IndividualQuarterlyReportClient({
             const result = await getIndividualReportCreditBalance();
             setCreditBalance(result);
             if (result.success) {
-                toast.success("ScrapeCreators balance checked");
+                toast.success("Credit balance checked");
                 return;
             }
             toast.error(result.error);
@@ -254,7 +254,7 @@ export function IndividualQuarterlyReportClient({
 
                 <div className="mt-5 flex flex-col gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-200 md:flex-row md:items-center md:justify-between">
                     <div>
-                        <div className="font-semibold">Estimated ScrapeCreators usage</div>
+                        <div className="font-semibold">Estimated API usage</div>
                         <div>
                             {estimate.totalCredits} credits before execution: profile{" "}
                             {estimate.breakdown.profileCredits}, listing{" "}
