@@ -37,7 +37,7 @@ describe("individual quarterly report foundation", () => {
         ).toMatchObject({ valid: false });
     });
 
-    it("estimates ScrapeCreators request credits before execution", () => {
+    it("estimates API request credits before execution", () => {
         expect(
             estimateIndividualReportCredits({
                 listingPageLimit: 4,
@@ -50,7 +50,7 @@ describe("individual quarterly report foundation", () => {
                 listingCredits: 4,
                 detailCredits: 10,
             },
-            note: expect.stringContaining("one ScrapeCreators credit per request"),
+            note: expect.stringContaining("one API credit per request"),
         });
     });
 
@@ -88,7 +88,7 @@ describe("individual quarterly report foundation", () => {
             followersPct: 30,
         });
         expect(summary.methodologyNotes).toContainEqual(
-            expect.stringContaining("No live ScrapeCreators request"),
+            expect.stringContaining("No live external API request"),
         );
     });
 

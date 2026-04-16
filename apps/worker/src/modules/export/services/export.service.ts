@@ -105,6 +105,100 @@ interface QuarterlyExportData {
     }>;
 }
 
+interface IndividualQuarterlyExportData {
+    account: {
+        id: string;
+        username: string;
+    };
+    request: {
+        platforms: string[];
+        year: number;
+        quarter: number;
+        listingPageLimit: number;
+        enrichedContentLimit: number;
+    };
+    estimatedCredits: {
+        totalCredits: number;
+    };
+    actualCreditsUsed: number;
+    results: Array<{
+        platform: string;
+        handle: string;
+        success: boolean;
+        error?: string;
+        creditsUsed: number;
+        rawItemsFetched: number;
+        fetchedDateRange?: {
+            earliest: string | null;
+            latest: string | null;
+        };
+        diagnostics?: string[];
+        profileStats?: {
+            followers: number | null;
+            following: number | null;
+            totalPosts: number | null;
+            isVerified: boolean | null;
+            displayName: string | null;
+        } | null;
+        quarterSummary?: {
+            quarterItemCount: number;
+            totalLikes: number;
+            totalComments: number;
+            totalViews: number;
+            avgLikes: number | null;
+            avgComments: number | null;
+            avgViews: number | null;
+            avgEngagementRate: number | null;
+            topPost: {
+                url: string | null;
+                likes: number | null;
+                publishedAt: string;
+            } | null;
+            contentTypeBreakdown: Record<string, number>;
+            isPopularMode: boolean;
+        } | null;
+        coverage: {
+            status: string;
+            totalContentItems: number;
+            listingPagesFetched: number;
+            reachedQuarterStart: boolean;
+            months: Array<{
+                key: string;
+                label: string;
+                contentCount: number;
+            }>;
+            note: string;
+        };
+        enrichedItems: Array<{
+            id: string;
+            url?: string | null;
+            publishedAt: string;
+            textExcerpt?: string | null;
+            thumbnailUrl?: string | null;
+            mediaType?: string | null;
+            engagementScore?: number;
+            selectionReason?: string;
+            metrics: {
+                likes?: number | null;
+                comments?: number | null;
+                views?: number | null;
+                shares?: number | null;
+            };
+        }>;
+    }>;
+    methodologyNotes: string[];
+    snapshotHistory?: Array<{
+        platform: string;
+        months: Array<{
+            monthKey: string;
+            label: string;
+            followers: number;
+            posts: number | null;
+            likes: number | null;
+        }>;
+    }>;
+}
+
 export class ExportService {
     static async generatePdf(filters: ExportFilters): Promise<Buffer> {
         const { startDate, endDate, status } = filters;
@@ -302,6 +396,102 @@ export class ExportService {
             return Buffer.from(pdfBuffer);
         } finally {
             await browser.close();
+        }
+    }
+
+    static async generateIndividualQuarterlyPdf(
+        exportData: IndividualQuarterlyExportData,
+    ): Promise<Buffer> {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const {
+            generateIndividualQuarterlyReportHtml,
+        } = require("../../individual-reports/services/individual-quarterly-template");
+
+        // Pre-download thumbnails and convert to base64 data URIs
+        await ExportService.resolveAllThumbnails(exportData);
+
+        const html = generateIndividualQuarterlyReportHtml({
+            data: exportData,
+            generatedAt: new Date().toLocaleDateString("id-ID", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+            }),
+        });
+
+        const browser = await puppeteer.launch({
+            headless: true,
+            args: ["--no-sandbox", "--disable-setuid-sandbox"],
+        });
+
+        try {
+            const page = await browser.newPage();
+            await page.setContent(html, { waitUntil: "networkidle0" });
+
+            const pdfBuffer = await page.pdf({
+                format: "A4",
+                printBackground: true,
+                margin: { top: "0", right: "0", bottom: "0", left: "0" },
+            });
+
+            return Buffer.from(pdfBuffer);
+        } finally {
+            await browser.close();
+        }
+    }
+
+    /**
+     * Download all thumbnail URLs in the export data and replace with base64 data URIs.
+     * This prevents CDN blocking issues (Instagram/TikTok CDNs reject referrer-bearing requests).
+     */
+    private static async resolveAllThumbnails(data: IndividualQuarterlyExportData): Promise<void> {
+        const items = data.results.flatMap((r) => r.enrichedItems ?? []);
+        const withThumbs = items.flatMap((item) => {
+            if (!item.thumbnailUrl || item.thumbnailUrl.startsWith("data:")) return [];
+            return [{ item, thumbnailUrl: item.thumbnailUrl }];
+        });
+
+        if (withThumbs.length === 0) return;
+
+        const results = await Promise.allSettled(
+            withThumbs.map(async ({ item, thumbnailUrl }) => {
+                const base64 = await ExportService.downloadThumbnailAsBase64(thumbnailUrl);
+                if (base64) {
+                    item.thumbnailUrl = base64;
+                } else {
+                    item.thumbnailUrl = null;
+                }
+            }),
+        );
+
+        const failed = results.filter((r) => r.status === "rejected").length;
+        if (failed > 0) {
+            console.warn(`[thumbnails] ${failed}/${withThumbs.length} thumbnail downloads failed`);
+        }
+    }
+
+    private static async downloadThumbnailAsBase64(url: string): Promise<string | null> {
+        try {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 5000);
+
+            const response = await fetch(url, {
+                signal: controller.signal,
+                headers: {
+                    "User-Agent": "Mozilla/5.0 (compatible; ReportBot/1.0)",
+                    Accept: "image/*",
+                },
+            });
+
+            clearTimeout(timeout);
+
+            if (!response.ok) return null;
+
+            const contentType = response.headers.get("content-type") || "image/jpeg";
+            const buffer = Buffer.from(await response.arrayBuffer());
+            return `data:${contentType};base64,${buffer.toString("base64")}`;
+        } catch {
+            return null;
         }
     }
 }

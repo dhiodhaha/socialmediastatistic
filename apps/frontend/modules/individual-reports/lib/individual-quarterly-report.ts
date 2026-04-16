@@ -68,7 +68,7 @@ export function estimateIndividualReportCredits(input: CreditEstimateInput) {
             listingCredits,
             detailCredits,
         },
-        note: "Estimate assumes one ScrapeCreators credit per request. OpenAI usage is not included in this ScrapeCreators estimate.",
+        note: "Estimate assumes one API credit per request. OpenAI usage is not included in this API estimate.",
     };
 }
 
@@ -136,7 +136,7 @@ export function buildIndividualQuarterlySnapshotSummary(input: IndividualSnapsho
         methodologyNotes: [
             "Official summary uses stored monthly snapshots from the database.",
             "Content-level reconstruction is intentionally separate from portfolio quarterly reporting.",
-            "No live ScrapeCreators request is executed by this foundation workflow.",
+            "No live external API request is executed by this foundation workflow.",
         ],
     };
 }

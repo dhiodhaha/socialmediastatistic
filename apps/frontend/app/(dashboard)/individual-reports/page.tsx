@@ -16,7 +16,7 @@ export default async function IndividualReportsPage() {
                 <p className="mt-2 max-w-3xl text-sm text-zinc-500 dark:text-zinc-400">
                     Manual one-account, one-platform, one-quarter workflow for future content-level
                     reporting. The foundation prepares an objective draft and credit estimate
-                    without running live ScrapeCreators calls.
+                    without running live API calls.
                 </p>
             </div>
 

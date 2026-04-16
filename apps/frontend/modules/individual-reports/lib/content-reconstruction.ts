@@ -156,7 +156,7 @@ export function buildContentLevelPlan(input: ContentLevelPlanInput) {
         methodologyNotes: [
             "Reconstructed coverage and enriched inspection must be labeled separately in the exported PDF.",
             "Coverage is based on returned listing items, not platform-native analytics.",
-            "Enrichment should stay selective by default to protect ScrapeCreators credits.",
+            "Enrichment should stay selective by default to protect API credits.",
         ],
     };
 }

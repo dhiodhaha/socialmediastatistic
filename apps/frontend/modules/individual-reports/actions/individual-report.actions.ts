@@ -1,6 +1,6 @@
 "use server";
 
-import { type Platform, prisma } from "@repo/database";
+import { type Platform, type Prisma, prisma } from "@repo/database";
 import type {
     calculateReconstructionCoverage,
     selectContentForEnrichment,
@@ -34,6 +34,32 @@ interface WorkerCreditBalance {
     raw: unknown;
 }
 
+interface WorkerPlatformProfileStats {
+    followers: number | null;
+    following: number | null;
+    totalPosts: number | null;
+    isVerified: boolean | null;
+    displayName: string | null;
+}
+
+interface WorkerQuarterSummaryStats {
+    quarterItemCount: number;
+    totalLikes: number;
+    totalComments: number;
+    totalViews: number;
+    avgLikes: number | null;
+    avgComments: number | null;
+    avgViews: number | null;
+    avgEngagementRate: number | null;
+    topPost: {
+        url: string | null;
+        likes: number | null;
+        publishedAt: string;
+    } | null;
+    contentTypeBreakdown: Record<string, number>;
+    isPopularMode: boolean;
+}
+
 interface WorkerLiveReviewResult {
     platform: Platform;
     handle: string;
@@ -48,6 +74,27 @@ interface WorkerLiveReviewResult {
     diagnostics: string[];
     coverage: ReturnType<typeof calculateReconstructionCoverage>;
     enrichedItems: ReturnType<typeof selectContentForEnrichment>;
+    profileStats?: WorkerPlatformProfileStats | null;
+    quarterSummary?: WorkerQuarterSummaryStats | null;
+}
+
+interface IndividualReportRunData {
+    account: {
+        id: string;
+        username: string;
+    };
+    request: {
+        accountId: string;
+        platforms: Platform[];
+        year: number;
+        quarter: number;
+        listingPageLimit: number;
+        enrichedContentLimit: number;
+    };
+    estimatedCredits: ReturnType<typeof estimateIndividualReportCredits>;
+    actualCreditsUsed: number;
+    results: WorkerLiveReviewResult[];
+    methodologyNotes: string[];
 }
 
 export async function getIndividualReportAccountOptions() {
@@ -152,7 +199,7 @@ export async function prepareIndividualQuarterlyReportDraft(input: IndividualRep
             executionModel: {
                 mode: "manual-local-first",
                 liveScrapingEnabled: false,
-                note: "This foundation workflow prepares an objective draft only. Future content reconstruction will require explicit operator confirmation before live ScrapeCreators calls.",
+                note: "This foundation workflow prepares an objective draft only. Future content reconstruction will require explicit operator confirmation before external API calls.",
             },
         },
     };
@@ -259,31 +306,98 @@ export async function runIndividualQuarterlyLiveReview(input: IndividualLiveRevi
         detailedContentLimit: 0,
     });
 
+    const runData: IndividualReportRunData = {
+        account: {
+            id: account.id,
+            username: account.username,
+        },
+        request: {
+            accountId: input.accountId,
+            platforms: runnablePlatforms.map((entry) => entry.platform),
+            year: input.year,
+            quarter: input.quarter,
+            listingPageLimit,
+            enrichedContentLimit,
+        },
+        estimatedCredits,
+        actualCreditsUsed: results.reduce((total, result) => total + result.creditsUsed, 0),
+        results,
+        methodologyNotes: [
+            "Rekonstruksi konten menggunakan endpoint daftar dari setiap platform yang dipilih.",
+            "Data yang dikembalikan difilter ke kuartal yang dipilih sebelum analisis cakupan dan pemilihan konten.",
+            "Konten terpilih diurutkan secara objektif berdasarkan metrik keterlibatan dari data daftar.",
+            "Data Twitter menampilkan tweet terpopuler karena keterbatasan platform, bukan urutan kronologis kuartal.",
+        ],
+    };
+
+    const savedRun = await createIndividualReportRun({
+        accountId: account.id,
+        year: input.year,
+        quarter: input.quarter,
+        platforms: runData.request.platforms,
+        status: results.every((result) => result.success) ? "COMPLETED" : "FAILED",
+        estimatedCredits: estimatedCredits.totalCredits,
+        actualCreditsUsed: runData.actualCreditsUsed,
+        resultJson: runData,
+    });
+
     return {
         success: true as const,
         data: {
-            account: {
-                id: account.id,
-                username: account.username,
+            ...runData,
+            run: {
+                id: savedRun.id,
+                createdAt: savedRun.createdAt.toISOString(),
             },
-            request: {
-                accountId: input.accountId,
-                platforms: runnablePlatforms.map((entry) => entry.platform),
-                year: input.year,
-                quarter: input.quarter,
-                listingPageLimit,
-                enrichedContentLimit,
-            },
-            estimatedCredits,
-            actualCreditsUsed: results.reduce((total, result) => total + result.creditsUsed, 0),
-            results,
-            methodologyNotes: [
-                "Live content reconstruction uses ScrapeCreators listing endpoints only in this release.",
-                "Returned items are filtered into the selected quarter before coverage and enrichment selection.",
-                "Selected content inspection is objective ranking from listing metrics; detail endpoints are not called yet.",
-            ],
         },
     };
+}
+
+export async function getSavedIndividualReportRuns(accountId?: string) {
+    const session = await auth();
+    if (!session) {
+        throw new Error("Unauthorized");
+    }
+
+    return findIndividualReportRuns(accountId);
+}
+
+export async function exportIndividualQuarterlyReportPdf(runId: string) {
+    const session = await auth();
+    if (!session) {
+        throw new Error("Unauthorized");
+    }
+
+    const run = await findIndividualReportRunForExport(runId);
+
+    if (!run) {
+        return { success: false as const, error: "Saved individual report run not found." };
+    }
+
+    try {
+        const snapshotHistory = await buildSnapshotHistoryForExport(
+            run.accountId,
+            run.year,
+            run.quarter,
+            run.platforms,
+        );
+
+        const payload = {
+            ...(run.resultJson as Record<string, unknown>),
+            snapshotHistory,
+        };
+
+        const base64 = await callWorkerPdfBase64("/export/individual-quarterly-pdf", payload);
+        return { success: true as const, data: base64 };
+    } catch (error) {
+        return {
+            success: false as const,
+            error:
+                error instanceof Error
+                    ? error.message
+                    : "Failed to export individual quarterly PDF.",
+        };
+    }
 }
 
 async function callWorkerJson<T>(path: string, init: RequestInit): Promise<T> {
@@ -316,6 +430,32 @@ async function callWorkerJson<T>(path: string, init: RequestInit): Promise<T> {
     return payload?.data as T;
 }
 
+async function callWorkerPdfBase64(path: string, body: unknown): Promise<string> {
+    const workerUrl = process.env.WORKER_URL || "http://localhost:4000";
+    const workerSecret = process.env.WORKER_SECRET;
+
+    if (!workerSecret) {
+        throw new Error("WORKER_SECRET not configured.");
+    }
+
+    const response = await fetch(`${workerUrl}${path}`, {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer ${workerSecret}`,
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`PDF export failed: ${response.status} - ${text.slice(0, 180)}`);
+    }
+
+    const buffer = await response.arrayBuffer();
+    return Buffer.from(buffer).toString("base64");
+}
+
 function platformHandle(
     account: { instagram: string | null; tiktok: string | null; twitter: string | null },
     platform: Platform,
@@ -323,4 +463,317 @@ function platformHandle(
     if (platform === "INSTAGRAM") return account.instagram;
     if (platform === "TIKTOK") return account.tiktok;
     return account.twitter;
+}
+
+function toPrismaJson(value: unknown): Prisma.InputJsonValue {
+    return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
+}
+
+function parsePlatformList(value: Prisma.JsonValue): Platform[] {
+    return Array.isArray(value)
+        ? value.filter((platform): platform is Platform =>
+              ["INSTAGRAM", "TIKTOK", "TWITTER"].includes(String(platform)),
+          )
+        : [];
+}
+
+function individualReportRunDelegate() {
+    return (
+        prisma as typeof prisma & {
+            individualReportRun?: typeof prisma.individualReportRun;
+        }
+    ).individualReportRun;
+}
+
+async function createIndividualReportRun(input: {
+    accountId: string;
+    year: number;
+    quarter: number;
+    platforms: Platform[];
+    status: "COMPLETED" | "FAILED";
+    estimatedCredits: number;
+    actualCreditsUsed: number;
+    resultJson: IndividualReportRunData;
+}) {
+    const delegate = individualReportRunDelegate();
+    if (delegate) {
+        return delegate.create({
+            data: {
+                accountId: input.accountId,
+                year: input.year,
+                quarter: input.quarter,
+                platforms: input.platforms,
+                status: input.status,
+                estimatedCredits: input.estimatedCredits,
+                actualCreditsUsed: input.actualCreditsUsed,
+                resultJson: toPrismaJson(input.resultJson),
+            },
+            select: {
+                id: true,
+                createdAt: true,
+            },
+        });
+    }
+
+    const rows = await prisma.$queryRawUnsafe<Array<{ id: string; createdAt: Date }>>(
+        `
+        INSERT INTO "IndividualReportRun" (
+            "id",
+            "accountId",
+            "year",
+            "quarter",
+            "platforms",
+            "status",
+            "estimatedCredits",
+            "actualCreditsUsed",
+            "resultJson",
+            "createdAt",
+            "updatedAt"
+        )
+        VALUES (
+            $1,
+            $2,
+            $3,
+            $4,
+            $5::jsonb,
+            $6::"IndividualReportStatus",
+            $7,
+            $8,
+            $9::jsonb,
+            NOW(),
+            NOW()
+        )
+        RETURNING "id", "createdAt"
+    `,
+        crypto.randomUUID(),
+        input.accountId,
+        input.year,
+        input.quarter,
+        JSON.stringify(input.platforms),
+        input.status,
+        input.estimatedCredits,
+        input.actualCreditsUsed,
+        JSON.stringify(input.resultJson),
+    );
+
+    const savedRun = rows[0];
+    if (!savedRun) {
+        throw new Error("Failed to save individual report run.");
+    }
+
+    return savedRun;
+}
+
+async function findIndividualReportRuns(accountId?: string) {
+    const delegate = individualReportRunDelegate();
+    if (delegate) {
+        const runs = await delegate.findMany({
+            where: accountId ? { accountId } : undefined,
+            orderBy: { createdAt: "desc" },
+            take: 12,
+            select: {
+                id: true,
+                accountId: true,
+                year: true,
+                quarter: true,
+                platforms: true,
+                status: true,
+                estimatedCredits: true,
+                actualCreditsUsed: true,
+                resultJson: true,
+                createdAt: true,
+                account: {
+                    select: {
+                        username: true,
+                    },
+                },
+            },
+        });
+
+        return runs.map((run) => ({
+            id: run.id,
+            accountId: run.accountId,
+            accountName: run.account.username,
+            year: run.year,
+            quarter: run.quarter,
+            platforms: parsePlatformList(run.platforms),
+            status: run.status,
+            estimatedCredits: run.estimatedCredits,
+            actualCreditsUsed: run.actualCreditsUsed,
+            createdAt: run.createdAt.toISOString(),
+            result: run.resultJson as unknown as IndividualReportRunData,
+        }));
+    }
+
+    const rows = await prisma.$queryRawUnsafe<
+        Array<{
+            id: string;
+            accountId: string;
+            accountName: string;
+            year: number;
+            quarter: number;
+            platforms: Prisma.JsonValue;
+            status: string;
+            estimatedCredits: number;
+            actualCreditsUsed: number;
+            resultJson: Prisma.JsonValue;
+            createdAt: Date;
+        }>
+    >(
+        `
+        SELECT
+            r."id",
+            r."accountId",
+            a."username" AS "accountName",
+            r."year",
+            r."quarter",
+            r."platforms",
+            r."status"::text AS "status",
+            r."estimatedCredits",
+            r."actualCreditsUsed",
+            r."resultJson",
+            r."createdAt"
+        FROM "IndividualReportRun" r
+        JOIN "Account" a ON a."id" = r."accountId"
+        WHERE ($1::text IS NULL OR r."accountId" = $2)
+        ORDER BY r."createdAt" DESC
+        LIMIT 12
+    `,
+        accountId ?? null,
+        accountId ?? null,
+    );
+
+    return rows.map((run) => ({
+        id: run.id,
+        accountId: run.accountId,
+        accountName: run.accountName,
+        year: run.year,
+        quarter: run.quarter,
+        platforms: parsePlatformList(run.platforms),
+        status: run.status,
+        estimatedCredits: run.estimatedCredits,
+        actualCreditsUsed: run.actualCreditsUsed,
+        createdAt: run.createdAt.toISOString(),
+        result: run.resultJson as unknown as IndividualReportRunData,
+    }));
+}
+
+async function findIndividualReportRunForExport(runId: string) {
+    const delegate = individualReportRunDelegate();
+    if (delegate) {
+        const row = await delegate.findUnique({
+            where: { id: runId },
+            select: {
+                accountId: true,
+                year: true,
+                quarter: true,
+                platforms: true,
+                resultJson: true,
+            },
+        });
+        if (!row) return null;
+        return {
+            ...row,
+            platforms: parsePlatformList(row.platforms),
+        };
+    }
+
+    const rows = await prisma.$queryRawUnsafe<
+        Array<{
+            accountId: string;
+            year: number;
+            quarter: number;
+            platforms: Prisma.JsonValue;
+            resultJson: Prisma.JsonValue;
+        }>
+    >(
+        `
+        SELECT "accountId", "year", "quarter", "platforms", "resultJson"
+        FROM "IndividualReportRun"
+        WHERE "id" = $1
+        LIMIT 1
+    `,
+        runId,
+    );
+
+    if (!rows[0]) return null;
+    return {
+        ...rows[0],
+        platforms: parsePlatformList(rows[0].platforms),
+    };
+}
+
+async function buildSnapshotHistoryForExport(
+    accountId: string,
+    year: number,
+    quarter: number,
+    platforms: Platform[],
+) {
+    // Quarter months: Q1 = Jan,Feb,Mar; Q2 = Apr,May,Jun; etc.
+    const startMonthIdx = (quarter - 1) * 3; // 0-indexed
+    const startDate = new Date(year, startMonthIdx, 1);
+    const endDate = new Date(year, startMonthIdx + 3, 0, 23, 59, 59); // last day of quarter
+
+    const snapshots = await prisma.$queryRawUnsafe<
+        Array<{
+            platform: string;
+            followers: number;
+            posts: number | null;
+            likes: number | null;
+            scrapedAt: Date;
+        }>
+    >(
+        `
+        SELECT s."platform", s."followers", s."posts", s."likes", s."scrapedAt"
+        FROM "Snapshot" s
+        WHERE s."accountId" = $1
+          AND s."platform" = ANY($2::"Platform"[])
+          AND s."scrapedAt" >= $3
+          AND s."scrapedAt" <= $4
+        ORDER BY s."scrapedAt" ASC
+        `,
+        accountId,
+        platforms,
+        startDate,
+        endDate,
+    );
+
+    // Group by platform, pick one snapshot per month (latest in that month)
+    const platformMap = new Map<
+        string,
+        Map<
+            string,
+            {
+                monthKey: string;
+                label: string;
+                followers: number;
+                posts: number | null;
+                likes: number | null;
+            }
+        >
+    >();
+
+    for (const snap of snapshots) {
+        if (!platformMap.has(snap.platform)) {
+            platformMap.set(snap.platform, new Map());
+        }
+        const monthMap = platformMap.get(snap.platform)!;
+        const d = new Date(snap.scrapedAt);
+        const mk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        const label = d.toLocaleString("id-ID", { month: "short", year: "numeric" });
+
+        // Keep the latest snapshot per month
+        monthMap.set(mk, {
+            monthKey: mk,
+            label,
+            followers: snap.followers,
+            posts: snap.posts,
+            likes: snap.likes,
+        });
+    }
+
+    return Array.from(platformMap.entries()).map(([platform, monthMap]) => ({
+        platform,
+        months: Array.from(monthMap.values()).sort((a, b) => a.monthKey.localeCompare(b.monthKey)),
+    }));
 }

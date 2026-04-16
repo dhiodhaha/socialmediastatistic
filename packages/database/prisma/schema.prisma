@@ -17,16 +17,17 @@ model User {
 }
 
 model Account {
-  id         String            @id @default(cuid())
-  username   String            @unique // Common display name / reference
-  instagram  String? // Handle
-  tiktok     String? // Handle
-  twitter    String? // Handle
-  isActive   Boolean           @default(true)
-  createdAt  DateTime          @default(now())
-  updatedAt  DateTime          @updatedAt
-  snapshots  Snapshot[]
-  categories AccountCategory[]
+  id                   String                @id @default(cuid())
+  username             String                @unique // Common display name / reference
+  instagram            String? // Handle
+  tiktok               String? // Handle
+  twitter              String? // Handle
+  isActive             Boolean               @default(true)
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  snapshots            Snapshot[]
+  categories           AccountCategory[]
+  individualReportRuns IndividualReportRun[]
 }
 
 // Join table for many-to-many Account <-> Category relationship
@@ -95,6 +96,25 @@ model Category {
   updatedAt DateTime          @updatedAt
 }
 
+model IndividualReportRun {
+  id                String                 @id @default(cuid())
+  accountId         String
+  account           Account                @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  year              Int
+  quarter           Int
+  platforms         Json
+  status            IndividualReportStatus @default(COMPLETED)
+  estimatedCredits  Int
+  actualCreditsUsed Int
+  resultJson        Json
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+
+  @@index([accountId])
+  @@index([year, quarter])
+  @@index([createdAt])
+}
+
 enum Platform {
   INSTAGRAM
   TIKTOK
@@ -104,6 +124,11 @@ enum Platform {
 enum JobStatus {
   PENDING
   RUNNING
+  COMPLETED
+  FAILED
+}
+
+enum IndividualReportStatus {
   COMPLETED
   FAILED
 }
