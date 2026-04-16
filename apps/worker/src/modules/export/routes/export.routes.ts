@@ -164,4 +164,36 @@ router.post("/individual-quarterly-pdf", async (req, res) => {
     }
 });
 
+/**
+ * Generate Individual Quarter-to-Quarter Statistics PDF Export
+ * POST /export/individual-quarter-comparison-pdf
+ */
+router.post("/individual-quarter-comparison-pdf", async (req, res) => {
+    try {
+        const exportData = req.body;
+        logger.info(
+            {
+                account: exportData.account?.username,
+                platforms: exportData.platforms?.length,
+            },
+            "Individual quarter comparison PDF export requested",
+        );
+
+        const pdfBuffer = await ExportService.generateIndividualQuarterComparisonPdf(exportData);
+
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader(
+            "Content-Disposition",
+            `attachment; filename=individual-quarter-comparison-${Date.now()}.pdf`,
+        );
+        res.send(pdfBuffer);
+    } catch (error) {
+        logger.error({ error }, "Failed to generate individual quarter comparison PDF");
+        res.status(500).json({
+            success: false,
+            error: "Failed to generate individual quarter comparison PDF report",
+        });
+    }
+});
+
 export default router;
