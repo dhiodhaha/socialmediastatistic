@@ -1433,10 +1433,11 @@ async function buildSnapshotHistoryForExport(
             followers: number;
             posts: number | null;
             likes: number | null;
+            engagement: number | null;
             scrapedAt: Date;
         }>
     >(
-        `SELECT s."platform", s."followers", s."posts", s."likes", s."scrapedAt"
+        `SELECT s."platform", s."followers", s."posts", s."likes", s."engagement", s."scrapedAt"
          FROM "Snapshot" s
          WHERE s."accountId"=$1 AND s."platform"=ANY($2::"Platform"[])
            AND s."scrapedAt">=$3 AND s."scrapedAt"<=$4
@@ -1457,6 +1458,7 @@ async function buildSnapshotHistoryForExport(
                 followers: number;
                 posts: number | null;
                 likes: number | null;
+                engagement: number | null;
             }
         >
     >();
@@ -1473,6 +1475,7 @@ async function buildSnapshotHistoryForExport(
             followers: snap.followers,
             posts: snap.posts,
             likes: snap.likes,
+            engagement: snap.engagement,
         });
     }
 

@@ -93,6 +93,7 @@ interface IndividualQuarterlyPdfData {
             followers: number;
             posts: number | null;
             likes: number | null;
+            engagement: number | null;
         }>;
     }>;
 }
@@ -103,6 +104,7 @@ interface SnapshotMonth {
     followers: number;
     posts: number | null;
     likes: number | null;
+    engagement: number | null;
 }
 
 export function generateIndividualQuarterlyReportHtml({
@@ -521,7 +523,8 @@ function renderPlatformPage(
         ? (result.quarterSummary?.quarterItemCount ?? 0)
         : result.coverage.totalContentItems;
 
-    const headerMetrics = buildHeaderMetrics(result, kontenLabel, kontenCount);
+    const growth = snapshotMonths ? calculateQuarterGrowth(snapshotMonths) : null;
+    const headerMetrics = buildHeaderMetrics(result, kontenLabel, kontenCount, growth);
 
     return `<section class="page">
     <div class="eyebrow">Detail Platform</div>
@@ -546,6 +549,7 @@ function buildHeaderMetrics(
     result: IndividualQuarterlyPdfData["results"][number],
     kontenLabel: string,
     kontenCount: number,
+    growth: QuarterGrowthSummary | null,
 ): string {
     const qs = result.quarterSummary;
     const ps = result.profileStats;
@@ -559,6 +563,8 @@ function buildHeaderMetrics(
     if (ps?.followers != null) {
         cards.push(metricCard("Pengikut", fmtNum(ps.followers)));
     }
+    cards.push(metricCard("Kenaikan Pengikut", formatPercent(growth?.followersPct ?? null)));
+    cards.push(metricCard("Kenaikan Interaksi", formatPercent(growth?.interactionPct ?? null)));
     if (qs?.avgEngagementRate != null) {
         cards.push(metricCard("Rata-rata ER", `${qs.avgEngagementRate}%`));
     }
@@ -790,6 +796,51 @@ function metricCard(label: string, value: string) {
     <span class="metric-label">${escapeHtml(label)}</span>
     <strong class="metric-value">${escapeHtml(value)}</strong>
   </div>`;
+}
+
+interface QuarterGrowthSummary {
+    followersPct: number | null;
+    interactionPct: number | null;
+}
+
+function calculateQuarterGrowth(months: SnapshotMonth[]): QuarterGrowthSummary | null {
+    if (months.length < 2) return null;
+
+    const sorted = [...months].sort((a, b) => a.monthKey.localeCompare(b.monthKey));
+    const first = sorted[0];
+    const last = sorted[sorted.length - 1];
+    if (!first || !last) return null;
+
+    return {
+        followersPct: calculatePercentChange(first.followers, last.followers),
+        interactionPct: calculateInteractionPercentChange(first, last),
+    };
+}
+
+function calculateInteractionPercentChange(first: SnapshotMonth, last: SnapshotMonth) {
+    if (first.likes != null && last.likes != null) {
+        return calculatePercentChange(first.likes, last.likes);
+    }
+
+    if (first.engagement != null && last.engagement != null) {
+        return calculatePercentChange(first.engagement, last.engagement);
+    }
+
+    return null;
+}
+
+function calculatePercentChange(first: number | null, last: number | null) {
+    if (first == null || last == null || first === 0) return null;
+    return Math.round(((last - first) / first) * 10000) / 100;
+}
+
+function formatPercent(value: number | null) {
+    if (value == null || !Number.isFinite(value)) return "N/A";
+    const sign = value > 0 ? "+" : "";
+    return `${sign}${value.toLocaleString("id-ID", {
+        maximumFractionDigits: 2,
+        minimumFractionDigits: 0,
+    })}%`;
 }
 
 function namaStatusCoverage(status: string, isPopular: boolean) {
