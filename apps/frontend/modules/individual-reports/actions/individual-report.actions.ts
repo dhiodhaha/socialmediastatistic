@@ -18,6 +18,12 @@ import {
     quarterEndMonthKey,
     validateIndividualReportRequest,
 } from "@/modules/individual-reports/lib/individual-quarterly-report";
+import {
+    buildIndividualQuarterComparison,
+    type QuarterSelection,
+    quarterBounds,
+    type SnapshotStatPoint,
+} from "@/modules/individual-reports/lib/quarter-stat-comparison";
 import { auth } from "@/shared/lib/auth";
 
 interface IndividualLiveReviewRequest {
@@ -27,6 +33,26 @@ interface IndividualLiveReviewRequest {
     quarter: number;
     listingPageLimit?: number;
     enrichedContentLimit?: number;
+}
+
+interface IndividualQuarterComparisonRequest {
+    accountId: string;
+    current: QuarterSelection;
+    comparison: QuarterSelection;
+    platforms: Platform[];
+}
+
+interface ManualQuarterSnapshotRequest {
+    accountId: string;
+    platform: Platform;
+    year: number;
+    quarter: number;
+    scrapedAt: string;
+    followers: number;
+    posts?: number | null;
+    likes?: number | null;
+    engagement?: number | null;
+    sourceNote?: string | null;
 }
 
 interface WorkerCreditBalance {
@@ -473,6 +499,117 @@ export async function getLatestSuccessfulPlatformResults(
     return findLatestSuccessfulPlatformResults(accountId, year, quarter);
 }
 
+export async function getIndividualQuarterComparison(input: IndividualQuarterComparisonRequest) {
+    const session = await auth();
+    if (!session) {
+        throw new Error("Unauthorized");
+    }
+
+    const platforms = Array.from(new Set(input.platforms));
+    if (platforms.length === 0) {
+        return { success: false as const, error: "Select at least one platform." };
+    }
+
+    const validationError = validateQuarterComparisonInput({
+        accountId: input.accountId,
+        current: input.current,
+        comparison: input.comparison,
+        platforms,
+    });
+    if (validationError) {
+        return { success: false as const, error: validationError };
+    }
+
+    const account = await prisma.account.findUnique({
+        where: { id: input.accountId },
+        select: { id: true, username: true },
+    });
+    if (!account) {
+        return { success: false as const, error: "Account not found." };
+    }
+
+    const [currentSnapshots, comparisonSnapshots] = await Promise.all([
+        findQuarterSnapshots(input.accountId, input.current, platforms),
+        findQuarterSnapshots(input.accountId, input.comparison, platforms),
+    ]);
+
+    return {
+        success: true as const,
+        data: buildIndividualQuarterComparison({
+            account,
+            current: input.current,
+            comparison: input.comparison,
+            platforms,
+            currentSnapshots,
+            comparisonSnapshots,
+        }),
+    };
+}
+
+export async function createManualQuarterSnapshot(input: ManualQuarterSnapshotRequest) {
+    const session = await auth();
+    if (!session) {
+        throw new Error("Unauthorized");
+    }
+
+    const validationError = validateManualSnapshotInput(input);
+    if (validationError) {
+        return { success: false as const, error: validationError };
+    }
+
+    const account = await prisma.account.findUnique({
+        where: { id: input.accountId },
+        select: { id: true },
+    });
+    if (!account) {
+        return { success: false as const, error: "Account not found." };
+    }
+
+    await prisma.snapshot.create({
+        data: {
+            accountId: input.accountId,
+            platform: input.platform,
+            followers: input.followers,
+            posts: input.posts ?? null,
+            likes: input.likes ?? null,
+            engagement: input.engagement ?? null,
+            scrapedAt: new Date(input.scrapedAt),
+            source: "MANUAL",
+            sourceNote: input.sourceNote?.trim() || null,
+        },
+    });
+
+    return { success: true as const };
+}
+
+export async function exportIndividualQuarterComparisonPdf(
+    input: IndividualQuarterComparisonRequest,
+) {
+    const session = await auth();
+    if (!session) {
+        throw new Error("Unauthorized");
+    }
+
+    const comparison = await getIndividualQuarterComparison(input);
+    if (!comparison.success) return comparison;
+
+    try {
+        const base64 = await callWorkerPdfBase64(
+            "/export/individual-quarter-comparison-pdf",
+            comparison.data,
+        );
+        return { success: true as const, data: base64 };
+    } catch (error) {
+        return {
+            success: false as const,
+            error:
+                error instanceof Error
+                    ? error.message
+                    : "Failed to export individual quarter comparison PDF.",
+        };
+    }
+}
+
 /**
  * Export PDF from an explicit list of platform result IDs.
  * Allows composing results across different runs.
@@ -732,7 +869,103 @@ function toPrismaJson(value: unknown): Prisma.InputJsonValue {
     return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
 }
 
+function validateQuarterComparisonInput(input: {
+    accountId: string;
+    current: QuarterSelection;
+    comparison: QuarterSelection;
+    platforms: Platform[];
+}) {
+    if (!input.accountId) return "Account is required.";
+    if (!isValidQuarter(input.current.quarter) || !isValidQuarter(input.comparison.quarter)) {
+        return "Quarter must be between 1 and 4.";
+    }
+    if (!isValidYear(input.current.year) || !isValidYear(input.comparison.year)) {
+        return "Year is outside the supported range.";
+    }
+    if (input.platforms.length === 0) return "Select at least one platform.";
+    return null;
+}
+
+function validateManualSnapshotInput(input: ManualQuarterSnapshotRequest) {
+    const baseError = validateQuarterComparisonInput({
+        accountId: input.accountId,
+        current: { year: input.year, quarter: input.quarter },
+        comparison: { year: input.year, quarter: input.quarter },
+        platforms: [input.platform],
+    });
+    if (baseError) return baseError;
+    if (!Number.isInteger(input.followers) || input.followers < 0) {
+        return "Followers must be a non-negative whole number.";
+    }
+    if (input.posts != null && (!Number.isInteger(input.posts) || input.posts < 0)) {
+        return "Posts must be a non-negative whole number.";
+    }
+    if (input.likes != null && (!Number.isInteger(input.likes) || input.likes < 0)) {
+        return "Likes must be a non-negative whole number.";
+    }
+    if (input.engagement != null && (!Number.isFinite(input.engagement) || input.engagement < 0)) {
+        return "Engagement must be a non-negative number.";
+    }
+
+    const scrapedAt = new Date(input.scrapedAt);
+    if (Number.isNaN(scrapedAt.getTime())) return "Snapshot date is invalid.";
+    const bounds = quarterBounds({ year: input.year, quarter: input.quarter });
+    if (scrapedAt < bounds.start || scrapedAt > bounds.end) {
+        return "Snapshot date must be inside the selected quarter.";
+    }
+
+    return null;
+}
+
+function isValidQuarter(quarter: number) {
+    return Number.isInteger(quarter) && quarter >= 1 && quarter <= 4;
+}
+
+function isValidYear(year: number) {
+    return Number.isInteger(year) && year >= 2020 && year <= 2100;
+}
+
 // ─── DB helpers ─────────────────────────────────────────────────────────────
+
+async function findQuarterSnapshots(
+    accountId: string,
+    quarter: QuarterSelection,
+    platforms: Platform[],
+): Promise<SnapshotStatPoint[]> {
+    const bounds = quarterBounds(quarter);
+    const rows = await prisma.snapshot.findMany({
+        where: {
+            accountId,
+            platform: { in: platforms },
+            scrapedAt: {
+                gte: bounds.start,
+                lte: bounds.end,
+            },
+        },
+        select: {
+            platform: true,
+            followers: true,
+            posts: true,
+            likes: true,
+            engagement: true,
+            scrapedAt: true,
+            source: true,
+            sourceNote: true,
+        },
+        orderBy: { scrapedAt: "desc" },
+    });
+
+    return rows.map((snapshot) => ({
+        platform: snapshot.platform as Platform,
+        followers: snapshot.followers,
+        posts: snapshot.posts,
+        likes: snapshot.likes,
+        engagement: snapshot.engagement,
+        scrapedAt: snapshot.scrapedAt,
+        source: snapshot.source as "SCRAPED" | "MANUAL",
+        sourceNote: snapshot.sourceNote,
+    }));
+}
 
 function runDelegate() {
     return (

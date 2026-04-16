@@ -14,6 +14,7 @@ import {
     retryFailedPlatforms,
     runIndividualQuarterlyLiveReview,
 } from "@/modules/individual-reports/actions/individual-report.actions";
+import { IndividualQuarterComparisonPanel } from "@/modules/individual-reports/components/individual-quarter-comparison-panel";
 import {
     DEFAULT_INDIVIDUAL_ENRICHED_CONTENT_LIMIT,
     DEFAULT_INDIVIDUAL_LISTING_PAGE_LIMIT,
@@ -78,7 +79,6 @@ export function IndividualQuarterlyReportClient({
     const availablePlatforms = PLATFORM_OPTIONS.filter(
         (option) => !!selectedAccount?.handles[option.id],
     );
-
     // Draft uses a single-platform select
     const [draftPlatform, setDraftPlatform] = useState<Platform>("INSTAGRAM");
 
@@ -449,6 +449,15 @@ export function IndividualQuarterlyReportClient({
                     </div>
                 </div>
             </section>
+
+            <IndividualQuarterComparisonPanel
+                accountId={accountId}
+                year={year}
+                quarter={quarter}
+                currentYear={currentYear}
+                availablePlatforms={availablePlatforms}
+                selectedPlatforms={selectedPlatforms}
+            />
 
             {/* ── Draft result ── */}
             {draft?.success && (

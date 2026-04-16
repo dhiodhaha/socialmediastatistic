@@ -200,6 +200,41 @@ interface IndividualQuarterlyExportData {
     }>;
 }
 
+interface IndividualQuarterComparisonExportData {
+    account: {
+        id: string;
+        username: string;
+    };
+    current: {
+        year: number;
+        quarter: number;
+    };
+    comparison: {
+        year: number;
+        quarter: number;
+    };
+    platforms: Array<{
+        platform: string;
+        current: {
+            sourceLabel: string;
+            snapshot: unknown | null;
+        };
+        comparison: {
+            sourceLabel: string;
+            snapshot: unknown | null;
+        };
+        metrics: Array<{
+            label: string;
+            currentValue: number | null;
+            comparisonValue: number | null;
+            absoluteDelta: number | null;
+            percentDelta: number | null;
+            reason: string | null;
+        }>;
+    }>;
+    notes: string[];
+}
+
 export class ExportService {
     static async generatePdf(filters: ExportFilters): Promise<Buffer> {
         const { startDate, endDate, status } = filters;
@@ -412,6 +447,44 @@ export class ExportService {
         await ExportService.resolveAllThumbnails(exportData);
 
         const html = generateIndividualQuarterlyReportHtml({
+            data: exportData,
+            generatedAt: new Date().toLocaleDateString("id-ID", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+            }),
+        });
+
+        const browser = await puppeteer.launch({
+            headless: true,
+            args: ["--no-sandbox", "--disable-setuid-sandbox"],
+        });
+
+        try {
+            const page = await browser.newPage();
+            await page.setContent(html, { waitUntil: "networkidle0" });
+
+            const pdfBuffer = await page.pdf({
+                format: "A4",
+                printBackground: true,
+                margin: { top: "0", right: "0", bottom: "0", left: "0" },
+            });
+
+            return Buffer.from(pdfBuffer);
+        } finally {
+            await browser.close();
+        }
+    }
+
+    static async generateIndividualQuarterComparisonPdf(
+        exportData: IndividualQuarterComparisonExportData,
+    ): Promise<Buffer> {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const {
+            generateIndividualQuarterComparisonReportHtml,
+        } = require("../../individual-reports/services/individual-quarter-comparison-template");
+
+        const html = generateIndividualQuarterComparisonReportHtml({
             data: exportData,
             generatedAt: new Date().toLocaleDateString("id-ID", {
                 day: "numeric",
