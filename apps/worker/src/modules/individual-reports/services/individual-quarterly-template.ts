@@ -835,7 +835,7 @@ function calculatePercentChange(first: number | null, last: number | null) {
 }
 
 function formatPercent(value: number | null) {
-    if (value == null || !Number.isFinite(value)) return "—";
+    if (value == null || !Number.isFinite(value)) return "N/A";
     const sign = value > 0 ? "+" : "";
     return `${sign}${value.toLocaleString("id-ID", {
         maximumFractionDigits: 2,
