@@ -42,18 +42,20 @@ model AccountCategory {
 }
 
 model Snapshot {
-  id         String       @id @default(cuid())
+  id         String         @id @default(cuid())
   accountId  String
-  account    Account      @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  account    Account        @relation(fields: [accountId], references: [id], onDelete: Cascade)
   platform   Platform // Which platform this snapshot is for
   followers  Int
   following  Int?
   posts      Int?
   engagement Float?
   likes      Int? // TikTok totalLikes (heartCount)
-  scrapedAt  DateTime     @default(now())
+  scrapedAt  DateTime       @default(now())
+  source     SnapshotSource @default(SCRAPED)
+  sourceNote String?
   jobId      String?
-  job        ScrapingJob? @relation(fields: [jobId], references: [id])
+  job        ScrapingJob?   @relation(fields: [jobId], references: [id])
 
   @@index([accountId])
   @@index([scrapedAt])
@@ -97,18 +99,18 @@ model Category {
 }
 
 model IndividualReportRun {
-  id                String                          @id @default(cuid())
+  id                String                 @id @default(cuid())
   accountId         String
-  account           Account                         @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  account           Account                @relation(fields: [accountId], references: [id], onDelete: Cascade)
   year              Int
   quarter           Int
-  status            IndividualReportStatus          @default(PARTIAL)
+  status            IndividualReportStatus @default(PARTIAL)
   estimatedCredits  Int
   actualCreditsUsed Int
-  createdAt         DateTime                        @default(now())
-  updatedAt         DateTime                        @updatedAt
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
 
-  platformResults   IndividualReportPlatformResult[]
+  platformResults IndividualReportPlatformResult[]
 
   @@index([accountId])
   @@index([year, quarter])
@@ -116,18 +118,18 @@ model IndividualReportRun {
 }
 
 model IndividualReportPlatformResult {
-  id          String                          @id @default(cuid())
+  id          String                         @id @default(cuid())
   runId       String
-  run         IndividualReportRun             @relation(fields: [runId], references: [id], onDelete: Cascade)
+  run         IndividualReportRun            @relation(fields: [runId], references: [id], onDelete: Cascade)
   platform    Platform
   handle      String
   status      IndividualReportPlatformStatus
-  creditsUsed Int                             @default(0)
+  creditsUsed Int                            @default(0)
   resultJson  Json?
   error       String?
   scrapedAt   DateTime?
-  createdAt   DateTime                        @default(now())
-  updatedAt   DateTime                        @updatedAt
+  createdAt   DateTime                       @default(now())
+  updatedAt   DateTime                       @updatedAt
 
   @@unique([runId, platform])
   @@index([platform])
@@ -157,6 +159,11 @@ enum IndividualReportPlatformStatus {
   PENDING
   SUCCESS
   FAILED
+}
+
+enum SnapshotSource {
+  SCRAPED
+  MANUAL
 }
 
 model Settings {
