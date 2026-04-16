@@ -246,7 +246,11 @@ async function fetchPlatformProfile(
             const legacy = asRecord(record.legacy ?? record);
 
             return {
-                followers: readNumber(legacy, ["followers_count", "normal_followers_count"]),
+                followers:
+                    readNumber(legacy, ["followers_count"]) ??
+                    readNumber(legacy, ["normal_followers_count"]) ??
+                    readNumber(record, ["followers_count"]) ??
+                    readNumber(record, ["normal_followers_count"]),
                 following: readNumber(legacy, ["friends_count"]),
                 totalPosts: readNumber(legacy, ["statuses_count"]),
                 isVerified:
