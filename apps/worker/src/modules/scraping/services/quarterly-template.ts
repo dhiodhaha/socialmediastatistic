@@ -190,42 +190,73 @@ export function generateQuarterlyReportHtml(config: QuarterlyReportConfig): stri
                         font-size: 24px;
                     }
                     
-                    .highlights-grid {
+                    .platform-summary-page {
+                        display: flex;
+                        flex-direction: column;
+                        min-height: 100vh;
+                        padding: 44px 32px;
+                        break-inside: avoid;
+                    }
+                    .platform-summary-header {
+                        flex: 0 0 auto;
+                        margin-bottom: 18px;
+                    }
+                    .platform-summary-header .eyebrow {
+                        padding: 0;
+                    }
+                    .platform-summary-header h2 {
+                        margin-top: 8px;
+                    }
+                    .platform-summary-grid {
                         display: grid;
                         grid-template-columns: repeat(3, minmax(0, 1fr));
-                        gap: 16px;
-                        margin-top: 24px;
-                        padding: 0 32px;
+                        gap: 12px;
+                        align-items: start;
+                        flex: 0 0 auto;
                     }
-                    .highlight-card {
-                        border-radius: 18px;
+                    .platform-summary-card {
+                        border-radius: 16px;
                         border: 1px solid #dbe4f0;
                         background: rgba(255,255,255,0.92);
-                        padding: 18px;
+                        padding: 14px;
+                        min-height: 0;
+                        break-inside: avoid;
+                        page-break-inside: avoid;
                     }
-                    .highlight-card h3 {
-                        margin: 8px 0 0;
-                        font-size: 22px;
+                    .platform-summary-card h3 {
+                        margin: 7px 0 0;
+                        font-size: 18px;
+                        line-height: 1.1;
                     }
-                    .highlight-list {
-                        margin-top: 14px;
-                        display: grid;
-                        gap: 10px;
-                    }
-                    .highlight-list-item {
-                        border-radius: 12px;
-                        background: #f8fafc;
-                        padding: 10px 12px;
-                    }
-                    .highlight-list-item strong {
-                        display: block;
-                        font-size: 13px;
-                    }
-                    .highlight-list-item span {
-                        display: block;
-                        margin-top: 4px;
-                        font-size: 11px;
+                    .platform-summary-rank {
+                        margin-top: 3px;
+                        font-size: 10px;
                         color: #64748b;
+                    }
+                    .platform-summary-list {
+                        margin-top: 10px;
+                        display: grid;
+                        gap: 6px;
+                    }
+                    .platform-summary-item {
+                        border-radius: 10px;
+                        background: #f8fafc;
+                        padding: 7px 9px;
+                    }
+                    .platform-summary-item strong {
+                        display: block;
+                        font-size: 10px;
+                        line-height: 1.25;
+                    }
+                    .platform-summary-item span {
+                        display: block;
+                        margin-top: 3px;
+                        font-size: 9px;
+                        color: #64748b;
+                    }
+                    .platform-summary-warnings {
+                        margin-top: 16px;
+                        padding: 0;
                     }
                     .report-table {
                         width: 100%;
@@ -406,24 +437,26 @@ export function generateQuarterlyReportHtml(config: QuarterlyReportConfig): stri
 
                 </section>
 
-                <section class="page">
-                    <div class="eyebrow" style="padding: 0 32px;">Ringkasan Per Platform</div>
-                    <div style="padding: 0 32px; margin-top: 8px;"><h2>${periodLabel}</h2></div>
+                <section class="page platform-summary-page">
+                    <div class="platform-summary-header">
+                        <div class="eyebrow">Ringkasan Per Platform</div>
+                        <h2>${periodLabel}</h2>
+                    </div>
 
-                    <div class="highlights-grid">
+                    <div class="platform-summary-grid">
                         ${executiveSummary.platformHighlights
                             .map(
                                 (highlight) => `
-                                <div class="highlight-card">
+                                <div class="platform-summary-card">
                                     <div class="eyebrow">${highlight.platform}</div>
                                     <h3 class="${getGrowthClass(highlight.netFollowerGrowth)}">${formatSigned(highlight.netFollowerGrowth)}</h3>
-                                    <div class="muted">Peringkat memenuhi syarat ${highlight.rankingEligibleCount}</div>
-                                    <div class="highlight-list">
+                                    <div class="platform-summary-rank">Peringkat memenuhi syarat ${highlight.rankingEligibleCount}</div>
+                                    <div class="platform-summary-list">
                                         ${highlight.topGainers
-                                            .slice(0, 5)
+                                            .slice(0, 4)
                                             .map(
                                                 (item) => `
-                                                <div class="highlight-list-item">
+                                                <div class="platform-summary-item">
                                                     <strong>${item.accountName}</strong>
                                                     <span>@${item.handle} • <span class="growth-positive">+${item.followerGrowthPct.toFixed(1)}%</span></span>
                                                 </div>
@@ -431,10 +464,10 @@ export function generateQuarterlyReportHtml(config: QuarterlyReportConfig): stri
                                             )
                                             .join("")}
                                         ${highlight.topDecliners
-                                            .slice(0, 5)
+                                            .slice(0, 4)
                                             .map(
                                                 (item) => `
-                                                <div class="highlight-list-item">
+                                                <div class="platform-summary-item">
                                                     <strong>${item.accountName}</strong>
                                                     <span>@${item.handle} • <span class="growth-negative">${item.followerGrowthPct.toFixed(1)}%</span></span>
                                                 </div>
@@ -451,7 +484,7 @@ export function generateQuarterlyReportHtml(config: QuarterlyReportConfig): stri
                     ${
                         executiveSummary.warnings.length > 0
                             ? `
-                        <ul class="warning-list">
+                        <ul class="warning-list platform-summary-warnings">
                             ${executiveSummary.warnings.map((warning) => `<li>${warning}</li>`).join("")}
                         </ul>
                     `
