@@ -152,9 +152,22 @@ export function buildQuarterlyExportData({
             },
             rows: selectedRows
                 .filter((row) => row.platform === summary.platform)
+                .toSorted(compareRowsByCurrentFollowers)
                 .map((row) => mapExportRow(row)),
         })),
     };
+}
+
+function compareRowsByCurrentFollowers(left: QuarterlyPreviewRow, right: QuarterlyPreviewRow) {
+    const rightFollowers = sortableNumber(right.newStats.followers);
+    const leftFollowers = sortableNumber(left.newStats.followers);
+
+    if (rightFollowers !== leftFollowers) return rightFollowers - leftFollowers;
+    return left.accountName.localeCompare(right.accountName);
+}
+
+function sortableNumber(value: number | null) {
+    return value ?? Number.NEGATIVE_INFINITY;
 }
 
 function mapExportRow(row: QuarterlyPreviewRow) {

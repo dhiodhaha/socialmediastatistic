@@ -918,6 +918,7 @@ function renderContentTable(
     isPopular: boolean,
 ) {
     const title = isPopular ? "Tweet Populer" : "Konten Terpilih";
+    const sortedItems = [...items].sort(compareContentItemsByPublicInteractions);
 
     return `<div class="section-block">
     <h3>${title}</h3>
@@ -934,10 +935,25 @@ function renderContentTable(
         </tr>
       </thead>
       <tbody>
-        ${items.map((item) => renderContentRow(item)).join("")}
+        ${sortedItems.map((item) => renderContentRow(item)).join("")}
       </tbody>
     </table>
   </div>`;
+}
+
+function compareContentItemsByPublicInteractions(
+    left: IndividualQuarterlyPdfData["results"][number]["enrichedItems"][number],
+    right: IndividualQuarterlyPdfData["results"][number]["enrichedItems"][number],
+) {
+    const delta = publicInteractionScore(right) - publicInteractionScore(left);
+    if (delta !== 0) return delta;
+    return String(right.publishedAt).localeCompare(String(left.publishedAt));
+}
+
+function publicInteractionScore(
+    item: IndividualQuarterlyPdfData["results"][number]["enrichedItems"][number],
+) {
+    return (item.metrics.likes ?? 0) + (item.metrics.comments ?? 0);
 }
 
 function renderContentRow(

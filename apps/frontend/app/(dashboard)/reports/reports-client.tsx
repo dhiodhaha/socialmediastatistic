@@ -243,19 +243,21 @@ export function ReportsClient({
                 sections: [
                     {
                         platform: selectedPlatform,
-                        data: comparisonData.map((data) => ({
-                            accountName: data.name,
-                            handle: data.handle,
-                            oldFollowers: data.rawOldFollowers,
-                            newFollowers: data.currentFollowers,
-                            followersPct: parseFloat(data.followersGrowth),
-                            oldPosts: data.rawOldPosts,
-                            newPosts: data.currentPosts,
-                            postsPct: 0,
-                            oldLikes: data.rawOldLikes,
-                            newLikes: data.currentLikes,
-                            likesPct: data.likesGrowth ? parseFloat(data.likesGrowth) : 0,
-                        })),
+                        data: comparisonData
+                            .toSorted(compareDisplayRowsByCurrentFollowers)
+                            .map((data) => ({
+                                accountName: data.name,
+                                handle: data.handle,
+                                oldFollowers: data.rawOldFollowers,
+                                newFollowers: data.currentFollowers,
+                                followersPct: parseFloat(data.followersGrowth),
+                                oldPosts: data.rawOldPosts,
+                                newPosts: data.currentPosts,
+                                postsPct: 0,
+                                oldLikes: data.rawOldLikes,
+                                newLikes: data.currentLikes,
+                                likesPct: data.likesGrowth ? parseFloat(data.likesGrowth) : 0,
+                            })),
                     },
                 ],
             });
@@ -314,14 +316,10 @@ export function ReportsClient({
             const sections = [];
 
             for (const platform of ["INSTAGRAM", "TIKTOK", "TWITTER"] as const) {
-                const platformRows = rawData.filter((row) => row.platform === platform);
+                const platformRows = rawData
+                    .filter((row) => row.platform === platform)
+                    .toSorted(compareComparisonRowsByCurrentFollowers);
                 if (platformRows.length === 0) continue;
-
-                platformRows.sort((a, b) => {
-                    const valA = a.newStats.followers === -1 ? -1 : a.newStats.followers;
-                    const valB = b.newStats.followers === -1 ? -1 : b.newStats.followers;
-                    return valB - valA;
-                });
 
                 sections.push({
                     platform,
@@ -440,6 +438,24 @@ export function ReportsClient({
 
     const quarterlyPeriodLabel = (preview: QuarterlyPlatformPreview) =>
         `Q${preview.status.selectedQuarter} ${preview.status.selectedYear}`;
+
+    const compareDisplayRowsByCurrentFollowers = (left: DisplayRow, right: DisplayRow) => {
+        const rightFollowers = sortableFollowers(right.currentFollowers);
+        const leftFollowers = sortableFollowers(left.currentFollowers);
+
+        if (rightFollowers !== leftFollowers) return rightFollowers - leftFollowers;
+        return left.name.localeCompare(right.name);
+    };
+
+    const compareComparisonRowsByCurrentFollowers = (left: ComparisonRow, right: ComparisonRow) => {
+        const rightFollowers = sortableFollowers(right.newStats.followers);
+        const leftFollowers = sortableFollowers(left.newStats.followers);
+
+        if (rightFollowers !== leftFollowers) return rightFollowers - leftFollowers;
+        return left.accountName.localeCompare(right.accountName);
+    };
+
+    const sortableFollowers = (value: number) => (value < 0 ? Number.NEGATIVE_INFINITY : value);
 
     const comparisonOptions = jobs
         .filter((job) => job.id !== selectedPeriod?.id)
