@@ -88,6 +88,31 @@ const preview: QuarterlyPlatformPreview = {
             detailNote: null,
         },
         {
+            accountId: "3",
+            accountName: "Besar Edukasi",
+            handle: "besaredukasi",
+            category: "Pendidikan",
+            platform: "INSTAGRAM",
+            sharedAccount: false,
+            rankingEligible: true,
+            hasQuarterEndData: true,
+            performanceIssue: false,
+            dataQualityIssue: false,
+            missingMonths: [],
+            oldStats: { followers: 1000, posts: 10, likes: null },
+            newStats: { followers: 2000, posts: 11, likes: null },
+            delta: {
+                followersVal: 1000,
+                followersPct: 100,
+                postsVal: 1,
+                postsPct: 10,
+                likesVal: null,
+                likesPct: null,
+            },
+            issueLabels: [],
+            detailNote: null,
+        },
+        {
             accountId: "2",
             accountName: "Kominfo",
             handle: "kominfo",
@@ -186,6 +211,10 @@ describe("buildQuarterlyExportData", () => {
         expect(result.executiveSummary.baselineSourceLabel).toBe("Auto from completion month");
         expect(result.sections).toHaveLength(2);
         expect(result.sections[0]?.platform).toBe("Instagram");
+        expect(result.sections[0]?.rows.map((row) => row.accountName)).toEqual([
+            "Besar Edukasi",
+            "Kemdikbud",
+        ]);
         expect(result.sections[1]?.rows[0]?.sharedAccount).toBe(true);
     });
 

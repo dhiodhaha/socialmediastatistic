@@ -21,7 +21,7 @@ export function QuarterlyStatusSummary({ status }: QuarterlyStatusSummaryProps) 
                 <div className="space-y-2">
                     <div className="flex items-center gap-2 text-sm font-medium text-zinc-500">
                         <ShieldCheck className="h-4 w-4 text-emerald-500" />
-                        Quarterly Review Status
+                        Status Tinjauan Kuartal
                     </div>
                     <h2 className="text-xl font-semibold text-zinc-900 dark:text-white">
                         Q{status.selectedQuarter} {status.selectedYear}
@@ -34,18 +34,18 @@ export function QuarterlyStatusSummary({ status }: QuarterlyStatusSummaryProps) 
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                     <StatusCard
                         icon={DatabaseZap}
-                        label="Quarter-End Coverage"
+                        label="Cakupan Akhir Kuartal"
                         value={coverageLabel}
                     />
                     <StatusCard
                         icon={CalendarClock}
-                        label="Full-Quarter Coverage"
+                        label="Cakupan Kuartal Penuh"
                         value={fullQuarterLabel}
                     />
                     <StatusCard
                         icon={ShieldCheck}
-                        label="Quarter Start"
-                        value={status.baseline.hasAnchor ? status.baseline.label : "Unavailable"}
+                        label="Awal Kuartal"
+                        value={status.baseline.hasAnchor ? status.baseline.label : "Tidak Tersedia"}
                     />
                 </div>
             </div>
@@ -53,7 +53,7 @@ export function QuarterlyStatusSummary({ status }: QuarterlyStatusSummaryProps) 
             <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
                 <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950/40">
                     <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                        Source Months
+                        Bulan Sumber
                     </div>
                     <div className="mt-3 flex flex-wrap gap-2">
                         {status.sourceMonths.map(
@@ -69,8 +69,8 @@ export function QuarterlyStatusSummary({ status }: QuarterlyStatusSummaryProps) 
                                     <div className="font-medium">{month.label}</div>
                                     <div className="text-xs opacity-80">
                                         {month.hasAnchor
-                                            ? month.sourceLabel || "Anchor ready"
-                                            : "Missing anchor"}
+                                            ? month.sourceLabel || "Anchor siap"
+                                            : "Anchor tidak ada"}
                                     </div>
                                 </div>
                             ),
@@ -80,15 +80,15 @@ export function QuarterlyStatusSummary({ status }: QuarterlyStatusSummaryProps) 
 
                 <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950/40">
                     <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                        Quarter-Start Baseline
+                        Baseline Awal Kuartal
                     </div>
                     <div className="mt-3 text-sm text-zinc-700 dark:text-zinc-300">
                         {status.baseline.label}
                     </div>
                     <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
                         {status.baseline.hasAnchor
-                            ? status.baseline.sourceLabel || "Quarter-start anchor available"
-                            : "Quarter report can still proceed, but growth cannot be ranked without quarter-start data"}
+                            ? status.baseline.sourceLabel || "Anchor awal kuartal tersedia"
+                            : "Laporan kuartal tetap dapat dibuat, namun pertumbuhan tidak dapat diperingkat tanpa data awal kuartal"}
                     </div>
                 </div>
             </div>
@@ -97,7 +97,7 @@ export function QuarterlyStatusSummary({ status }: QuarterlyStatusSummaryProps) 
                 <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200">
                     <div className="mb-2 flex items-center gap-2 font-semibold">
                         <AlertTriangle className="h-4 w-4" />
-                        Warnings
+                        Peringatan
                     </div>
                     <ul className="space-y-1">
                         {status.warnings.map((warning: string) => (

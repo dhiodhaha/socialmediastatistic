@@ -1,7 +1,6 @@
 "use client";
 
 import type { SortingState } from "@tanstack/react-table";
-import { format } from "date-fns";
 import { FileText } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
@@ -30,6 +29,7 @@ import type {
     QuarterlyPreviewRow,
 } from "@/modules/analytics/lib/quarterly-platform-preview";
 import type { QuarterlyOption, QuarterlyStatus } from "@/modules/analytics/lib/quarterly-reporting";
+import { buildReportPdfFilename } from "@/shared/lib/pdf-filename";
 
 type ReportsClientProps = {
     initialJobs: Array<{
@@ -212,7 +212,12 @@ export function ReportsClient({
 
                 downloadPdf(
                     pdfBase64,
-                    `quarterly-${selectedPlatform.toLowerCase()}-${format(new Date(), "yyyyMMdd")}.pdf`,
+                    buildReportPdfFilename({
+                        reportType: "Laporan Triwulan",
+                        platform: platformLabel(selectedPlatform),
+                        subject: selectedCategory.label,
+                        period: quarterlyPeriodLabel(quarterlyPreview),
+                    }),
                 );
             } catch (error) {
                 console.error("Quarterly export failed:", error);
@@ -238,26 +243,34 @@ export function ReportsClient({
                 sections: [
                     {
                         platform: selectedPlatform,
-                        data: comparisonData.map((data) => ({
-                            accountName: data.name,
-                            handle: data.handle,
-                            oldFollowers: data.rawOldFollowers,
-                            newFollowers: data.currentFollowers,
-                            followersPct: parseFloat(data.followersGrowth),
-                            oldPosts: data.rawOldPosts,
-                            newPosts: data.currentPosts,
-                            postsPct: 0,
-                            oldLikes: data.rawOldLikes,
-                            newLikes: data.currentLikes,
-                            likesPct: data.likesGrowth ? parseFloat(data.likesGrowth) : 0,
-                        })),
+                        data: comparisonData
+                            .toSorted(compareDisplayRowsByCurrentFollowers)
+                            .map((data) => ({
+                                accountName: data.name,
+                                handle: data.handle,
+                                oldFollowers: data.rawOldFollowers,
+                                newFollowers: data.currentFollowers,
+                                followersPct: parseFloat(data.followersGrowth),
+                                oldPosts: data.rawOldPosts,
+                                newPosts: data.currentPosts,
+                                postsPct: 0,
+                                oldLikes: data.rawOldLikes,
+                                newLikes: data.currentLikes,
+                                likesPct: data.likesGrowth ? parseFloat(data.likesGrowth) : 0,
+                            })),
                     },
                 ],
             });
 
             downloadPdf(
                 pdfBase64,
-                `report-${selectedPlatform.toLowerCase()}-${format(new Date(), "yyyyMMdd")}.pdf`,
+                buildReportPdfFilename({
+                    reportType: "Laporan Bulanan",
+                    platform: platformLabel(selectedPlatform),
+                    subject: selectedCategory.label,
+                    period: selectedPeriod.label,
+                    comparisonPeriod: selectedComparison.label,
+                }),
             );
         } catch (error) {
             console.error("Export failed:", error);
@@ -280,7 +293,14 @@ export function ReportsClient({
                     }),
                 );
 
-                downloadPdf(pdfBase64, `quarterly-all-${format(new Date(), "yyyyMMdd")}.pdf`);
+                downloadPdf(
+                    pdfBase64,
+                    buildReportPdfFilename({
+                        reportType: "Laporan Triwulan",
+                        subject: selectedCategory.label,
+                        period: quarterlyPeriodLabel(quarterlyPreview),
+                    }),
+                );
             } catch (error) {
                 console.error("Quarterly export all failed:", error);
                 alert("Quarterly export all failed. Please check console.");
@@ -296,14 +316,10 @@ export function ReportsClient({
             const sections = [];
 
             for (const platform of ["INSTAGRAM", "TIKTOK", "TWITTER"] as const) {
-                const platformRows = rawData.filter((row) => row.platform === platform);
+                const platformRows = rawData
+                    .filter((row) => row.platform === platform)
+                    .toSorted(compareComparisonRowsByCurrentFollowers);
                 if (platformRows.length === 0) continue;
-
-                platformRows.sort((a, b) => {
-                    const valA = a.newStats.followers === -1 ? -1 : a.newStats.followers;
-                    const valB = b.newStats.followers === -1 ? -1 : b.newStats.followers;
-                    return valB - valA;
-                });
 
                 sections.push({
                     platform,
@@ -335,7 +351,15 @@ export function ReportsClient({
                 sections,
             });
 
-            downloadPdf(pdfBase64, `report-all-${format(new Date(), "yyyyMMdd")}.pdf`);
+            downloadPdf(
+                pdfBase64,
+                buildReportPdfFilename({
+                    reportType: "Laporan Bulanan",
+                    subject: selectedCategory.label,
+                    period: selectedPeriod.label,
+                    comparisonPeriod: selectedComparison.label,
+                }),
+            );
         } catch (error) {
             console.error("Export All failed:", error);
             alert("Export All failed. Please check console.");
@@ -379,7 +403,14 @@ export function ReportsClient({
                 sections,
             });
 
-            downloadPdf(pdfBase64, `report-latest-${format(new Date(), "yyyyMMdd")}.pdf`);
+            downloadPdf(
+                pdfBase64,
+                buildReportPdfFilename({
+                    reportType: "Laporan Data Terbaru",
+                    subject: selectedCategory.label,
+                    period: selectedPeriod.label,
+                }),
+            );
         } catch (error) {
             console.error("Export Latest failed:", error);
             alert("Export Latest failed. Please check console.");
@@ -398,6 +429,33 @@ export function ReportsClient({
         link.click();
         document.body.removeChild(link);
     };
+
+    const platformLabel = (platform: Platform) => {
+        if (platform === "INSTAGRAM") return "Instagram";
+        if (platform === "TIKTOK") return "TikTok";
+        return "Twitter X";
+    };
+
+    const quarterlyPeriodLabel = (preview: QuarterlyPlatformPreview) =>
+        `Q${preview.status.selectedQuarter} ${preview.status.selectedYear}`;
+
+    const compareDisplayRowsByCurrentFollowers = (left: DisplayRow, right: DisplayRow) => {
+        const rightFollowers = sortableFollowers(right.currentFollowers);
+        const leftFollowers = sortableFollowers(left.currentFollowers);
+
+        if (rightFollowers !== leftFollowers) return rightFollowers - leftFollowers;
+        return left.name.localeCompare(right.name);
+    };
+
+    const compareComparisonRowsByCurrentFollowers = (left: ComparisonRow, right: ComparisonRow) => {
+        const rightFollowers = sortableFollowers(right.newStats.followers);
+        const leftFollowers = sortableFollowers(left.newStats.followers);
+
+        if (rightFollowers !== leftFollowers) return rightFollowers - leftFollowers;
+        return left.accountName.localeCompare(right.accountName);
+    };
+
+    const sortableFollowers = (value: number) => (value < 0 ? Number.NEGATIVE_INFINITY : value);
 
     const comparisonOptions = jobs
         .filter((job) => job.id !== selectedPeriod?.id)

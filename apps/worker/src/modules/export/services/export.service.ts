@@ -145,6 +145,11 @@ interface IndividualQuarterlyExportData {
             totalLikes: number;
             totalComments: number;
             totalViews: number;
+            totalShares?: number;
+            totalSaves?: number;
+            totalReposts?: number;
+            totalQuotes?: number;
+            totalBookmarks?: number;
             avgLikes: number | null;
             avgComments: number | null;
             avgViews: number | null;
@@ -155,6 +160,21 @@ interface IndividualQuarterlyExportData {
                 publishedAt: string;
             } | null;
             contentTypeBreakdown: Record<string, number>;
+            monthlyInteractionTotals?: Array<{
+                key: string;
+                label: string;
+                contentCount: number;
+                totalLikes: number;
+                totalComments: number;
+                totalViews: number;
+                totalShares: number;
+                totalSaves: number;
+                totalReposts: number;
+                totalQuotes: number;
+                totalBookmarks: number;
+                publicInteractions: number;
+                publicReachInteractions: number | null;
+            }>;
             isPopularMode: boolean;
         } | null;
         coverage: {
@@ -197,6 +217,19 @@ interface IndividualQuarterlyExportData {
             posts: number | null;
             likes: number | null;
         }>;
+    }>;
+    interactionGrowth?: Array<{
+        platform: string;
+        current: {
+            publicInteractions: number;
+            publicReachInteractions: number | null;
+            coverageStatus: string;
+        };
+        absoluteDelta: number | null;
+        percentDelta: number | null;
+        reason: string | null;
+        reachAbsoluteDelta: number | null;
+        reachPercentDelta: number | null;
     }>;
 }
 

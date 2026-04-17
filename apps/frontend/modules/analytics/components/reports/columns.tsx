@@ -60,7 +60,7 @@ function getRankBadgeStyles(rank: number, isNA: boolean) {
 /**
  * Styles for growth text based on direction.
  */
-function getGrowthTextStyles(direction: "up" | "down" | "flat" | "na") {
+function _getGrowthTextStyles(direction: "up" | "down" | "flat" | "na") {
     if (direction === "up") return "text-emerald-600";
     if (direction === "down") return "text-rose-600";
     return "text-zinc-500";
@@ -85,7 +85,7 @@ export function useReportsColumns(selectedPlatform: string) {
         const baseCols: ColumnDef<DisplayRow>[] = [
             {
                 id: "identity",
-                header: () => <div className="!pl-6">Account Identity</div>,
+                header: () => <div className="!pl-6">Identitas Akun</div>,
                 accessorFn: (row) => row.name, // Allow sorting by name if needed
                 cell: ({ row }) => {
                     const account = row.original;
@@ -167,11 +167,10 @@ export function useReportsColumns(selectedPlatform: string) {
             },
             {
                 id: "result",
-                header: "Result (Followers)",
+                header: "Pengikut",
                 accessorFn: (row) => row.currentFollowers,
                 cell: ({ row }) => {
                     const account = row.original;
-                    const growthClass = getGrowthTextStyles(account.followersGrowthDir);
 
                     return (
                         <div>
@@ -182,8 +181,12 @@ export function useReportsColumns(selectedPlatform: string) {
                             </span>
                             <div
                                 className={cn(
-                                    "inline-flex items-center gap-1 mt-0.5 text-xs font-medium",
-                                    growthClass,
+                                    "inline-flex items-center gap-1 mt-0.5 text-xs font-semibold",
+                                    account.followersGrowthDir === "up"
+                                        ? "text-emerald-600"
+                                        : account.followersGrowthDir === "down"
+                                          ? "text-rose-600"
+                                          : "text-zinc-500",
                                 )}
                             >
                                 {account.followersGrowthDir === "up" ? (
@@ -202,7 +205,7 @@ export function useReportsColumns(selectedPlatform: string) {
         if (isTikTok) {
             baseCols.push({
                 id: "engagement",
-                header: "Engagement (Likes)",
+                header: "Suka",
                 accessorFn: (row) => row.currentLikes ?? 0,
                 cell: ({ row }) => {
                     const account = row.original;
@@ -218,8 +221,12 @@ export function useReportsColumns(selectedPlatform: string) {
                                 account.likesGrowth && (
                                     <div
                                         className={cn(
-                                            "inline-flex items-center gap-1 mt-0.5 text-xs font-medium",
-                                            getGrowthTextStyles(account.likesGrowthDir || "na"),
+                                            "inline-flex items-center gap-1 mt-0.5 text-xs font-semibold",
+                                            (account.likesGrowthDir || "na") === "up"
+                                                ? "text-emerald-600"
+                                                : (account.likesGrowthDir || "na") === "down"
+                                                  ? "text-rose-600"
+                                                  : "text-zinc-500",
                                         )}
                                     >
                                         <Heart size={10} className="fill-current" />
@@ -234,7 +241,7 @@ export function useReportsColumns(selectedPlatform: string) {
 
         baseCols.push({
             id: "effort",
-            header: "Effort (Activity)",
+            header: "Aktivitas Postingan",
             accessorFn: (row) => row.newPosts,
             cell: ({ row }) => {
                 const account = row.original;
@@ -245,7 +252,7 @@ export function useReportsColumns(selectedPlatform: string) {
                         {account.currentPosts >= 0 ? (
                             <div className="text-zinc-900 dark:text-white font-semibold text-sm">
                                 {account.currentPosts}{" "}
-                                <span className="text-zinc-400 font-normal">posts</span>
+                                <span className="text-zinc-400 font-normal">postingan</span>
                             </div>
                         ) : (
                             <div className="text-zinc-500 dark:text-zinc-400 font-semibold text-sm">
@@ -261,10 +268,10 @@ export function useReportsColumns(selectedPlatform: string) {
                             {account.currentPosts >= 0 ? (
                                 <>
                                     {account.newPosts >= 0 ? "+" : ""}
-                                    {account.newPosts} New
+                                    {account.newPosts} Baru
                                 </>
                             ) : (
-                                "No quarter-end data"
+                                "Tidak ada data akhir kuartal"
                             )}
                         </div>
                     </div>
