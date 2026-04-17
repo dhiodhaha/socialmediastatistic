@@ -19,6 +19,11 @@ import {
     validateIndividualReportRequest,
 } from "@/modules/individual-reports/lib/individual-quarterly-report";
 import {
+    asInteractionResultJson,
+    computeInteractionGrowth,
+    type InteractionGrowthResult,
+} from "@/modules/individual-reports/lib/public-interaction-growth";
+import {
     buildIndividualQuarterComparison,
     type QuarterSelection,
     quarterBounds,
@@ -73,6 +78,11 @@ interface WorkerQuarterSummaryStats {
     totalLikes: number;
     totalComments: number;
     totalViews: number;
+    totalShares: number;
+    totalSaves: number;
+    totalReposts: number;
+    totalQuotes: number;
+    totalBookmarks: number;
     avgLikes: number | null;
     avgComments: number | null;
     avgViews: number | null;
@@ -83,6 +93,21 @@ interface WorkerQuarterSummaryStats {
         publishedAt: string;
     } | null;
     contentTypeBreakdown: Record<string, number>;
+    monthlyInteractionTotals: Array<{
+        key: string;
+        label: string;
+        contentCount: number;
+        totalLikes: number;
+        totalComments: number;
+        totalViews: number;
+        totalShares: number;
+        totalSaves: number;
+        totalReposts: number;
+        totalQuotes: number;
+        totalBookmarks: number;
+        publicInteractions: number;
+        publicReachInteractions: number | null;
+    }>;
     isPopularMode: boolean;
 }
 
@@ -142,6 +167,7 @@ interface IndividualReportRunData {
     actualCreditsUsed: number;
     results: WorkerLiveReviewResult[];
     methodologyNotes: string[];
+    interactionGrowth?: InteractionGrowthResult[];
 }
 
 export async function getIndividualReportAccountOptions() {
@@ -665,9 +691,31 @@ export async function exportComposedIndividualPdf(input: {
             "Data yang dikembalikan difilter ke kuartal yang dipilih sebelum analisis cakupan dan pemilihan konten.",
             "Konten terpilih diurutkan secara objektif berdasarkan metrik keterlibatan dari data daftar.",
             "Data Twitter menampilkan tweet terpopuler karena keterbatasan platform, bukan urutan kronologis kuartal.",
+            "Public Interaction Growth dihitung dari metrik publik yang tersedia melalui API pihak ketiga dan disimpan oleh aplikasi ini. Angka ini dapat berbeda dari analitik platform internal karena platform dapat menyertakan metrik privat, penyaringan spam, penanganan konten terhapus, pemisahan bayar/organik, dan sinyal interaksi non-publik.",
         ],
         coverageLabel,
     };
+
+    let compYear = input.year;
+    let compQuarter = input.quarter - 1;
+    if (compQuarter === 0) {
+        compYear -= 1;
+        compQuarter = 4;
+    }
+    const prevResults = await findLatestSuccessfulPlatformResults(
+        account.id,
+        compYear,
+        compQuarter,
+    );
+
+    exportPayload.interactionGrowth = results.map((r) => {
+        const prev = prevResults.find((p) => p.platform === r.platform);
+        return computeInteractionGrowth(
+            asInteractionResultJson(r.resultJson)!,
+            asInteractionResultJson(prev?.resultJson ?? null),
+            r.platform as Platform,
+        );
+    });
 
     const snapshotHistory = await buildSnapshotHistoryForExport(
         account.id,
@@ -754,9 +802,31 @@ export async function exportIndividualQuarterlyReportPdf(runId: string) {
             "Data yang dikembalikan difilter ke kuartal yang dipilih sebelum analisis cakupan dan pemilihan konten.",
             "Konten terpilih diurutkan secara objektif berdasarkan metrik keterlibatan dari data daftar.",
             "Data Twitter menampilkan tweet terpopuler karena keterbatasan platform, bukan urutan kronologis kuartal.",
+            "Public Interaction Growth dihitung dari metrik publik yang tersedia melalui API pihak ketiga dan disimpan oleh aplikasi ini. Angka ini dapat berbeda dari analitik platform internal karena platform dapat menyertakan metrik privat, penyaringan spam, penanganan konten terhapus, pemisahan bayar/organik, dan sinyal interaksi non-publik.",
         ],
         coverageLabel,
     };
+
+    let compYear = runWithResults.year;
+    let compQuarter = runWithResults.quarter - 1;
+    if (compQuarter === 0) {
+        compYear -= 1;
+        compQuarter = 4;
+    }
+    const prevResults = await findLatestSuccessfulPlatformResults(
+        account.id,
+        compYear,
+        compQuarter,
+    );
+
+    exportPayload.interactionGrowth = successfulResults.map((r) => {
+        const prev = prevResults.find((p) => p.platform === r.platform);
+        return computeInteractionGrowth(
+            asInteractionResultJson(r.resultJson)!,
+            asInteractionResultJson(prev?.resultJson ?? null),
+            r.platform as Platform,
+        );
+    });
 
     const snapshotHistory = await buildSnapshotHistoryForExport(
         account.id,

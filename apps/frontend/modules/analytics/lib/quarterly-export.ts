@@ -14,8 +14,8 @@ export interface QuarterlyExportData {
         quarterEndCoverageLabel: string;
         fullQuarterCoverageLabel: string;
         totalAccounts: number;
-        warnings: string[];
         methodologyNote: string | null;
+        warnings: string[];
         sourceMonths: Array<{
             label: string;
             sourceLabel: string;
@@ -106,7 +106,7 @@ export function buildQuarterlyExportData({
                 : `Laporan Triwulanan ${platformLabel(selectedPlatform || "")}<br/>${categoryLabel}`,
         scope,
         executiveSummary: {
-            headlineLabel: "Cross-platform net follower growth",
+            headlineLabel: "Pertumbuhan Pengikut Bersih Lintas Platform",
             headlineValue: selectedSummaries.reduce(
                 (total, summary) => total + summary.netFollowerGrowth,
                 0,
@@ -114,13 +114,13 @@ export function buildQuarterlyExportData({
             quarterEndCoverageLabel,
             fullQuarterCoverageLabel,
             totalAccounts: preview.status.coverage.totalAccounts,
-            warnings: preview.status.warnings,
             methodologyNote: preview.methodologyNote,
+            warnings: preview.status.warnings,
             sourceMonths: preview.status.sourceMonths.map((month) => ({
                 label: month.label,
-                sourceLabel: month.sourceLabel || "Missing anchor",
+                sourceLabel: month.sourceLabel || "Anchor tidak ada",
             })),
-            baselineSourceLabel: preview.status.baseline.sourceLabel || "Baseline unavailable",
+            baselineSourceLabel: preview.status.baseline.sourceLabel || "Baseline tidak tersedia",
             platformHighlights: selectedSummaries.map((summary) => ({
                 platform: platformLabel(summary.platform),
                 netFollowerGrowth: summary.netFollowerGrowth,

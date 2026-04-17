@@ -1,7 +1,6 @@
 "use client";
 
 import type { SortingState } from "@tanstack/react-table";
-import { format } from "date-fns";
 import { FileText } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
@@ -30,6 +29,7 @@ import type {
     QuarterlyPreviewRow,
 } from "@/modules/analytics/lib/quarterly-platform-preview";
 import type { QuarterlyOption, QuarterlyStatus } from "@/modules/analytics/lib/quarterly-reporting";
+import { buildReportPdfFilename } from "@/shared/lib/pdf-filename";
 
 type ReportsClientProps = {
     initialJobs: Array<{
@@ -212,7 +212,12 @@ export function ReportsClient({
 
                 downloadPdf(
                     pdfBase64,
-                    `quarterly-${selectedPlatform.toLowerCase()}-${format(new Date(), "yyyyMMdd")}.pdf`,
+                    buildReportPdfFilename({
+                        reportType: "Laporan Triwulan",
+                        platform: platformLabel(selectedPlatform),
+                        subject: selectedCategory.label,
+                        period: quarterlyPeriodLabel(quarterlyPreview),
+                    }),
                 );
             } catch (error) {
                 console.error("Quarterly export failed:", error);
@@ -257,7 +262,13 @@ export function ReportsClient({
 
             downloadPdf(
                 pdfBase64,
-                `report-${selectedPlatform.toLowerCase()}-${format(new Date(), "yyyyMMdd")}.pdf`,
+                buildReportPdfFilename({
+                    reportType: "Laporan Bulanan",
+                    platform: platformLabel(selectedPlatform),
+                    subject: selectedCategory.label,
+                    period: selectedPeriod.label,
+                    comparisonPeriod: selectedComparison.label,
+                }),
             );
         } catch (error) {
             console.error("Export failed:", error);
@@ -280,7 +291,14 @@ export function ReportsClient({
                     }),
                 );
 
-                downloadPdf(pdfBase64, `quarterly-all-${format(new Date(), "yyyyMMdd")}.pdf`);
+                downloadPdf(
+                    pdfBase64,
+                    buildReportPdfFilename({
+                        reportType: "Laporan Triwulan",
+                        subject: selectedCategory.label,
+                        period: quarterlyPeriodLabel(quarterlyPreview),
+                    }),
+                );
             } catch (error) {
                 console.error("Quarterly export all failed:", error);
                 alert("Quarterly export all failed. Please check console.");
@@ -335,7 +353,15 @@ export function ReportsClient({
                 sections,
             });
 
-            downloadPdf(pdfBase64, `report-all-${format(new Date(), "yyyyMMdd")}.pdf`);
+            downloadPdf(
+                pdfBase64,
+                buildReportPdfFilename({
+                    reportType: "Laporan Bulanan",
+                    subject: selectedCategory.label,
+                    period: selectedPeriod.label,
+                    comparisonPeriod: selectedComparison.label,
+                }),
+            );
         } catch (error) {
             console.error("Export All failed:", error);
             alert("Export All failed. Please check console.");
@@ -379,7 +405,14 @@ export function ReportsClient({
                 sections,
             });
 
-            downloadPdf(pdfBase64, `report-latest-${format(new Date(), "yyyyMMdd")}.pdf`);
+            downloadPdf(
+                pdfBase64,
+                buildReportPdfFilename({
+                    reportType: "Laporan Data Terbaru",
+                    subject: selectedCategory.label,
+                    period: selectedPeriod.label,
+                }),
+            );
         } catch (error) {
             console.error("Export Latest failed:", error);
             alert("Export Latest failed. Please check console.");
@@ -398,6 +431,15 @@ export function ReportsClient({
         link.click();
         document.body.removeChild(link);
     };
+
+    const platformLabel = (platform: Platform) => {
+        if (platform === "INSTAGRAM") return "Instagram";
+        if (platform === "TIKTOK") return "TikTok";
+        return "Twitter X";
+    };
+
+    const quarterlyPeriodLabel = (preview: QuarterlyPlatformPreview) =>
+        `Q${preview.status.selectedQuarter} ${preview.status.selectedYear}`;
 
     const comparisonOptions = jobs
         .filter((job) => job.id !== selectedPeriod?.id)

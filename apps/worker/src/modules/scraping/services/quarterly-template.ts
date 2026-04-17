@@ -11,8 +11,8 @@ interface QuarterlyReportConfig {
         quarterEndCoverageLabel: string;
         fullQuarterCoverageLabel: string;
         totalAccounts: number;
+        methodologyNote?: string | null;
         warnings: string[];
-        methodologyNote: string | null;
         sourceMonths: Array<{
             label: string;
             sourceLabel: string;
@@ -80,81 +80,16 @@ export function generateQuarterlyReportHtml(config: QuarterlyReportConfig): stri
         sections,
     } = config;
 
-    const sectionsHtml = sections
-        .map(
-            (section) => `
-            <section class="page platform-page">
-                <div class="section-header">
-                    <div>
-                        <div class="eyebrow">Platform Section</div>
-                        <h2>${section.platform}</h2>
-                    </div>
-                    <div class="metrics-grid compact">
-                        <div class="metric-card">
-                            <span class="metric-label">Net Follower Growth</span>
-                            <strong class="metric-value">${formatSigned(section.summary.netFollowerGrowth)}</strong>
-                        </div>
-                        <div class="metric-card">
-                            <span class="metric-label">Eligible Rankings</span>
-                            <strong class="metric-value">${section.summary.rankingEligibleCount}/${section.summary.totalAccounts}</strong>
-                        </div>
-                        <div class="metric-card">
-                            <span class="metric-label">Performance Issues</span>
-                            <strong class="metric-value">${section.summary.performanceIssueCount}</strong>
-                        </div>
-                        <div class="metric-card">
-                            <span class="metric-label">Data Quality Issues</span>
-                            <strong class="metric-value">${section.summary.dataQualityIssueCount}</strong>
-                        </div>
-                    </div>
-                </div>
-
-                <table class="report-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 56px;">Rank</th>
-                            <th style="width: 260px; text-align: left;">Account</th>
-                            <th>Followers</th>
-                            <th>Posts</th>
-                            <th>Likes</th>
-                            <th style="width: 240px; text-align: left;">Notes</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${section.rows
-                            .map(
-                                (row, index) => `
-                                <tr>
-                                    <td>${row.isRanked ? `#${index + 1}` : "-"}</td>
-                                    <td class="align-left">
-                                        <strong>${row.accountName}</strong>
-                                        <span class="muted">${row.handle} • ${row.category}</span>
-                                    </td>
-                                    <td>${renderMetric(row.newFollowers, row.followersPct)}</td>
-                                    <td>${renderMetric(row.newPosts, row.postsPct)}</td>
-                                    <td>${renderMetric(row.newLikes, row.likesPct)}</td>
-                                    <td class="align-left">
-                                        ${renderBadges(row)}
-                                        ${row.detailNote ? `<div class="note">${row.detailNote}</div>` : ""}
-                                    </td>
-                                </tr>
-                            `,
-                            )
-                            .join("")}
-                    </tbody>
-                </table>
-            </section>
-        `,
-        )
-        .join("");
+    const sectionsHtml = sections.map((section) => renderPlatformSection(section)).join("");
 
     return `
         <!DOCTYPE html>
-        <html>
+        <html lang="id">
             <head>
                 <meta charset="utf-8" />
-                <title>Quarterly Executive Report</title>
+                <title>Laporan Eksekutif Triwulanan</title>
                 <style>
+                    @page { margin: 0; }
                     * { box-sizing: border-box; }
                     body {
                         font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
@@ -165,7 +100,7 @@ export function generateQuarterlyReportHtml(config: QuarterlyReportConfig): stri
                     .page {
                         page-break-after: always;
                         min-height: 100vh;
-                        padding: 44px 52px;
+                        padding: 44px 0;
                         background:
                             radial-gradient(circle at top right, rgba(59,130,246,0.14), transparent 28%),
                             linear-gradient(180deg, #ffffff, #f8fafc);
@@ -178,6 +113,7 @@ export function generateQuarterlyReportHtml(config: QuarterlyReportConfig): stri
                         align-items: flex-start;
                         background: linear-gradient(135deg, #0f172a 0%, #1d4ed8 100%);
                         color: white;
+                        padding: 44px 52px;
                     }
                     .cover h1 {
                         margin: 0;
@@ -204,6 +140,7 @@ export function generateQuarterlyReportHtml(config: QuarterlyReportConfig): stri
                         gap: 24px;
                         align-items: flex-start;
                         margin-bottom: 28px;
+                        padding: 0 32px;
                     }
                     h2 {
                         margin: 8px 0 0;
@@ -215,19 +152,21 @@ export function generateQuarterlyReportHtml(config: QuarterlyReportConfig): stri
                         gap: 12px;
                         width: 100%;
                         margin-top: 24px;
+                        padding: 0 32px;
                     }
                     .metrics-grid.compact {
                         max-width: 640px;
+                        padding: 0;
                     }
                     .metric-card {
                         background: rgba(255,255,255,0.9);
                         border: 1px solid #dbe4f0;
                         border-radius: 16px;
-                        padding: 14px 16px;
+                        padding: 24px 28px;
                     }
                     .metric-label {
                         display: block;
-                        font-size: 10px;
+                        font-size: 12px;
                         text-transform: uppercase;
                         letter-spacing: 0.14em;
                         color: #64748b;
@@ -235,14 +174,28 @@ export function generateQuarterlyReportHtml(config: QuarterlyReportConfig): stri
                     }
                     .metric-value {
                         display: block;
+                        margin-top: 12px;
+                        font-size: 36px;
+                    }
+                    
+                    /* Compact modifiers for platform section headers */
+                    .metrics-grid.compact .metric-card {
+                        padding: 14px 16px;
+                    }
+                    .metrics-grid.compact .metric-label {
+                        font-size: 10px;
+                    }
+                    .metrics-grid.compact .metric-value {
                         margin-top: 8px;
                         font-size: 24px;
                     }
+                    
                     .highlights-grid {
                         display: grid;
                         grid-template-columns: repeat(3, minmax(0, 1fr));
                         gap: 16px;
                         margin-top: 24px;
+                        padding: 0 32px;
                     }
                     .highlight-card {
                         border-radius: 18px;
@@ -278,9 +231,9 @@ export function generateQuarterlyReportHtml(config: QuarterlyReportConfig): stri
                         width: 100%;
                         border-collapse: collapse;
                         background: white;
-                        border-radius: 18px;
                         overflow: hidden;
-                        border: 1px solid #dbe4f0;
+                        border-top: 1px solid #dbe4f0;
+                        border-bottom: 1px solid #dbe4f0;
                     }
                     .report-table th,
                     .report-table td {
@@ -289,6 +242,14 @@ export function generateQuarterlyReportHtml(config: QuarterlyReportConfig): stri
                         text-align: right;
                         vertical-align: top;
                         font-size: 12px;
+                    }
+                    .report-table th:first-child,
+                    .report-table td:first-child {
+                        padding-left: 32px;
+                    }
+                    .report-table th:last-child,
+                    .report-table td:last-child {
+                        padding-right: 32px;
                     }
                     .report-table th {
                         background: #e8f0fe;
@@ -308,8 +269,13 @@ export function generateQuarterlyReportHtml(config: QuarterlyReportConfig): stri
                         display: block;
                         margin-top: 4px;
                         font-size: 11px;
-                        color: #64748b;
+                        font-weight: 600;
                     }
+                    .delta-positive { color: #047857; }
+                    .delta-negative { color: #b91c1c; }
+                    .delta-neutral  { color: #64748b; }
+                    .growth-positive { color: #047857; }
+                    .growth-negative { color: #b91c1c; }
                     .badge {
                         display: inline-block;
                         margin-right: 6px;
@@ -343,7 +309,7 @@ export function generateQuarterlyReportHtml(config: QuarterlyReportConfig): stri
                     }
                     .warning-list {
                         margin: 18px 0 0;
-                        padding: 0;
+                        padding: 0 32px;
                         list-style: none;
                         display: grid;
                         gap: 10px;
@@ -356,34 +322,26 @@ export function generateQuarterlyReportHtml(config: QuarterlyReportConfig): stri
                         color: #9a3412;
                         font-size: 12px;
                     }
-                    .methodology-callout {
-                        margin-top: 16px;
-                        padding: 12px 14px;
-                        border-radius: 14px;
-                        background: #eff6ff;
-                        border: 1px solid #bfdbfe;
-                        color: #1d4ed8;
-                        font-size: 12px;
-                    }
                     .source-grid {
                         display: grid;
                         grid-template-columns: repeat(4, minmax(0, 1fr));
                         gap: 10px;
                         margin-top: 18px;
+                        padding: 0 32px;
                     }
                     .source-card {
                         border-radius: 14px;
                         background: #eff6ff;
                         border: 1px solid #bfdbfe;
-                        padding: 12px 14px;
-                        font-size: 11px;
+                        padding: 18px 20px;
+                        font-size: 13px;
                         color: #1e40af;
                     }
                     .source-card strong {
                         display: block;
-                        margin-bottom: 4px;
+                        margin-bottom: 6px;
                         color: #0f172a;
-                        font-size: 12px;
+                        font-size: 14px;
                     }
                 </style>
             </head>
@@ -392,7 +350,7 @@ export function generateQuarterlyReportHtml(config: QuarterlyReportConfig): stri
                     includeCover
                         ? `
                     <section class="page cover">
-                        <div class="eyebrow">Quarterly Executive Report</div>
+                        <div class="eyebrow">Laporan Eksekutif Triwulanan</div>
                         <h1>${customTitle || "Laporan Triwulanan"}</h1>
                         <p>Periode ${periodLabel} • Baseline ${baselineLabel}</p>
                         <p>Dibuat ${generatedAt}</p>
@@ -402,29 +360,29 @@ export function generateQuarterlyReportHtml(config: QuarterlyReportConfig): stri
                 }
 
                 <section class="page">
-                    <div class="eyebrow">Executive Summary</div>
+                    <div class="eyebrow" style="padding: 0 32px;">Ringkasan Eksekutif</div>
                     <div class="section-header">
                         <div>
                             <h2>${periodLabel}</h2>
-                            <p>Quarter-end vs quarter-start baseline: ${baselineLabel}</p>
+                            <p>Akhir kuartal vs baseline awal kuartal: ${baselineLabel}</p>
                         </div>
                     </div>
 
                     <div class="metrics-grid">
                         <div class="metric-card">
                             <span class="metric-label">${executiveSummary.headlineLabel}</span>
-                            <strong class="metric-value">${formatSigned(executiveSummary.headlineValue)}</strong>
+                            <strong class="metric-value ${getGrowthClass(executiveSummary.headlineValue)}">${formatSigned(executiveSummary.headlineValue)}</strong>
                         </div>
                         <div class="metric-card">
-                            <span class="metric-label">Quarter-End Coverage</span>
+                            <span class="metric-label">Cakupan Akhir Kuartal</span>
                             <strong class="metric-value">${executiveSummary.quarterEndCoverageLabel}</strong>
                         </div>
                         <div class="metric-card">
-                            <span class="metric-label">Full-Quarter Coverage</span>
+                            <span class="metric-label">Cakupan Kuartal Penuh</span>
                             <strong class="metric-value">${executiveSummary.fullQuarterCoverageLabel}</strong>
                         </div>
                         <div class="metric-card">
-                            <span class="metric-label">Tracked Accounts</span>
+                            <span class="metric-label">Akun Terlacak</span>
                             <strong class="metric-value">${executiveSummary.totalAccounts}</strong>
                         </div>
                     </div>
@@ -441,10 +399,16 @@ export function generateQuarterlyReportHtml(config: QuarterlyReportConfig): stri
                             )
                             .join("")}
                         <div class="source-card">
-                            <strong>Quarter-start ${baselineLabel}</strong>
+                            <strong>Awal Kuartal ${baselineLabel}</strong>
                             ${executiveSummary.baselineSourceLabel}
                         </div>
                     </div>
+
+                </section>
+
+                <section class="page">
+                    <div class="eyebrow" style="padding: 0 32px;">Ringkasan Per Platform</div>
+                    <div style="padding: 0 32px; margin-top: 8px;"><h2>${periodLabel}</h2></div>
 
                     <div class="highlights-grid">
                         ${executiveSummary.platformHighlights
@@ -452,27 +416,27 @@ export function generateQuarterlyReportHtml(config: QuarterlyReportConfig): stri
                                 (highlight) => `
                                 <div class="highlight-card">
                                     <div class="eyebrow">${highlight.platform}</div>
-                                    <h3>${formatSigned(highlight.netFollowerGrowth)}</h3>
-                                    <div class="muted">Eligible rankings ${highlight.rankingEligibleCount}</div>
+                                    <h3 class="${getGrowthClass(highlight.netFollowerGrowth)}">${formatSigned(highlight.netFollowerGrowth)}</h3>
+                                    <div class="muted">Peringkat memenuhi syarat ${highlight.rankingEligibleCount}</div>
                                     <div class="highlight-list">
                                         ${highlight.topGainers
-                                            .slice(0, 3)
+                                            .slice(0, 5)
                                             .map(
                                                 (item) => `
                                                 <div class="highlight-list-item">
                                                     <strong>${item.accountName}</strong>
-                                                    <span>@${item.handle} • +${item.followerGrowthPct.toFixed(1)}%</span>
+                                                    <span>@${item.handle} • <span class="growth-positive">+${item.followerGrowthPct.toFixed(1)}%</span></span>
                                                 </div>
                                             `,
                                             )
                                             .join("")}
                                         ${highlight.topDecliners
-                                            .slice(0, 3)
+                                            .slice(0, 5)
                                             .map(
                                                 (item) => `
                                                 <div class="highlight-list-item">
                                                     <strong>${item.accountName}</strong>
-                                                    <span>@${item.handle} • ${item.followerGrowthPct.toFixed(1)}%</span>
+                                                    <span>@${item.handle} • <span class="growth-negative">${item.followerGrowthPct.toFixed(1)}%</span></span>
                                                 </div>
                                             `,
                                             )
@@ -483,14 +447,6 @@ export function generateQuarterlyReportHtml(config: QuarterlyReportConfig): stri
                             )
                             .join("")}
                     </div>
-
-                    ${
-                        executiveSummary.methodologyNote
-                            ? `
-                        <div class="methodology-callout">${executiveSummary.methodologyNote}</div>
-                    `
-                            : ""
-                    }
 
                     ${
                         executiveSummary.warnings.length > 0
@@ -508,35 +464,116 @@ export function generateQuarterlyReportHtml(config: QuarterlyReportConfig): stri
         </html>
     `;
 }
+function renderPlatformSection(section: QuarterlyReportConfig["sections"][number]) {
+    const isTikTok =
+        section.platform.toUpperCase().includes("TIKTOK") ||
+        section.platform.toLowerCase().includes("tiktok");
+
+    const likesHeader = isTikTok ? `<th>Suka</th>` : "";
+
+    return `
+        <section class="page platform-page">
+            <div class="section-header">
+                <div>
+                    <div class="eyebrow">Bagian Platform</div>
+                    <h2>${section.platform}</h2>
+                </div>
+                <div class="metrics-grid compact">
+                    <div class="metric-card">
+                        <span class="metric-label">Pertumbuhan Pengikut Bersih</span>
+                        <strong class="metric-value ${getGrowthClass(section.summary.netFollowerGrowth)}">${formatSigned(section.summary.netFollowerGrowth)}</strong>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-label">Peringkat Memenuhi Syarat</span>
+                        <strong class="metric-value">${section.summary.rankingEligibleCount}/${section.summary.totalAccounts}</strong>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-label">Masalah Performa</span>
+                        <strong class="metric-value">${section.summary.performanceIssueCount}</strong>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-label">Masalah Kualitas Data</span>
+                        <strong class="metric-value">${section.summary.dataQualityIssueCount}</strong>
+                    </div>
+                </div>
+            </div>
+
+            <table class="report-table">
+                <thead>
+                    <tr>
+                        <th style="width: 56px;">Peringkat</th>
+                        <th style="text-align: left;">Akun</th>
+                        <th>Pengikut</th>
+                        <th>Postingan</th>
+                        ${likesHeader}
+                    </tr>
+                </thead>
+                <tbody>
+                    ${section.rows
+                        .map(
+                            (row, index) => `
+                            <tr>
+                                <td>${row.isRanked ? `#${index + 1}` : "-"}</td>
+                                <td class="align-left">
+                                    <strong>${row.accountName}</strong>
+                                    <span class="muted">${row.handle} \u2022 ${row.category}</span>
+                                </td>
+                                <td>${renderMetric(row.newFollowers, row.followersPct)}</td>
+                                <td>${renderMetric(row.newPosts, row.postsPct)}</td>
+                                ${isTikTok ? `<td>${renderMetric(row.newLikes, row.likesPct)}</td>` : ""}
+                            </tr>
+                        `,
+                        )
+                        .join("")}
+                </tbody>
+            </table>
+        </section>
+    `;
+}
 
 function renderMetric(value: number | null, pct: number | null) {
     if (value === null) {
         return '<span class="muted">N/A</span>';
     }
 
+    const deltaClass =
+        pct === null
+            ? "delta-neutral"
+            : pct > 0
+              ? "delta-positive"
+              : pct < 0
+                ? "delta-negative"
+                : "delta-neutral";
+
     return `
         <strong>${value.toLocaleString("id-ID")}</strong>
-        <span class="delta">${pct === null ? "N/A" : `${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%`}</span>
+        <span class="delta ${deltaClass}">${pct === null ? "N/A" : `${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%`}</span>
     `;
 }
 
-function renderBadges(row: QuarterlyReportConfig["sections"][number]["rows"][number]) {
+function _renderBadges(row: QuarterlyReportConfig["sections"][number]["rows"][number]) {
     const badges = [];
     if (row.performanceIssue) {
-        badges.push('<span class="badge badge-performance">Performance</span>');
+        badges.push('<span class="badge badge-performance">Performa</span>');
     }
     if (row.dataQualityIssue) {
-        badges.push('<span class="badge badge-quality">Data quality</span>');
+        badges.push('<span class="badge badge-quality">Kualitas Data</span>');
     }
     if (row.sharedAccount) {
-        badges.push('<span class="badge badge-shared">Shared</span>');
+        badges.push('<span class="badge badge-shared">Akun Bersama</span>');
     }
     if (!row.isRanked) {
-        badges.push('<span class="badge badge-unranked">Unranked</span>');
+        badges.push('<span class="badge badge-unranked">Tidak Diperingkat</span>');
     }
     return badges.join("");
 }
 
 function formatSigned(value: number) {
     return `${value > 0 ? "+" : ""}${value.toLocaleString("id-ID")}`;
+}
+
+function getGrowthClass(value: number) {
+    if (value > 0) return "growth-positive";
+    if (value < 0) return "growth-negative";
+    return "";
 }

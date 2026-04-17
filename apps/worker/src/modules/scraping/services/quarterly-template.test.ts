@@ -78,11 +78,11 @@ test("generateQuarterlyReportHtml renders executive summary and platform section
         ],
     });
 
-    assert.match(html, /Executive Summary/);
+    assert.match(html, /Ringkasan Eksekutif/);
     assert.match(html, /Q1 2026/);
-    assert.match(html, /Quarter-End Coverage/);
-    assert.match(html, /current category membership/);
-    assert.match(html, /Shared/);
+    assert.match(html, /Cakupan Akhir Kuartal/);
+    assert.match(html, /Ringkasan Per Platform/);
+    assert.match(html, /Bagian Platform/);
     assert.match(html, /Manual reporting month/);
     assert.match(html, /Instagram/);
     assert.match(html, /Kemdikbud/);

@@ -21,6 +21,21 @@ interface QuarterSummaryStats {
         publishedAt: string;
     } | null;
     contentTypeBreakdown: Record<string, number>;
+    monthlyInteractionTotals?: Array<{
+        key: string;
+        label: string;
+        contentCount: number;
+        totalLikes: number;
+        totalComments: number;
+        totalViews: number;
+        totalShares: number;
+        totalSaves: number;
+        totalReposts: number;
+        totalQuotes: number;
+        totalBookmarks: number;
+        publicInteractions: number;
+        publicReachInteractions: number | null;
+    }>;
     isPopularMode?: boolean;
 }
 
@@ -96,6 +111,21 @@ interface IndividualQuarterlyPdfData {
             engagement: number | null;
         }>;
     }>;
+    interactionGrowth?: InteractionGrowthPdfData[];
+}
+
+interface InteractionGrowthPdfData {
+    platform: string;
+    current: {
+        publicInteractions: number;
+        publicReachInteractions: number | null;
+        coverageStatus: string;
+    };
+    absoluteDelta: number | null;
+    percentDelta: number | null;
+    reason: string | null;
+    reachAbsoluteDelta: number | null;
+    reachPercentDelta: number | null;
 }
 
 interface SnapshotMonth {
@@ -135,7 +165,13 @@ export function generateIndividualQuarterlyReportHtml({
     }
 
     const platformPages = data.results
-        .map((r) => renderPlatformPage(r, snapshotMap.get(r.platform)))
+        .map((r) =>
+            renderPlatformPage(
+                r,
+                snapshotMap.get(r.platform),
+                data.interactionGrowth?.find((g) => g.platform === r.platform),
+            ),
+        )
         .join("");
 
     return `<!DOCTYPE html>
@@ -145,12 +181,14 @@ export function generateIndividualQuarterlyReportHtml({
   <meta name="referrer" content="no-referrer" />
   <title>Laporan Ulasan Individual – ${escapeHtml(data.account.username)} ${periodLabel}</title>
   <style>
+    @page { margin: 0; }
+
     * { box-sizing: border-box; }
     body {
       font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
       margin: 0;
       color: #0f172a;
-      background: #f5f7fb;
+      background: #f8fafc;
     }
 
     /* ── Cover ──────────────────────────────────────────────── */
@@ -203,12 +241,9 @@ export function generateIndividualQuarterlyReportHtml({
 
     /* ── Content pages ───────────────────────────────────────── */
     .page {
-      min-height: 100vh;
-      padding: 64px 52px;
-      background:
-        radial-gradient(circle at top right, rgba(59,130,246,0.08), transparent 28%),
-        linear-gradient(180deg, #ffffff, #f8fafc);
       page-break-after: always;
+      padding: 44px;
+      padding-top: 64px;
     }
     .page:last-child { page-break-after: auto; }
 
@@ -222,34 +257,54 @@ export function generateIndividualQuarterlyReportHtml({
       margin-bottom: 4px;
     }
     h2 { margin: 8px 0 0; font-size: 34px; font-weight: 800; }
-    h3 { margin: 0 0 12px; font-size: 16px; font-weight: 700; color: #0f172a; }
+    h3 { margin: 0 0 10px; font-size: 15px; font-weight: 700; color: #0f172a; }
     .muted { color: #64748b; }
     .small { font-size: 11px; }
 
     /* ── Section header ─────────────────────────────────────── */
     .section-header {
       display: flex;
-      flex-direction: column;
-      gap: 16px;
-      margin-bottom: 24px;
+      flex-direction: row;
+      align-items: flex-start;
+      gap: 22px;
+      margin-bottom: 18px;
     }
-    .section-header-left { }
+    .section-header-left {
+      padding-top: 2px;
+      width: 190px;
+      flex-shrink: 0;
+    }
 
     /* ── Metric cards ───────────────────────────────────────── */
     .metrics-grid {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 12px;
-      margin-top: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
     }
-    .metrics-grid.col-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    .metrics-grid.col-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .metrics-grid.compact { max-width: 100%; margin-top: 0; }
+    .metrics-grid.col-3 .metric-card { flex: 1 1 calc(33.333% - 10px); }
+    .metrics-grid.col-2 .metric-card { flex: 1 1 calc(50% - 10px); }
+    .metrics-grid.summary-grid {
+      margin-top: 0;
+    }
+    .metrics-grid.summary-grid .metric-card { flex: 1 1 calc(33.333% - 10px); }
+    
+    .metrics-grid.compact {
+      flex: 1;
+      margin-top: 0;
+    }
+    .metrics-grid.compact .metric-card { flex: 1 1 calc(33.333% - 10px); }
+    
     .metric-card {
-      background: rgba(255,255,255,0.9);
+      background: #ffffff;
       border: 1px solid #dbe4f0;
-      border-radius: 14px;
-      padding: 14px 16px;
+      border-radius: 12px;
+      padding: 12px 14px;
+      min-height: 64px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+      page-break-inside: avoid;
+      flex: 1 1 calc(25% - 10px);
+      min-width: 120px;
     }
     .metric-label {
       display: block;
@@ -261,8 +316,8 @@ export function generateIndividualQuarterlyReportHtml({
     }
     .metric-value {
       display: block;
-      margin-top: 6px;
-      font-size: 24px;
+      margin-top: 4px;
+      font-size: 21px;
       font-weight: 700;
       color: #0f172a;
     }
@@ -276,7 +331,7 @@ export function generateIndividualQuarterlyReportHtml({
       overflow: hidden;
       border: 1px solid #dbe4f0;
       font-size: 12px;
-      margin-top: 14px;
+      margin-top: 10px;
     }
     .report-table th {
       background: #e8f0fe;
@@ -289,6 +344,8 @@ export function generateIndividualQuarterlyReportHtml({
       text-align: left;
       border-bottom: 1px solid #c7d9f9;
     }
+    .report-table thead { display: table-header-group; }
+    .report-table tbody { display: table-row-group; }
     .report-table td {
       padding: 10px 12px;
       border-bottom: 1px solid #e8eef6;
@@ -304,12 +361,13 @@ export function generateIndividualQuarterlyReportHtml({
       display: flex;
       align-items: center;
       gap: 20px;
-      padding: 14px 18px;
+      padding: 12px 16px;
       background: white;
       border: 1px solid #dbe4f0;
       border-radius: 14px;
-      margin-top: 16px;
+      margin-top: 12px;
       flex-wrap: wrap;
+      page-break-inside: avoid;
     }
     .profile-stat { text-align: center; }
     .profile-stat-value { font-size: 20px; font-weight: 700; color: #0f172a; }
@@ -342,18 +400,24 @@ export function generateIndividualQuarterlyReportHtml({
       background: #f0f7f3;
       border: 1px solid #c4dece;
       border-radius: 14px;
-      padding: 16px 18px;
-      margin-top: 16px;
+      padding: 14px 20px 16px;
+      margin-top: 0;
+      page-break-inside: avoid;
     }
-    .summary-card h3 { color: #18392b; }
+    .summary-card h3 { color: #18392b; margin-bottom: 12px; }
+    .summary-card .metric-card {
+      min-height: 74px;
+      background: #ffffff;
+    }
 
     /* ── Callout boxes ───────────────────────────────────────── */
     .callout {
       border-radius: 12px;
       padding: 10px 14px;
       font-size: 12px;
-      margin-top: 12px;
+      margin-top: 10px;
       line-height: 1.5;
+      page-break-inside: avoid;
     }
     .callout-warning { background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412; }
     .callout-info    { background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; }
@@ -382,33 +446,54 @@ export function generateIndividualQuarterlyReportHtml({
       font-size: 11px;
       font-weight: 600;
     }
+    .top-post-summary {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-end;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #c4dece;
+      font-size: 12px;
+    }
+    .top-post-summary a {
+      color: #1d4ed8;
+      text-decoration: none;
+      word-break: break-all;
+    }
 
     /* ── Methodology ─────────────────────────────────────────── */
     .method-list {
-      margin: 10px 0 0;
+      margin: 8px 0 0;
       padding-left: 20px;
       color: #475569;
       font-size: 12px;
     }
-    .method-list li { margin: 5px 0; }
+    .method-list li { margin: 4px 0; }
 
     /* ── Section divider within page ─────────────────────────── */
-    .section-block { margin-top: 32px; padding-top: 12px; page-break-inside: avoid; }
+    .section-block {
+      margin-top: 32px;
+      padding-top: 0;
+      break-inside: auto;
+    }
+    .section-block.keep-together { break-inside: avoid; page-break-inside: avoid; }
+    .section-block.keep-together .report-table { break-inside: avoid; page-break-inside: avoid; }
 
     /* ── Growth charts ────────────────────────────────────────── */
     .growth-charts-row {
       display: flex;
-      gap: 16px;
-      margin-top: 20px;
+      gap: 12px;
+      margin-top: 14px;
       page-break-inside: avoid;
     }
     .growth-chart-card {
       flex: 1;
       min-width: 0;
-      background: rgba(255,255,255,0.9);
+      background: #ffffff;
       border: 1px solid #dbe4f0;
       border-radius: 10px;
-      padding: 16px;
+      padding: 12px;
     }
     .growth-chart-card h4 {
       margin: 0 0 8px;
@@ -446,7 +531,7 @@ export function generateIndividualQuarterlyReportHtml({
     <div class="eyebrow">Ringkasan Eksekutif</div>
     <h2>${escapeHtml(data.account.username)} · ${periodLabel}</h2>
 
-    <div class="metrics-grid${totalQuarterItems === 0 ? " col-2" : ""}">
+    <div class="metrics-grid col-3">
       ${metricCard("Total Konten Kuartal", fmtNum(totalQuarterItems))}
       ${metricCard("Total Keterlibatan", fmtNum(totalEngagement))}
       ${metricCard("Platform Dianalisis", String(data.results.length))}
@@ -516,6 +601,7 @@ function renderExecProfileTable(results: IndividualQuarterlyPdfData["results"]) 
 function renderPlatformPage(
     result: IndividualQuarterlyPdfData["results"][number],
     snapshotMonths?: SnapshotMonth[],
+    interactionGrowth?: InteractionGrowthPdfData,
 ) {
     const isPopular = result.quarterSummary?.isPopularMode === true;
     const kontenLabel = isPopular ? "Tweet Populer" : "Konten Kuartal";
@@ -524,7 +610,13 @@ function renderPlatformPage(
         : result.coverage.totalContentItems;
 
     const growth = snapshotMonths ? calculateQuarterGrowth(snapshotMonths) : null;
-    const headerMetrics = buildHeaderMetrics(result, kontenLabel, kontenCount, growth);
+    const headerMetrics = buildHeaderMetrics(
+        result,
+        kontenLabel,
+        kontenCount,
+        growth,
+        interactionGrowth,
+    );
 
     return `<section class="page">
     <div class="eyebrow">Detail Platform</div>
@@ -541,7 +633,7 @@ function renderPlatformPage(
 
     ${result.error ? renderError(result.error) : ""}
 
-    ${!result.error ? renderPlatformBody(result, isPopular, snapshotMonths) : ""}
+    ${!result.error ? renderPlatformBody(result, isPopular, snapshotMonths, interactionGrowth) : ""}
   </section>`;
 }
 
@@ -550,6 +642,7 @@ function buildHeaderMetrics(
     kontenLabel: string,
     kontenCount: number,
     growth: QuarterGrowthSummary | null,
+    interactionGrowth?: InteractionGrowthPdfData,
 ): string {
     const qs = result.quarterSummary;
     const ps = result.profileStats;
@@ -564,7 +657,15 @@ function buildHeaderMetrics(
         cards.push(metricCard("Pengikut", fmtNum(ps.followers)));
     }
     cards.push(metricCard("Kenaikan Pengikut", formatPercent(growth?.followersPct ?? null)));
-    cards.push(metricCard("Kenaikan Interaksi", formatPercent(growth?.interactionPct ?? null)));
+    cards.push(
+        metricCard(
+            "Kenaikan Interaksi",
+            formatQuarterInteractionGrowth(
+                growth?.interactionPct ?? null,
+                result.quarterSummary?.monthlyInteractionTotals,
+            ),
+        ),
+    );
     if (qs?.avgEngagementRate != null) {
         cards.push(metricCard("Rata-rata ER", `${qs.avgEngagementRate}%`));
     }
@@ -576,6 +677,7 @@ function renderPlatformBody(
     result: IndividualQuarterlyPdfData["results"][number],
     isPopular: boolean,
     snapshotMonths?: SnapshotMonth[],
+    interactionGrowth?: InteractionGrowthPdfData,
 ) {
     const parts: string[] = [];
 
@@ -587,6 +689,10 @@ function renderPlatformBody(
     // Growth charts (side-by-side)
     if (snapshotMonths && snapshotMonths.length >= 2) {
         parts.push(renderGrowthCharts(result.platform, snapshotMonths));
+    }
+
+    if (interactionGrowth) {
+        parts.push(renderInteractionGrowthBlock(interactionGrowth));
     }
 
     // Diagnostics (non-popular, or info callout for popular)
@@ -604,13 +710,22 @@ function renderPlatformBody(
         parts.push(renderSummaryCard(result.quarterSummary, isPopular));
     }
 
+    // Force a new page section for monthly distribution + content table
+    // so they get proper top padding instead of landing flush at the top
+    const hasMonthly = !isPopular && result.coverage.months.length > 0;
+    const hasContent = result.enrichedItems.length > 0;
+
+    if (hasMonthly || hasContent) {
+        parts.push(`</section><section class="page">`);
+    }
+
     // Monthly distribution — skip for Twitter popular mode
-    if (!isPopular && result.coverage.months.length > 0) {
+    if (hasMonthly) {
         parts.push(renderMonthlyTable(result.coverage.months));
     }
 
     // Selected content / popular tweets
-    if (result.enrichedItems.length > 0) {
+    if (hasContent) {
         parts.push(renderContentTable(result.enrichedItems, isPopular));
     } else {
         parts.push(
@@ -671,7 +786,6 @@ function renderSummaryCard(qs: QuarterSummaryStats, isPopular: boolean) {
     const title = isPopular ? "Statistik Tweet Populer" : "Ringkasan Kuartal";
 
     const hasViews = qs.avgViews != null;
-    const colClass = hasViews ? "" : " col-3";
 
     const breakdown = Object.entries(qs.contentTypeBreakdown)
         .filter(([type]) => type !== "unknown")
@@ -681,9 +795,9 @@ function renderSummaryCard(qs: QuarterSummaryStats, isPopular: boolean) {
         )
         .join("");
 
-    return `<div class="summary-card section-block">
+    return `<div class="summary-card section-block keep-together">
     <h3>${title}</h3>
-    <div class="metrics-grid${colClass}">
+    <div class="metrics-grid summary-grid">
       ${metricCard("Total Suka", fmtNum(qs.totalLikes))}
       ${metricCard("Total Komentar", fmtNum(qs.totalComments))}
       ${metricCard("Rata-rata Suka/Post", fmtNum(qs.avgLikes))}
@@ -694,19 +808,89 @@ function renderSummaryCard(qs: QuarterSummaryStats, isPopular: boolean) {
     ${breakdown ? `<div class="breakdown-tags">${breakdown}</div>` : ""}
     ${
         qs.topPost
-            ? `<div style="margin-top:14px; padding-top:12px; border-top:1px solid #c4dece; font-size:12px;">
-        <span class="muted" style="display:block; margin-bottom:4px; font-size:10px; text-transform:uppercase; letter-spacing:.1em; font-weight:700;">${isPopular ? "Tweet Terpopuler" : "Postingan Terbaik"}</span>
-        <strong>${fmtNum(qs.topPost.likes)} suka</strong>
-        <span class="muted"> · ${escapeHtml(qs.topPost.publishedAt.slice(0, 10))}</span>
-        ${qs.topPost.url ? `<br/><span style="font-size:11px; color:#1d4ed8; word-break:break-all;">${escapeHtml(qs.topPost.url)}</span>` : ""}
+            ? `<div class="top-post-summary">
+        <div>
+          <span class="metric-label">${isPopular ? "Tweet Terpopuler" : "Postingan Terbaik"}</span>
+          <strong>${fmtNum(qs.topPost.likes)} suka</strong>
+          <span class="muted"> · ${escapeHtml(qs.topPost.publishedAt.slice(0, 10))}</span>
+          ${qs.topPost.url ? `<br/><a href="${escapeHtml(qs.topPost.url)}">${escapeHtml(qs.topPost.url)}</a>` : ""}
+        </div>
       </div>`
             : ""
     }
   </div>`;
 }
 
+function renderInteractionGrowthBlock(growth: InteractionGrowthPdfData) {
+    if (!growth) return "";
+
+    let badgeColor = "#94a3b8";
+    let badgeBg = "#f1f5f9";
+    if (growth.current.coverageStatus === "complete-public-coverage") {
+        badgeColor = "#047857";
+        badgeBg = "#d1fae5";
+    } else if (growth.current.coverageStatus === "partial-public-coverage") {
+        badgeColor = "#b45309";
+        badgeBg = "#fef3c7";
+    } else if (growth.current.coverageStatus === "limited-platform-coverage") {
+        badgeColor = "#b91c1c";
+        badgeBg = "#fee2e2";
+    }
+
+    const badges = `<span style="display:inline-block; padding: 2px 8px; border-radius: 999px; background:${badgeBg}; color:${badgeColor}; font-size:10px; font-weight:700;">${growth.current.coverageStatus.replace(/-/g, " ").toUpperCase()}</span>`;
+
+    let deltaHtml = growth.reason
+        ? `<div class="muted small" style="margin-top:6px;">${escapeHtml(growth.reason)}</div>`
+        : "";
+    if (growth.absoluteDelta !== null) {
+        const sign = growth.absoluteDelta > 0 ? "+" : "";
+        const color =
+            growth.absoluteDelta > 0 ? "#047857" : growth.absoluteDelta < 0 ? "#b91c1c" : "#64748b";
+        deltaHtml = `<div style="color:${color}; font-size:14px; font-weight:700; margin-top:6px;">${sign}${fmtNum(growth.absoluteDelta)} <span style="font-size:11px; opacity:0.8;">(${sign}${growth.percentDelta}%)</span></div>`;
+    }
+
+    let reachDeltaHtml = "";
+    if (growth.reachAbsoluteDelta !== null) {
+        const sign = growth.reachAbsoluteDelta > 0 ? "+" : "";
+        const color =
+            growth.reachAbsoluteDelta > 0
+                ? "#047857"
+                : growth.reachAbsoluteDelta < 0
+                  ? "#b91c1c"
+                  : "#64748b";
+        reachDeltaHtml = `<div style="color:${color}; font-size:14px; font-weight:700; margin-top:6px;">${sign}${fmtNum(growth.reachAbsoluteDelta)} <span style="font-size:11px; opacity:0.8;">(${sign}${growth.reachPercentDelta}%)</span></div>`;
+    }
+
+    return `<div class="section-block keep-together">
+    <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:12px;">
+      <h3>Pertumbuhan Interaksi Publik</h3>
+      <div>${badges}</div>
+    </div>
+    <div class="metrics-grid col-2">
+      <div class="metric-card">
+        <span class="metric-label">Total Interaksi Publik</span>
+        <strong class="metric-value">${fmtNum(growth.current.publicInteractions)}</strong>
+        ${deltaHtml}
+      </div>
+      ${
+          growth.current.publicReachInteractions !== null
+              ? `<div class="metric-card">
+        <span class="metric-label">Total Reach & Interaksi</span>
+        <strong class="metric-value">${fmtNum(growth.current.publicReachInteractions)}</strong>
+        ${reachDeltaHtml || deltaHtml}
+      </div>`
+              : `<div class="metric-card">
+        <span class="metric-label">Total Reach & Interaksi</span>
+        <strong class="metric-value">—</strong>
+        <div class="muted small" style="margin-top:6px;">Views tidak tersedia</div>
+      </div>`
+      }
+    </div>
+  </div>`;
+}
+
 function renderMonthlyTable(months: Array<{ key: string; label: string; contentCount: number }>) {
-    return `<div class="section-block">
+    return `<div class="section-block keep-together">
     <h3>Distribusi Bulanan</h3>
     <table class="report-table">
       <thead>
@@ -841,6 +1025,41 @@ function formatPercent(value: number | null) {
         maximumFractionDigits: 2,
         minimumFractionDigits: 0,
     })}%`;
+}
+
+function formatQuarterInteractionGrowth(
+    snapshotInteractionPct: number | null,
+    monthlyInteractionTotals?: QuarterSummaryStats["monthlyInteractionTotals"],
+) {
+    if (snapshotInteractionPct != null && Number.isFinite(snapshotInteractionPct)) {
+        return formatPercent(snapshotInteractionPct);
+    }
+
+    const monthlyGrowth = calculateMonthlyInteractionGrowth(monthlyInteractionTotals);
+    if (monthlyGrowth != null) {
+        return formatPercent(monthlyGrowth);
+    }
+
+    return "Tidak tersedia";
+}
+
+function calculateMonthlyInteractionGrowth(
+    monthlyInteractionTotals?: QuarterSummaryStats["monthlyInteractionTotals"],
+) {
+    const months = (monthlyInteractionTotals ?? []).filter(
+        (month) =>
+            month.contentCount > 0 &&
+            Number.isFinite(month.publicInteractions) &&
+            month.publicInteractions >= 0,
+    );
+    if (months.length < 2) return null;
+
+    const sorted = [...months].sort((a, b) => a.key.localeCompare(b.key));
+    const first = sorted[0];
+    const last = sorted[sorted.length - 1];
+    if (!first || !last || first.publicInteractions === 0) return null;
+
+    return calculatePercentChange(first.publicInteractions, last.publicInteractions);
 }
 
 function namaStatusCoverage(status: string, isPopular: boolean) {
