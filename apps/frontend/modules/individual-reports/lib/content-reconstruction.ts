@@ -8,6 +8,10 @@ export interface ReconstructedContentItem {
         comments?: number | null;
         views?: number | null;
         shares?: number | null;
+        saves?: number | null;
+        reposts?: number | null;
+        quotes?: number | null;
+        bookmarks?: number | null;
     };
 }
 
@@ -198,6 +202,10 @@ export function engagementScore(item: ReconstructedContentItem) {
         (item.metrics.likes || 0) +
         (item.metrics.comments || 0) +
         (item.metrics.shares || 0) +
+        (item.metrics.saves || 0) +
+        (item.metrics.reposts || 0) +
+        (item.metrics.quotes || 0) +
+        (item.metrics.bookmarks || 0) +
         (item.metrics.views || 0)
     );
 }

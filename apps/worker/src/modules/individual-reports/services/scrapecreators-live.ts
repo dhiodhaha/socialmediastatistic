@@ -23,6 +23,11 @@ export interface QuarterSummaryStats {
     totalLikes: number;
     totalComments: number;
     totalViews: number;
+    totalShares: number;
+    totalSaves: number;
+    totalReposts: number;
+    totalQuotes: number;
+    totalBookmarks: number;
     avgLikes: number | null;
     avgComments: number | null;
     avgViews: number | null;
@@ -33,6 +38,21 @@ export interface QuarterSummaryStats {
         publishedAt: string;
     } | null;
     contentTypeBreakdown: Record<string, number>;
+    monthlyInteractionTotals: Array<{
+        key: string;
+        label: string;
+        contentCount: number;
+        totalLikes: number;
+        totalComments: number;
+        totalViews: number;
+        totalShares: number;
+        totalSaves: number;
+        totalReposts: number;
+        totalQuotes: number;
+        totalBookmarks: number;
+        publicInteractions: number;
+        publicReachInteractions: number | null;
+    }>;
     /** True for Twitter: quarter filter is empty, stats are computed from popular tweets instead */
     isPopularMode: boolean;
 }
@@ -243,19 +263,20 @@ async function fetchPlatformProfile(
                 `/v1/twitter/profile?handle=${encodeURIComponent(cleanHandle)}`,
             );
             const record = asRecord(data);
-            const legacy = asRecord(record.legacy ?? record);
+            const profile = extractTwitterProfileRecord(record);
+            const legacy = asRecord(profile.legacy ?? profile);
 
             return {
                 followers:
                     readNumber(legacy, ["followers_count"]) ??
                     readNumber(legacy, ["normal_followers_count"]) ??
-                    readNumber(record, ["followers_count"]) ??
-                    readNumber(record, ["normal_followers_count"]),
+                    readNumber(profile, ["followers_count"]) ??
+                    readNumber(profile, ["normal_followers_count"]),
                 following: readNumber(legacy, ["friends_count"]),
                 totalPosts: readNumber(legacy, ["statuses_count"]),
                 isVerified:
-                    typeof record.is_blue_verified === "boolean" ? record.is_blue_verified : null,
-                displayName: readString(legacy, ["name"]) ?? readString(record, ["name"]),
+                    typeof profile.is_blue_verified === "boolean" ? profile.is_blue_verified : null,
+                displayName: readString(legacy, ["name"]) ?? readString(profile, ["name"]),
             };
         }
 
@@ -286,6 +307,14 @@ function buildQuarterSummaryStats(
     const totalLikes = workingItems.reduce((sum, item) => sum + (item.metrics.likes ?? 0), 0);
     const totalComments = workingItems.reduce((sum, item) => sum + (item.metrics.comments ?? 0), 0);
     const totalViews = workingItems.reduce((sum, item) => sum + (item.metrics.views ?? 0), 0);
+    const totalShares = workingItems.reduce((sum, item) => sum + (item.metrics.shares ?? 0), 0);
+    const totalSaves = workingItems.reduce((sum, item) => sum + (item.metrics.saves ?? 0), 0);
+    const totalReposts = workingItems.reduce((sum, item) => sum + (item.metrics.reposts ?? 0), 0);
+    const totalQuotes = workingItems.reduce((sum, item) => sum + (item.metrics.quotes ?? 0), 0);
+    const totalBookmarks = workingItems.reduce(
+        (sum, item) => sum + (item.metrics.bookmarks ?? 0),
+        0,
+    );
 
     const hasViews = workingItems.some((item) => item.metrics.views != null);
 
@@ -307,12 +336,18 @@ function buildQuarterSummaryStats(
         const type = item.mediaType ?? "unknown";
         contentTypeBreakdown[type] = (contentTypeBreakdown[type] ?? 0) + 1;
     }
+    const monthlyInteractionTotals = buildMonthlyInteractionTotals(workingItems);
 
     return {
         quarterItemCount: workingItems.length,
         totalLikes,
         totalComments,
         totalViews,
+        totalShares,
+        totalSaves,
+        totalReposts,
+        totalQuotes,
+        totalBookmarks,
         avgLikes: Math.round(totalLikes / workingItems.length),
         avgComments: Math.round(totalComments / workingItems.length),
         avgViews: hasViews ? Math.round(totalViews / workingItems.length) : null,
@@ -325,8 +360,95 @@ function buildQuarterSummaryStats(
               }
             : null,
         contentTypeBreakdown,
+        monthlyInteractionTotals,
         isPopularMode,
     };
+}
+
+function buildMonthlyInteractionTotals(items: ReconstructedContentItem[]) {
+    const buckets = new Map<
+        string,
+        {
+            key: string;
+            label: string;
+            contentCount: number;
+            totalLikes: number;
+            totalComments: number;
+            totalViews: number;
+            totalShares: number;
+            totalSaves: number;
+            totalReposts: number;
+            totalQuotes: number;
+            totalBookmarks: number;
+            hasViews: boolean;
+        }
+    >();
+
+    for (const item of items) {
+        const key = `${item.publishedAt.getFullYear()}-${String(
+            item.publishedAt.getMonth() + 1,
+        ).padStart(2, "0")}`;
+        const existing = buckets.get(key) ?? {
+            key,
+            label: item.publishedAt.toLocaleString("id-ID", {
+                month: "short",
+                year: "numeric",
+            }),
+            contentCount: 0,
+            totalLikes: 0,
+            totalComments: 0,
+            totalViews: 0,
+            totalShares: 0,
+            totalSaves: 0,
+            totalReposts: 0,
+            totalQuotes: 0,
+            totalBookmarks: 0,
+            hasViews: false,
+        };
+
+        existing.contentCount += 1;
+        existing.totalLikes += item.metrics.likes ?? 0;
+        existing.totalComments += item.metrics.comments ?? 0;
+        existing.totalViews += item.metrics.views ?? 0;
+        existing.totalShares += item.metrics.shares ?? 0;
+        existing.totalSaves += item.metrics.saves ?? 0;
+        existing.totalReposts += item.metrics.reposts ?? 0;
+        existing.totalQuotes += item.metrics.quotes ?? 0;
+        existing.totalBookmarks += item.metrics.bookmarks ?? 0;
+        existing.hasViews = existing.hasViews || item.metrics.views != null;
+        buckets.set(key, existing);
+    }
+
+    return Array.from(buckets.values())
+        .sort((a, b) => a.key.localeCompare(b.key))
+        .map((bucket) => {
+            const publicInteractions =
+                bucket.totalLikes +
+                bucket.totalComments +
+                bucket.totalShares +
+                bucket.totalSaves +
+                bucket.totalReposts +
+                bucket.totalQuotes +
+                bucket.totalBookmarks;
+
+            return {
+                key: bucket.key,
+                label: bucket.label,
+                contentCount: bucket.contentCount,
+                totalLikes: bucket.totalLikes,
+                totalComments: bucket.totalComments,
+                totalViews: bucket.totalViews,
+                totalShares: bucket.totalShares,
+                totalSaves: bucket.totalSaves,
+                totalReposts: bucket.totalReposts,
+                totalQuotes: bucket.totalQuotes,
+                totalBookmarks: bucket.totalBookmarks,
+                publicInteractions,
+                publicReachInteractions: bucket.hasViews
+                    ? publicInteractions + bucket.totalViews
+                    : null,
+            };
+        });
 }
 
 async function fetchQuarterListings(input: LiveReviewPlatformInput) {
@@ -568,6 +690,7 @@ export function parseTikTokListing(data: unknown): ListingPageResult {
                     comments: readNumber(stats, ["comment_count"]),
                     views: readNumber(stats, ["play_count"]),
                     shares: readNumber(stats, ["share_count"]),
+                    saves: readNumber(stats, ["collect_count"]),
                 },
             } satisfies ReconstructedContentItem,
         ];
@@ -611,9 +734,10 @@ export function parseTwitterListing(data: unknown): ListingPageResult {
                     likes: readNumber(legacy, ["favorite_count"]),
                     comments: readNumber(legacy, ["reply_count"]),
                     views: readNumber(views, ["count"]),
-                    shares:
-                        (readNumber(legacy, ["retweet_count"]) ?? 0) +
-                        (readNumber(legacy, ["quote_count"]) ?? 0),
+                    shares: null,
+                    reposts: readNumber(legacy, ["retweet_count"]),
+                    quotes: readNumber(legacy, ["quote_count"]),
+                    bookmarks: readNumber(legacy, ["bookmark_count"]),
                 },
             } satisfies ReconstructedContentItem,
         ];
@@ -648,6 +772,56 @@ function extractTwitterTweetCandidates(record: Record<string, unknown>) {
     const candidates: unknown[] = [];
     collectTwitterCandidates(record, candidates, 0);
     return candidates;
+}
+
+function extractTwitterProfileRecord(record: Record<string, unknown>) {
+    const directLegacy = asRecord(record.legacy);
+    if (
+        readNumber(directLegacy, ["followers_count"]) != null ||
+        readNumber(directLegacy, ["normal_followers_count"]) != null ||
+        readNumber(record, ["followers_count"]) != null ||
+        readNumber(record, ["normal_followers_count"]) != null
+    ) {
+        return record;
+    }
+
+    const nested = findTwitterProfileRecord(record, 0);
+    return nested ?? record;
+}
+
+function findTwitterProfileRecord(value: unknown, depth: number): Record<string, unknown> | null {
+    if (depth > 8 || !value || typeof value !== "object") return null;
+
+    if (Array.isArray(value)) {
+        for (const item of value) {
+            const found = findTwitterProfileRecord(item, depth + 1);
+            if (found) return found;
+        }
+        return null;
+    }
+
+    const record = value as Record<string, unknown>;
+    const legacy = asRecord(record.legacy);
+    const hasFollowerCount =
+        readNumber(legacy, ["followers_count"]) != null ||
+        readNumber(legacy, ["normal_followers_count"]) != null ||
+        readNumber(record, ["followers_count"]) != null ||
+        readNumber(record, ["normal_followers_count"]) != null;
+    const looksLikeUser =
+        record.__typename === "User" ||
+        readString(legacy, ["screen_name"]) != null ||
+        readString(record, ["screen_name"]) != null;
+
+    if (hasFollowerCount && looksLikeUser) {
+        return record;
+    }
+
+    for (const child of Object.values(record)) {
+        const found = findTwitterProfileRecord(child, depth + 1);
+        if (found) return found;
+    }
+
+    return null;
 }
 
 function collectTwitterCandidates(value: unknown, candidates: unknown[], depth: number) {

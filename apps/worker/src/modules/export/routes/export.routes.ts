@@ -123,7 +123,13 @@ router.post("/quarterly-pdf", async (req, res) => {
         const pdfBuffer = await ExportService.generateQuarterlyPdf(exportData);
 
         res.setHeader("Content-Type", "application/pdf");
-        res.setHeader("Content-Disposition", `attachment; filename=quarterly-${Date.now()}.pdf`);
+        res.setHeader(
+            "Content-Disposition",
+            `attachment; filename="${buildReportPdfFilename({
+                reportType: "Laporan Triwulan",
+                period: exportData.periodLabel,
+            })}"`,
+        );
         res.send(pdfBuffer);
     } catch (error) {
         logger.error({ error }, "Failed to generate quarterly PDF");
@@ -152,7 +158,11 @@ router.post("/individual-quarterly-pdf", async (req, res) => {
         res.setHeader("Content-Type", "application/pdf");
         res.setHeader(
             "Content-Disposition",
-            `attachment; filename=individual-quarterly-${Date.now()}.pdf`,
+            `attachment; filename="${buildReportPdfFilename({
+                reportType: "Laporan Individu",
+                subject: exportData.account?.username,
+                period: formatQuarterPeriod(exportData.request?.year, exportData.request?.quarter),
+            })}"`,
         );
         res.send(pdfBuffer);
     } catch (error) {
@@ -184,7 +194,15 @@ router.post("/individual-quarter-comparison-pdf", async (req, res) => {
         res.setHeader("Content-Type", "application/pdf");
         res.setHeader(
             "Content-Disposition",
-            `attachment; filename=individual-quarter-comparison-${Date.now()}.pdf`,
+            `attachment; filename="${buildReportPdfFilename({
+                reportType: "Laporan Perbandingan Individu",
+                subject: exportData.account?.username,
+                period: formatQuarterPeriod(exportData.current?.year, exportData.current?.quarter),
+                comparisonPeriod: formatQuarterPeriod(
+                    exportData.comparison?.year,
+                    exportData.comparison?.quarter,
+                ),
+            })}"`,
         );
         res.send(pdfBuffer);
     } catch (error) {
@@ -197,3 +215,44 @@ router.post("/individual-quarter-comparison-pdf", async (req, res) => {
 });
 
 export default router;
+
+function buildReportPdfFilename({
+    reportType,
+    subject,
+    period,
+    comparisonPeriod,
+}: {
+    reportType: string;
+    subject?: string | null;
+    period?: string | null;
+    comparisonPeriod?: string | null;
+}) {
+    const segments = [reportType, subject, period];
+    if (comparisonPeriod) {
+        segments.push("vs", comparisonPeriod);
+    }
+
+    const filename = segments
+        .map((segment) => sanitizeFilenameSegment(segment))
+        .filter(Boolean)
+        .join("-");
+
+    return `${filename || "Laporan"}.pdf`;
+}
+
+function sanitizeFilenameSegment(value?: string | null) {
+    if (!value) return "";
+
+    return value
+        .normalize("NFKD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/&/g, " dan ")
+        .replace(/[^a-zA-Z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .replace(/-{2,}/g, "-");
+}
+
+function formatQuarterPeriod(year?: number, quarter?: number) {
+    if (!year || !quarter) return null;
+    return `Q${quarter} ${year}`;
+}

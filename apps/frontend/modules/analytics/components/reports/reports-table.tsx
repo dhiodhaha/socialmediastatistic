@@ -127,12 +127,12 @@ export function ReportsTable({
                         <Filter size={48} className="text-zinc-200 dark:text-zinc-700 mb-4" />
                         <Strong className="text-lg text-zinc-900 dark:text-white">
                             {reportMode === "QUARTERLY"
-                                ? "No quarterly platform rows available"
+                                ? "Tidak ada baris platform kuartal yang tersedia"
                                 : "Tidak ada data ditemukan"}
                         </Strong>
                         <Text className="mt-1 max-w-sm">
                             {reportMode === "QUARTERLY"
-                                ? "This platform has no derived quarterly account evidence for the selected quarter and filters."
+                                ? "Platform ini tidak memiliki data akun kuartal yang diturunkan untuk kuartal dan filter yang dipilih."
                                 : "Coba ganti filter kategori atau pilih platform lain."}
                         </Text>
                     </div>

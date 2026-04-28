@@ -49,15 +49,17 @@ export function generateIndividualQuarterComparisonReportHtml({
   <meta charset="utf-8" />
   <title>Perbandingan Statistik Individual ${escapeHtml(data.account.username)}</title>
   <style>
+    @page { margin: 0; }
+
     * { box-sizing: border-box; }
     body {
       margin: 0;
       font-family: Arial, Helvetica, sans-serif;
       color: #14213d;
-      background: #f4f6f2;
+      background: #f8fafc;
     }
     .cover {
-      min-height: 297mm;
+      height: 297mm;
       padding: 48px;
       background: linear-gradient(135deg, #12372a 0%, #436850 58%, #fbfada 100%);
       color: white;
@@ -85,10 +87,8 @@ export function generateIndividualQuarterComparisonReportHtml({
       opacity: 0.88;
     }
     .page {
-      min-height: 297mm;
-      padding: 42px;
-      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
       page-break-after: always;
+      padding: 48px;
     }
     .page:last-child { page-break-after: auto; }
     h2 { margin: 8px 0 4px; font-size: 28px; }
@@ -134,6 +134,7 @@ export function generateIndividualQuarterComparisonReportHtml({
       border-top: 1px solid #edf2f7;
       vertical-align: top;
     }
+    tr { page-break-inside: avoid; }
     .right { text-align: right; }
     .delta-positive { color: #047857; font-weight: 800; }
     .delta-negative { color: #be123c; font-weight: 800; }
@@ -147,6 +148,7 @@ export function generateIndividualQuarterComparisonReportHtml({
       border: 1px solid #fed7aa;
       font-size: 12px;
       color: #7c2d12;
+      page-break-inside: avoid;
     }
     .notes li { margin: 6px 0; }
   </style>

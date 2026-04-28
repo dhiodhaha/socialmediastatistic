@@ -22,6 +22,7 @@ import {
     estimateIndividualReportCredits,
     type IndividualReportRequest,
 } from "@/modules/individual-reports/lib/individual-quarterly-report";
+import { normalizeQuarterInteractions } from "@/modules/individual-reports/lib/public-interaction-growth";
 import { Button } from "@/shared/components/catalyst/button";
 import {
     Select,
@@ -30,6 +31,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/shared/components/ui/select";
+import { buildReportPdfFilename } from "@/shared/lib/pdf-filename";
 
 interface AccountOption {
     id: string;
@@ -205,7 +207,7 @@ export function IndividualQuarterlyReportClient({
                 toast.error(result.error);
                 return;
             }
-            triggerDownload(result.data);
+            triggerDownload(result.data, buildIndividualQuarterlyFilename());
             toast.success("PDF exported");
         } catch (err) {
             toast.error(err instanceof Error ? err.message : "Export failed");
@@ -232,7 +234,7 @@ export function IndividualQuarterlyReportClient({
                 toast.error(result.error);
                 return;
             }
-            triggerDownload(result.data);
+            triggerDownload(result.data, buildIndividualQuarterlyFilename());
             toast.success("PDF exported");
         } catch (err) {
             toast.error(err instanceof Error ? err.message : "Export failed");
@@ -241,10 +243,18 @@ export function IndividualQuarterlyReportClient({
         }
     };
 
-    function triggerDownload(base64: string) {
+    function buildIndividualQuarterlyFilename() {
+        return buildReportPdfFilename({
+            reportType: "Laporan Individu",
+            subject: selectedAccount?.username,
+            period: `Q${quarter} ${year}`,
+        });
+    }
+
+    function triggerDownload(base64: string, filename: string) {
         const link = document.createElement("a");
         link.href = `data:application/pdf;base64,${base64}`;
-        link.download = `individual-quarterly-report-${Date.now()}.pdf`;
+        link.download = filename;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -452,6 +462,7 @@ export function IndividualQuarterlyReportClient({
 
             <IndividualQuarterComparisonPanel
                 accountId={accountId}
+                accountName={selectedAccount?.username ?? null}
                 year={year}
                 quarter={quarter}
                 currentYear={currentYear}
@@ -781,6 +792,16 @@ function PlatformResultCard({
                             {diagnostics.join(" ")}
                         </div>
                     )}
+                    <div className="mt-3 rounded-lg bg-zinc-50 p-3 dark:bg-zinc-950">
+                        <div className="text-xs font-semibold text-zinc-500">
+                            Public Interactions
+                        </div>
+                        <div className="mt-1 text-lg font-bold text-zinc-900 dark:text-zinc-100">
+                            {new Intl.NumberFormat("id-ID").format(
+                                normalizeQuarterInteractions(result).publicInteractions,
+                            )}
+                        </div>
+                    </div>
                     <div className="mt-4 space-y-1">
                         {result.coverage.months.map((month) => (
                             <div key={month.key} className="flex justify-between text-sm">

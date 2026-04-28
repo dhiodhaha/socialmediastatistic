@@ -38,38 +38,39 @@ export function QuarterlyPlatformSummary({
             <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                 <div>
                     <div className="text-sm font-medium text-zinc-500">
-                        Quarterly Platform Summary
+                        Ringkasan Platform Kuartal
                     </div>
                     <h3 className="mt-1 text-2xl font-semibold text-zinc-900 dark:text-white">
                         {platformLabel(platform)}
                     </h3>
                     <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
-                        Review eligible rankings, issues, and supporting evidence before export.
+                        Tinjau peringkat, masalah, dan bukti pendukung sebelum ekspor.
                     </p>
                     <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
-                        Scope: {categoryLabel}
+                        Cakupan: {categoryLabel}
                     </p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                     <SummaryCard
                         icon={BarChart3}
-                        label="Eligible Rankings"
+                        label="Peringkat Memenuhi Syarat"
                         value={`${summary.rankingEligibleCount}/${summary.totalAccounts}`}
                     />
                     <SummaryCard
                         icon={TrendingUp}
-                        label="Net Follower Growth"
+                        label="Pertumbuhan Pengikut Bersih"
                         value={formatGrowth(summary.netFollowerGrowth)}
+                        growthValue={summary.netFollowerGrowth}
                     />
                     <SummaryCard
                         icon={TrendingDown}
-                        label="Performance Issues"
+                        label="Masalah Performa"
                         value={String(summary.performanceIssueCount)}
                     />
                     <SummaryCard
                         icon={AlertTriangle}
-                        label="Data Quality Issues"
+                        label="Masalah Kualitas Data"
                         value={String(summary.dataQualityIssueCount)}
                     />
                 </div>
@@ -77,14 +78,14 @@ export function QuarterlyPlatformSummary({
 
             <div className="mt-5 grid gap-4 lg:grid-cols-2">
                 <MoverList
-                    title="Top Gainers"
-                    emptyLabel="No eligible within-quarter rankings for this platform yet."
+                    title="Peningkatan Tertinggi"
+                    emptyLabel="Belum ada peringkat dalam kuartal ini untuk platform ini."
                     movers={summary.topGainers}
                     tone="emerald"
                 />
                 <MoverList
-                    title="Top Decliners"
-                    emptyLabel="No decliners to show for this platform."
+                    title="Penurunan Tertinggi"
+                    emptyLabel="Tidak ada penurunan untuk platform ini."
                     movers={summary.topDecliners}
                     tone="rose"
                 />
@@ -93,7 +94,7 @@ export function QuarterlyPlatformSummary({
             {methodologyNote && (
                 <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-200">
                     <div className="mb-1 text-xs font-semibold uppercase tracking-wide">
-                        Category Methodology
+                        Metodologi Kategori
                     </div>
                     <p>{methodologyNote}</p>
                 </div>
@@ -106,18 +107,33 @@ function SummaryCard({
     icon: Icon,
     label,
     value,
+    growthValue,
 }: {
     icon: typeof BarChart3;
     label: string;
     value: string;
+    growthValue?: number;
 }) {
+    const growthColorClass =
+        growthValue !== undefined
+            ? growthValue > 0
+                ? "text-emerald-600"
+                : growthValue < 0
+                  ? "text-rose-600"
+                  : ""
+            : "";
+
     return (
         <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950/40">
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
                 <Icon className="h-4 w-4" />
                 {label}
             </div>
-            <div className="mt-2 text-lg font-semibold text-zinc-900 dark:text-white">{value}</div>
+            <div
+                className={`mt-2 text-lg font-semibold ${growthColorClass || "text-zinc-900 dark:text-white"}`}
+            >
+                {value}
+            </div>
         </div>
     );
 }

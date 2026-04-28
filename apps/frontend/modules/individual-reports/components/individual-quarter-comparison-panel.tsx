@@ -18,6 +18,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/shared/components/ui/select";
+import { buildReportPdfFilename } from "@/shared/lib/pdf-filename";
 
 interface PlatformOption {
     id: Platform;
@@ -26,6 +27,7 @@ interface PlatformOption {
 
 interface IndividualQuarterComparisonPanelProps {
     accountId: string;
+    accountName: string | null;
     year: string;
     quarter: string;
     currentYear: number;
@@ -51,6 +53,7 @@ const DEFAULT_MANUAL_SNAPSHOT_FORM = {
 
 export function IndividualQuarterComparisonPanel({
     accountId,
+    accountName,
     year,
     quarter,
     currentYear,
@@ -164,7 +167,15 @@ export function IndividualQuarterComparisonPanel({
                 toast.error(result.error);
                 return;
             }
-            triggerDownload(result.data);
+            triggerDownload(
+                result.data,
+                buildReportPdfFilename({
+                    reportType: "Laporan Perbandingan Individu",
+                    subject: accountName,
+                    period: `Q${quarter} ${year}`,
+                    comparisonPeriod: `Q${comparisonQuarter} ${comparisonYear}`,
+                }),
+            );
             toast.success("PDF perbandingan diekspor");
         } catch (err) {
             toast.error(err instanceof Error ? err.message : "Export failed");
@@ -505,10 +516,10 @@ function quarterEndDate(year: number, quarter: number) {
     return date.toISOString();
 }
 
-function triggerDownload(base64: string) {
+function triggerDownload(base64: string, filename: string) {
     const link = document.createElement("a");
     link.href = `data:application/pdf;base64,${base64}`;
-    link.download = `individual-quarter-comparison-${Date.now()}.pdf`;
+    link.download = filename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
