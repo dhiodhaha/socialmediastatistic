@@ -29,6 +29,8 @@ import type {
     QuarterlyPreviewRow,
 } from "@/modules/analytics/lib/quarterly-platform-preview";
 import type { QuarterlyOption, QuarterlyStatus } from "@/modules/analytics/lib/quarterly-reporting";
+import { DemoModeNotice } from "@/shared/components/demo-mode-notice";
+import { isDemoMode } from "@/shared/lib/demo-mode";
 import { buildReportPdfFilename } from "@/shared/lib/pdf-filename";
 
 type ReportsClientProps = {
@@ -490,6 +492,7 @@ export function ReportsClient({
         <div className="mx-auto flex max-w-7xl flex-col space-y-8 p-10">
             <ReportHeader
                 reportMode={reportMode}
+                demoMode={isDemoMode}
                 exporting={exporting}
                 exportingAll={exportingAll}
                 exportingLatest={exportingLatest}
@@ -498,6 +501,8 @@ export function ReportsClient({
                 onExportAll={handleExportAllPdf}
                 onExportLatest={handleExportLatestPdf}
             />
+
+            {isDemoMode && <DemoModeNotice />}
 
             <ReportsControls
                 reportMode={reportMode}

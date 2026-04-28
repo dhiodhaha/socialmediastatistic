@@ -4,6 +4,7 @@ import { type JobStatus, type Platform, type Prisma, prisma } from "@repo/databa
 import { revalidatePath } from "next/cache";
 import { validateReportingMonthAssignment } from "@/modules/analytics/lib/reporting-month-assignment";
 import { auth } from "@/shared/lib/auth";
+import { DEMO_WORKER_DISABLED_MESSAGE, isDemoMode } from "@/shared/lib/demo-mode";
 import { logger } from "@/shared/lib/logger";
 
 // ... console.error("Failed to fetch scraping history:", error); -> logger.error({ error }, "Failed to fetch scraping history");
@@ -106,11 +107,15 @@ export async function exportHistoryPdf(filters: HistoryFilters) {
             return { success: false, error: "Unauthorized" };
         }
 
+        if (isDemoMode) {
+            return { success: false, error: DEMO_WORKER_DISABLED_MESSAGE };
+        }
+
         const workerUrl = process.env.WORKER_URL;
         const workerSecret = process.env.WORKER_SECRET;
 
         if (!workerUrl || !workerSecret) {
-            return { success: false, error: "System configuration error" };
+            return { success: false, error: "Worker is not configured for this deployment." };
         }
 
         const res = await fetch(`${workerUrl}/export/pdf`, {

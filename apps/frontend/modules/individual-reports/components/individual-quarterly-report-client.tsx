@@ -6,7 +6,6 @@ import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import {
     exportComposedIndividualPdf,
-    exportIndividualQuarterlyReportPdf,
     getIndividualReportCreditBalance,
     getLatestSuccessfulPlatformResults,
     getSavedIndividualReportRuns,
@@ -41,6 +40,7 @@ interface AccountOption {
 
 interface IndividualQuarterlyReportClientProps {
     accounts: AccountOption[];
+    demoMode?: boolean;
 }
 
 type DraftResult = Awaited<ReturnType<typeof prepareIndividualQuarterlyReportDraft>>;
@@ -59,6 +59,7 @@ const QUARTER_OPTIONS = [1, 2, 3, 4];
 
 export function IndividualQuarterlyReportClient({
     accounts,
+    demoMode = false,
 }: IndividualQuarterlyReportClientProps) {
     const currentYear = new Date().getFullYear();
     const [accountId, setAccountId] = useState(accounts[0]?.id || "");
@@ -73,7 +74,6 @@ export function IndividualQuarterlyReportClient({
     const [savedRuns, setSavedRuns] = useState<SavedRunsResult>([]);
     const [latestSuccessful, setLatestSuccessful] = useState<LatestSuccessfulResult>([]);
     const [composerSelection, setComposerSelection] = useState<Set<string>>(new Set());
-    const [exportingRunId, setExportingRunId] = useState<string | null>(null);
     const [isComposerExporting, setIsComposerExporting] = useState(false);
     const [isPending, startTransition] = useTransition();
 
@@ -197,23 +197,6 @@ export function IndividualQuarterlyReportClient({
                 toast.error(result.error);
             }
         });
-    };
-
-    const handleExportRun = async (runId: string) => {
-        setExportingRunId(runId);
-        try {
-            const result = await exportIndividualQuarterlyReportPdf(runId);
-            if (!result.success) {
-                toast.error(result.error);
-                return;
-            }
-            triggerDownload(result.data, buildIndividualQuarterlyFilename());
-            toast.success("PDF exported");
-        } catch (err) {
-            toast.error(err instanceof Error ? err.message : "Export failed");
-        } finally {
-            setExportingRunId(null);
-        }
     };
 
     const handleComposerExport = async () => {
@@ -353,111 +336,123 @@ export function IndividualQuarterlyReportClient({
                 </div>
 
                 {/* ── Platform selector + scrape actions ── */}
-                <div className="mt-5 rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-900/50 dark:bg-blue-950/40">
-                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                        <div className="text-sm text-blue-900 dark:text-blue-200">
-                            <div className="font-semibold">Pilih Platform untuk Scraping</div>
-                            <div className="mt-1 flex flex-wrap gap-2">
-                                {availablePlatforms.map((opt) => {
-                                    const checked = selectedPlatforms.has(opt.id);
-                                    return (
-                                        <button
-                                            key={opt.id}
-                                            type="button"
-                                            onClick={() => {
-                                                setSelectedPlatforms((prev) => {
-                                                    const next = new Set(prev);
-                                                    if (next.has(opt.id)) next.delete(opt.id);
-                                                    else next.add(opt.id);
-                                                    return next;
-                                                });
-                                            }}
-                                            className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                                                checked
-                                                    ? "border-blue-600 bg-blue-600 text-white dark:border-blue-400 dark:bg-blue-400 dark:text-blue-950"
-                                                    : "border-blue-300 bg-white text-blue-700 dark:border-blue-700 dark:bg-blue-950 dark:text-blue-300"
-                                            }`}
-                                        >
-                                            {opt.label}
-                                        </button>
-                                    );
-                                })}
+                {!demoMode && (
+                    <div className="mt-5 rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-900/50 dark:bg-blue-950/40">
+                        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                            <div className="text-sm text-blue-900 dark:text-blue-200">
+                                <div className="font-semibold">Pilih Platform untuk Scraping</div>
+                                <div className="mt-1 flex flex-wrap gap-2">
+                                    {availablePlatforms.map((opt) => {
+                                        const checked = selectedPlatforms.has(opt.id);
+                                        return (
+                                            <button
+                                                key={opt.id}
+                                                type="button"
+                                                onClick={() => {
+                                                    setSelectedPlatforms((prev) => {
+                                                        const next = new Set(prev);
+                                                        if (next.has(opt.id)) next.delete(opt.id);
+                                                        else next.add(opt.id);
+                                                        return next;
+                                                    });
+                                                }}
+                                                className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                                                    checked
+                                                        ? "border-blue-600 bg-blue-600 text-white dark:border-blue-400 dark:bg-blue-400 dark:text-blue-950"
+                                                        : "border-blue-300 bg-white text-blue-700 dark:border-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                                                }`}
+                                            >
+                                                {opt.label}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                                <div className="mt-2 text-xs opacity-80">
+                                    Semua platform (listing-only): maks{" "}
+                                    {allPlatformsEstimate.totalCredits} kredit.
+                                    {selectedPlatforms.size > 0 && (
+                                        <>
+                                            {" "}
+                                            Pilihan saat ini ({selectedPlatforms.size} platform):
+                                            maks {selectedPlatformsEstimate.totalCredits} kredit.
+                                        </>
+                                    )}
+                                    {creditBalance?.success && (
+                                        <> Saldo: {creditBalance.data.credits ?? "?"} kredit.</>
+                                    )}
+                                </div>
                             </div>
-                            <div className="mt-2 text-xs opacity-80">
-                                Semua platform (listing-only): maks{" "}
-                                {allPlatformsEstimate.totalCredits} kredit.
-                                {selectedPlatforms.size > 0 && (
-                                    <>
-                                        {" "}
-                                        Pilihan saat ini ({selectedPlatforms.size} platform): maks{" "}
-                                        {selectedPlatformsEstimate.totalCredits} kredit.
-                                    </>
-                                )}
-                                {creditBalance?.success && (
-                                    <> Saldo: {creditBalance.data.credits ?? "?"} kredit.</>
-                                )}
-                            </div>
-                        </div>
 
-                        <div className="flex flex-wrap gap-2">
-                            <Button
-                                type="button"
-                                outline
-                                onClick={handleCheckCredits}
-                                disabled={isPending}
-                            >
-                                Cek Saldo
-                            </Button>
-                            <Button
-                                type="button"
-                                outline
-                                onClick={handlePrepare}
-                                disabled={isPending || !selectedAccount}
-                            >
-                                {isPending ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" data-slot="icon" />
-                                ) : (
-                                    <Search className="h-4 w-4" data-slot="icon" />
-                                )}
-                                Prepare Draft
-                            </Button>
-                            <Button
-                                type="button"
-                                onClick={() => handleLiveReview(Array.from(selectedPlatforms))}
-                                disabled={
-                                    isPending || !selectedAccount || selectedPlatforms.size === 0
-                                }
-                            >
-                                {isPending ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" data-slot="icon" />
-                                ) : null}
-                                Scrape Pilihan ({selectedPlatforms.size})
-                            </Button>
-                            <Button
-                                type="button"
-                                onClick={() =>
-                                    handleLiveReview(availablePlatforms.map((o) => o.id))
-                                }
-                                disabled={
-                                    isPending || !selectedAccount || availablePlatforms.length === 0
-                                }
-                            >
-                                Scrape Semua ({availablePlatforms.length})
-                            </Button>
-                            {failedPlatforms.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
                                 <Button
                                     type="button"
-                                    color="rose"
-                                    onClick={handleRetryFailed}
+                                    outline
+                                    onClick={handleCheckCredits}
+                                    disabled={isPending}
+                                >
+                                    Cek Saldo
+                                </Button>
+                                <Button
+                                    type="button"
+                                    outline
+                                    onClick={handlePrepare}
                                     disabled={isPending || !selectedAccount}
                                 >
-                                    <RefreshCw className="h-4 w-4" data-slot="icon" />
-                                    Retry Gagal ({failedPlatforms.length})
+                                    {isPending ? (
+                                        <Loader2
+                                            className="h-4 w-4 animate-spin"
+                                            data-slot="icon"
+                                        />
+                                    ) : (
+                                        <Search className="h-4 w-4" data-slot="icon" />
+                                    )}
+                                    Prepare Draft
                                 </Button>
-                            )}
+                                <Button
+                                    type="button"
+                                    onClick={() => handleLiveReview(Array.from(selectedPlatforms))}
+                                    disabled={
+                                        isPending ||
+                                        !selectedAccount ||
+                                        selectedPlatforms.size === 0
+                                    }
+                                >
+                                    {isPending ? (
+                                        <Loader2
+                                            className="h-4 w-4 animate-spin"
+                                            data-slot="icon"
+                                        />
+                                    ) : null}
+                                    Scrape Pilihan ({selectedPlatforms.size})
+                                </Button>
+                                <Button
+                                    type="button"
+                                    onClick={() =>
+                                        handleLiveReview(availablePlatforms.map((o) => o.id))
+                                    }
+                                    disabled={
+                                        isPending ||
+                                        !selectedAccount ||
+                                        availablePlatforms.length === 0
+                                    }
+                                >
+                                    Scrape Semua ({availablePlatforms.length})
+                                </Button>
+                                {failedPlatforms.length > 0 && (
+                                    <Button
+                                        type="button"
+                                        color="rose"
+                                        onClick={handleRetryFailed}
+                                        disabled={isPending || !selectedAccount}
+                                    >
+                                        <RefreshCw className="h-4 w-4" data-slot="icon" />
+                                        Retry Gagal ({failedPlatforms.length})
+                                    </Button>
+                                )}
+                            </div>
                         </div>
                     </div>
-                </div>
+                )}
             </section>
 
             <IndividualQuarterComparisonPanel
@@ -468,6 +463,7 @@ export function IndividualQuarterlyReportClient({
                 currentYear={currentYear}
                 availablePlatforms={availablePlatforms}
                 selectedPlatforms={selectedPlatforms}
+                demoMode={demoMode}
             />
 
             {/* ── Draft result ── */}
@@ -548,19 +544,11 @@ export function IndividualQuarterlyReportClient({
                                 {new Date(liveReview.data.run.createdAt).toLocaleString("id-ID")}
                             </p>
                         </div>
-                        <Button
-                            type="button"
-                            outline
-                            onClick={() => handleExportRun(liveReview.data.run.id)}
-                            disabled={exportingRunId === liveReview.data.run.id}
-                        >
-                            {exportingRunId === liveReview.data.run.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" data-slot="icon" />
-                            ) : (
-                                <Download className="h-4 w-4" data-slot="icon" />
-                            )}
-                            Export Run Ini
-                        </Button>
+                        {!demoMode && latestSuccessful.length > 0 && (
+                            <div className="rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
+                                Export lewat composer di bawah.
+                            </div>
+                        )}
                     </div>
 
                     <div className="mt-5 grid gap-4 lg:grid-cols-3">
@@ -572,7 +560,7 @@ export function IndividualQuarterlyReportClient({
             )}
 
             {/* ── Export Composer ── */}
-            {latestSuccessful.length > 0 && (
+            {!demoMode && latestSuccessful.length > 0 && (
                 <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 shadow-sm dark:border-emerald-900/50 dark:bg-emerald-950/30">
                     <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                         <div>
@@ -667,12 +655,7 @@ export function IndividualQuarterlyReportClient({
                                     run.accountId === accountId,
                             )
                             .map((run) => (
-                                <RunHistoryCard
-                                    key={run.id}
-                                    run={run}
-                                    exportingRunId={exportingRunId}
-                                    onExport={handleExportRun}
-                                />
+                                <RunHistoryCard key={run.id} run={run} demoMode={demoMode} />
                             ))}
                         {savedRuns.filter(
                             (run) =>
@@ -699,8 +682,7 @@ export function IndividualQuarterlyReportClient({
                                         <RunHistoryCard
                                             key={run.id}
                                             run={run}
-                                            exportingRunId={exportingRunId}
-                                            onExport={handleExportRun}
+                                            demoMode={demoMode}
                                         />
                                     ))}
                             </>
@@ -818,8 +800,7 @@ function PlatformResultCard({
 
 function RunHistoryCard({
     run,
-    exportingRunId,
-    onExport,
+    demoMode = false,
 }: {
     run: {
         id: string;
@@ -838,8 +819,7 @@ function RunHistoryCard({
             error: string | null;
         }>;
     };
-    exportingRunId: string | null;
-    onExport: (runId: string) => void;
+    demoMode?: boolean;
 }) {
     const statusColor =
         run.status === "COMPLETE"
@@ -890,19 +870,11 @@ function RunHistoryCard({
                     </div>
                 </div>
 
-                <Button
-                    type="button"
-                    outline
-                    onClick={() => onExport(run.id)}
-                    disabled={exportingRunId === run.id}
-                >
-                    {exportingRunId === run.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" data-slot="icon" />
-                    ) : (
-                        <Download className="h-4 w-4" data-slot="icon" />
-                    )}
-                    Export PDF
-                </Button>
+                {!demoMode && run.status !== "FAILED" && (
+                    <div className="text-sm text-zinc-500">
+                        Gunakan Export Composer untuk membuat PDF.
+                    </div>
+                )}
             </div>
         </div>
     );

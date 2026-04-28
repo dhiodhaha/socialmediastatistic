@@ -6,6 +6,7 @@ import type { ReportMode } from "./report-mode";
 
 interface ReportHeaderProps {
     reportMode: ReportMode;
+    demoMode?: boolean;
     exporting: boolean;
     exportingAll: boolean;
     exportingLatest: boolean;
@@ -17,6 +18,7 @@ interface ReportHeaderProps {
 
 export function ReportHeader({
     reportMode,
+    demoMode = false,
     exporting,
     exportingAll,
     exportingLatest,
@@ -58,6 +60,7 @@ export function ReportHeader({
     ];
 
     const handleExportChange = (option: SelectOption) => {
+        if (demoMode) return;
         if (option.id === "current") onExport();
         if (option.id === "latest") onExportLatest();
         if (option.id === "full") onExportAll();
@@ -86,14 +89,21 @@ export function ReportHeader({
                     Share
                 </Button>
 
-                <FilterListbox
-                    icon={Download}
-                    value={{ id: "trigger", label: "Export Options" }}
-                    onChange={handleExportChange}
-                    options={exportOptions}
-                    disabled={!hasViewed}
-                    loading={isExporting}
-                />
+                {demoMode ? (
+                    <Button outline disabled className="rounded-xl opacity-60 cursor-not-allowed">
+                        <Download data-slot="icon" />
+                        Export disabled
+                    </Button>
+                ) : (
+                    <FilterListbox
+                        icon={Download}
+                        value={{ id: "trigger", label: "Export Options" }}
+                        onChange={handleExportChange}
+                        options={exportOptions}
+                        disabled={!hasViewed}
+                        loading={isExporting}
+                    />
+                )}
             </div>
         </div>
     );

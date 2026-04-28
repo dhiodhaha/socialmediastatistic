@@ -30,6 +30,7 @@ import {
     type SnapshotStatPoint,
 } from "@/modules/individual-reports/lib/quarter-stat-comparison";
 import { auth } from "@/shared/lib/auth";
+import { DEMO_WORKER_DISABLED_MESSAGE, isDemoMode } from "@/shared/lib/demo-mode";
 
 interface IndividualLiveReviewRequest {
     accountId: string;
@@ -578,6 +579,13 @@ export async function createManualQuarterSnapshot(input: ManualQuarterSnapshotRe
         throw new Error("Unauthorized");
     }
 
+    if (isDemoMode) {
+        return {
+            success: false as const,
+            error: "Manual snapshot changes are disabled in demo mode.",
+        };
+    }
+
     const validationError = validateManualSnapshotInput(input);
     if (validationError) {
         return { success: false as const, error: validationError };
@@ -877,9 +885,7 @@ function platformDisplayName(platform: Platform): string {
 }
 
 async function callWorkerJson<T>(path: string, init: RequestInit): Promise<T> {
-    const workerUrl = process.env.WORKER_URL || "http://localhost:4000";
-    const workerSecret = process.env.WORKER_SECRET;
-    if (!workerSecret) throw new Error("WORKER_SECRET not configured.");
+    const { workerUrl, workerSecret } = requireWorkerConfig();
 
     const response = await fetch(`${workerUrl}${path}`, {
         ...init,
@@ -904,9 +910,7 @@ async function callWorkerJson<T>(path: string, init: RequestInit): Promise<T> {
 }
 
 async function callWorkerPdfBase64(path: string, body: unknown): Promise<string> {
-    const workerUrl = process.env.WORKER_URL || "http://localhost:4000";
-    const workerSecret = process.env.WORKER_SECRET;
-    if (!workerSecret) throw new Error("WORKER_SECRET not configured.");
+    const { workerUrl, workerSecret } = requireWorkerConfig();
 
     const response = await fetch(`${workerUrl}${path}`, {
         method: "POST",
@@ -924,6 +928,20 @@ async function callWorkerPdfBase64(path: string, body: unknown): Promise<string>
 
     const buffer = await response.arrayBuffer();
     return Buffer.from(buffer).toString("base64");
+}
+
+function requireWorkerConfig() {
+    if (isDemoMode) {
+        throw new Error(DEMO_WORKER_DISABLED_MESSAGE);
+    }
+
+    const workerUrl = process.env.WORKER_URL;
+    const workerSecret = process.env.WORKER_SECRET;
+    if (!workerUrl || !workerSecret) {
+        throw new Error("Worker is not configured for this deployment.");
+    }
+
+    return { workerUrl, workerSecret };
 }
 
 function platformHandle(

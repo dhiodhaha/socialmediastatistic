@@ -17,6 +17,7 @@ import {
 } from "@/modules/analytics/lib/quarterly-reporting";
 import { calculateGrowth } from "@/modules/analytics/lib/report-metrics";
 import { auth } from "@/shared/lib/auth";
+import { DEMO_WORKER_DISABLED_MESSAGE, isDemoMode } from "@/shared/lib/demo-mode";
 
 export interface ComparisonRow {
     accountId: string;
@@ -520,12 +521,7 @@ export async function exportComparisonPdf(exportData: ExportData): Promise<strin
         throw new Error("Unauthorized");
     }
 
-    const workerUrl = process.env.WORKER_URL || "http://localhost:4000";
-    const workerSecret = process.env.WORKER_SECRET;
-
-    if (!workerSecret) {
-        throw new Error("WORKER_SECRET not configured");
-    }
+    const { workerUrl, workerSecret } = requireWorkerExportConfig();
 
     const response = await fetch(`${workerUrl}/export/comparison-pdf`, {
         method: "POST",
@@ -556,12 +552,7 @@ export async function exportComparisonPdfV2(exportData: ExportData): Promise<str
         throw new Error("Unauthorized");
     }
 
-    const workerUrl = process.env.WORKER_URL || "http://localhost:4000";
-    const workerSecret = process.env.WORKER_SECRET;
-
-    if (!workerSecret) {
-        throw new Error("WORKER_SECRET not configured");
-    }
+    const { workerUrl, workerSecret } = requireWorkerExportConfig();
 
     const response = await fetch(`${workerUrl}/export/comparison-pdf-v2`, {
         method: "POST",
@@ -608,12 +599,7 @@ export async function exportQuarterlyPdf(exportData: QuarterlyExportData): Promi
         throw new Error("Unauthorized");
     }
 
-    const workerUrl = process.env.WORKER_URL || "http://localhost:4000";
-    const workerSecret = process.env.WORKER_SECRET;
-
-    if (!workerSecret) {
-        throw new Error("WORKER_SECRET not configured");
-    }
+    const { workerUrl, workerSecret } = requireWorkerExportConfig();
 
     const response = await fetch(`${workerUrl}/export/quarterly-pdf`, {
         method: "POST",
@@ -643,12 +629,7 @@ export async function exportLatestPdf(exportData: LatestExportData): Promise<str
         throw new Error("Unauthorized");
     }
 
-    const workerUrl = process.env.WORKER_URL || "http://localhost:4000";
-    const workerSecret = process.env.WORKER_SECRET;
-
-    if (!workerSecret) {
-        throw new Error("WORKER_SECRET not configured");
-    }
+    const { workerUrl, workerSecret } = requireWorkerExportConfig();
 
     const response = await fetch(`${workerUrl}/export/latest-pdf`, {
         method: "POST",
@@ -667,4 +648,19 @@ export async function exportLatestPdf(exportData: LatestExportData): Promise<str
     const buffer = await response.arrayBuffer();
     const base64 = Buffer.from(buffer).toString("base64");
     return base64;
+}
+
+function requireWorkerExportConfig() {
+    if (isDemoMode) {
+        throw new Error(DEMO_WORKER_DISABLED_MESSAGE);
+    }
+
+    const workerUrl = process.env.WORKER_URL;
+    const workerSecret = process.env.WORKER_SECRET;
+
+    if (!workerUrl || !workerSecret) {
+        throw new Error("Worker is not configured for this deployment.");
+    }
+
+    return { workerUrl, workerSecret };
 }
