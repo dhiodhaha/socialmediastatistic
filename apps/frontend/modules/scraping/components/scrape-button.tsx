@@ -4,10 +4,20 @@ import { Loader2, Play } from "lucide-react";
 import { useState } from "react";
 import { triggerScrape } from "@/modules/scraping/actions/scrape.actions";
 import { Button } from "@/shared/components/catalyst/button";
+import { isDemoMode } from "@/shared/lib/demo-mode";
 
 export function ScrapeButton() {
     const [isLoading, setIsLoading] = useState(false);
     const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
+
+    if (isDemoMode) {
+        return (
+            <Button disabled outline>
+                <Play className="h-4 w-4" data-slot="icon" />
+                Scraping disabled
+            </Button>
+        );
+    }
 
     async function handleScrape() {
         setIsLoading(true);

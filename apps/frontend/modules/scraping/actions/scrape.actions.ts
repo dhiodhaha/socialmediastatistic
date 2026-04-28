@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { auth } from "@/shared/lib/auth";
+import { DEMO_WORKER_DISABLED_MESSAGE, isDemoMode } from "@/shared/lib/demo-mode";
 import { logger } from "@/shared/lib/logger";
 
 const MAX_RETRIES = 3;
@@ -33,11 +34,15 @@ export async function triggerScrape(categoryId?: string) {
             return { success: false, error: "Unauthorized" };
         }
 
+        if (isDemoMode) {
+            return { success: false, error: DEMO_WORKER_DISABLED_MESSAGE };
+        }
+
         const workerUrl = process.env.WORKER_URL;
         const workerSecret = process.env.WORKER_SECRET;
 
         if (!workerUrl || !workerSecret) {
-            return { success: false, error: "System configuration error" };
+            return { success: false, error: "Worker is not configured for this deployment." };
         }
 
         const res = await fetchWithRetry(`${workerUrl}/scrape`, {
@@ -72,11 +77,15 @@ export async function stopScrape(jobId: string) {
             return { success: false, error: "Unauthorized" };
         }
 
+        if (isDemoMode) {
+            return { success: false, error: DEMO_WORKER_DISABLED_MESSAGE };
+        }
+
         const workerUrl = process.env.WORKER_URL;
         const workerSecret = process.env.WORKER_SECRET;
 
         if (!workerUrl || !workerSecret) {
-            return { success: false, error: "System configuration error" };
+            return { success: false, error: "Worker is not configured for this deployment." };
         }
 
         const res = await fetch(`${workerUrl}/scrape/stop/${jobId}`, {
@@ -106,11 +115,15 @@ export async function retryFailedAccounts() {
             return { success: false, error: "Unauthorized" };
         }
 
+        if (isDemoMode) {
+            return { success: false, error: DEMO_WORKER_DISABLED_MESSAGE };
+        }
+
         const workerUrl = process.env.WORKER_URL;
         const workerSecret = process.env.WORKER_SECRET;
 
         if (!workerUrl || !workerSecret) {
-            return { success: false, error: "System configuration error" };
+            return { success: false, error: "Worker is not configured for this deployment." };
         }
 
         const res = await fetch(`${workerUrl}/scrape/retry-failed`, {

@@ -2,7 +2,9 @@ import { prisma } from "@repo/database";
 import { RecentActivity } from "@/modules/analytics/components/recent-activity";
 import { StatsCards } from "@/modules/analytics/components/stats-cards";
 import { ScrapeButton } from "@/modules/scraping/components/scrape-button";
+import { DemoModeNotice } from "@/shared/components/demo-mode-notice";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
+import { isDemoMode } from "@/shared/lib/demo-mode";
 
 async function getStats() {
     const [
@@ -72,6 +74,8 @@ export default async function DashboardPage() {
                 </div>
                 <ScrapeButton />
             </div>
+
+            {isDemoMode && <DemoModeNotice />}
 
             <StatsCards stats={stats} />
 
