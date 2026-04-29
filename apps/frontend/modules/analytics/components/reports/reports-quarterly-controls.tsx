@@ -37,7 +37,7 @@ export function ReportsQuarterlyControls({
         <div className="bg-white dark:bg-zinc-900 p-2 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-wrap gap-2 items-center">
             <div className="relative z-30">
                 <FilterListbox
-                    title="Filter Kategori"
+                    title="Saring kategori"
                     value={selectedCategory}
                     onChange={setSelectedCategory}
                     options={categories}
@@ -49,8 +49,8 @@ export function ReportsQuarterlyControls({
 
             <div className="relative z-20">
                 <FilterListbox
-                    title="Pilih Tahun Laporan"
-                    value={selectedYear || { id: "", label: "Pilih Tahun" }}
+                    title="Pilih tahun laporan"
+                    value={selectedYear || { id: "", label: "Pilih tahun" }}
                     onChange={setSelectedYear}
                     options={years}
                     icon={CalendarRange}
@@ -59,8 +59,8 @@ export function ReportsQuarterlyControls({
 
             <div className="relative z-10">
                 <FilterListbox
-                    title="Pilih Kuartal"
-                    value={selectedQuarter || { id: "", label: "Pilih Kuartal" }}
+                    title="Pilih kuartal"
+                    value={selectedQuarter || { id: "", label: "Pilih kuartal" }}
                     onChange={setSelectedQuarter}
                     options={quarters}
                     prefix="Q"
@@ -75,7 +75,7 @@ export function ReportsQuarterlyControls({
                 </div>
             ) : (
                 <div className="rounded-lg border border-dashed border-blue-200 bg-blue-50 px-3 py-2 text-[11px] font-medium text-blue-700 dark:border-blue-900/40 dark:bg-blue-950/30 dark:text-blue-300">
-                    Quarter availability is derived from completed month-end jobs.
+                    Ketersediaan triwulan diturunkan dari tugas selesai di akhir bulan.
                 </div>
             )}
 
@@ -95,7 +95,7 @@ export function ReportsQuarterlyControls({
                 ) : (
                     <Search className="w-3 h-3" />
                 )}
-                View Report
+                Lihat laporan
             </Button>
         </div>
     );

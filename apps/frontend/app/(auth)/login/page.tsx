@@ -40,13 +40,13 @@ export default function LoginPage() {
             });
 
             if (result?.error) {
-                setError("Invalid email or password");
+                setError("Email atau kata sandi tidak valid");
             } else {
                 router.push("/dashboard");
                 router.refresh();
             }
         } catch {
-            setError("Something went wrong. Please try again.");
+            setError("Terjadi kendala. Silakan coba lagi.");
         } finally {
             setIsLoading(false);
         }
@@ -71,26 +71,26 @@ export default function LoginPage() {
                             />
                         </svg>
                     </div>
-                    <h1 className="text-2xl font-bold">Social Media Stats</h1>
+                    <h1 className="text-2xl font-bold">Statistik Media Sosial</h1>
                     <p className="text-muted-foreground mt-2">
-                        Track follower growth across platforms
+                        Pantau pertumbuhan pengikut lintas platform
                     </p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     {isDemoMode && hasDemoCredentials && (
                         <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-                            <div className="font-semibold">Demo account available</div>
+                            <div className="font-semibold">Akun demo tersedia</div>
                             <p className="mt-1 text-amber-800">
-                                This deployment uses saved Neon data with scraping and PDF export
-                                disabled.
+                                Penayangan ini memakai data Neon tersimpan, dengan scraping dan
+                                ekspor PDF dinonaktifkan.
                             </p>
                             <button
                                 type="button"
                                 onClick={fillDemoCredentials}
                                 className="mt-3 text-sm font-semibold text-amber-950 underline underline-offset-4"
                             >
-                                Use demo credentials
+                                Gunakan kredensial demo
                             </button>
                         </div>
                     )}
@@ -108,7 +108,7 @@ export default function LoginPage() {
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            placeholder="admin@example.com"
+                            placeholder="nama@contoh.id"
                             required
                         />
                     </div>
@@ -148,16 +148,16 @@ export default function LoginPage() {
                                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                                     />
                                 </svg>
-                                Signing in...
+                                Sedang masuk...
                             </span>
                         ) : (
-                            "Sign in"
+                            "Masuk"
                         )}
                     </Button>
                 </form>
 
                 <p className="mt-6 text-center text-muted-foreground text-sm">
-                    Government Social Media Analytics Dashboard
+                    Dasbor Analitik Media Sosial
                 </p>
             </Card>
         </div>

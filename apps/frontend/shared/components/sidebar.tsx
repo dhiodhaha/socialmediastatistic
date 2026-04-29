@@ -35,23 +35,23 @@ const navGroups: NavGroup[] = [
     {
         label: "Main",
         items: [
-            { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
-            { href: "/accounts", label: "Accounts", icon: Users },
-            { href: "/categories", label: "Categories", icon: FolderTree },
+            { href: "/dashboard", label: "Ringkasan", icon: LayoutDashboard },
+            { href: "/accounts", label: "Akun", icon: Users },
+            { href: "/categories", label: "Kategori", icon: FolderTree },
         ],
     },
     {
         label: "Analytics",
         items: [
-            { href: "/history", label: "Scraping History", icon: History },
-            { href: "/reports", label: "Reports", icon: BarChart2 },
+            { href: "/history", label: "Riwayat scraping", icon: History },
+            { href: "/reports", label: "Laporan", icon: BarChart2 },
         ],
     },
     {
         label: "System",
         items: [
-            { href: "/docs", label: "Documentation", icon: BookOpen },
-            { href: "/settings", label: "Settings", icon: Settings },
+            { href: "/docs", label: "Dokumentasi", icon: BookOpen },
+            { href: "/settings", label: "Pengaturan", icon: Settings },
         ],
     },
 ];
@@ -88,7 +88,7 @@ export function Sidebar() {
                 </div>
                 {!isCollapsed && (
                     <div className="overflow-hidden whitespace-nowrap animate-in fade-in duration-300">
-                        <h1 className="font-bold text-lg leading-none">Social Stats</h1>
+                        <h1 className="font-bold text-lg leading-none">Statistik Sosial</h1>
                     </div>
                 )}
             </div>

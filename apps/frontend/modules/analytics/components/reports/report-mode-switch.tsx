@@ -10,14 +10,14 @@ const MODES: Array<{
 }> = [
     {
         id: "MONTHLY",
-        label: "Monthly",
-        description: "Compare month-end snapshots",
+        label: "Bulanan",
+        description: "Bandingkan snapshot akhir bulan",
         icon: BarChart3,
     },
     {
         id: "QUARTERLY",
-        label: "Quarterly",
-        description: "Prepare quarter-based reports",
+        label: "Triwulanan",
+        description: "Siapkan laporan berbasis triwulan",
         icon: CalendarRange,
     },
 ];

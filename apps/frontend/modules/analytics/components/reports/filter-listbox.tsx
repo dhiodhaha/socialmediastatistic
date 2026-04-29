@@ -68,7 +68,7 @@ export function FilterListbox({
                             )}
                             <span className="truncate max-w-[140px] text-left">
                                 {prefix && <span className="text-zinc-400 mr-1">{prefix}</span>}
-                                {value.label || "Select"}
+                                {value.label || "Pilih"}
                             </span>
                             <ChevronDown
                                 size={14}

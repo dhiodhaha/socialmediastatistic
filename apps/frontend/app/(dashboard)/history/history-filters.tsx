@@ -23,10 +23,12 @@ export function HistoryFilters() {
     // Local state for immediate UI feedback
     const [status, setStatus] = useState(searchParams.get("status") || "ALL");
 
-    const initialDateRange: DateRange | undefined = searchParams.get("startDate")
+    const startDate = searchParams.get("startDate");
+    const endDate = searchParams.get("endDate");
+    const initialDateRange: DateRange | undefined = startDate
         ? {
-              from: new Date(searchParams.get("startDate")!),
-              to: searchParams.get("endDate") ? new Date(searchParams.get("endDate")!) : undefined,
+              from: new Date(startDate),
+              to: endDate ? new Date(endDate) : undefined,
           }
         : undefined;
 
@@ -78,25 +80,25 @@ export function HistoryFilters() {
                 <Label htmlFor="status">Status</Label>
                 <Select value={status} onValueChange={handleStatusChange}>
                     <SelectTrigger className="w-[180px]" id="status">
-                        <SelectValue placeholder="Select status" />
+                        <SelectValue placeholder="Pilih status" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="ALL">All Statuses</SelectItem>
-                        <SelectItem value="COMPLETED">Completed</SelectItem>
-                        <SelectItem value="FAILED">Failed</SelectItem>
-                        <SelectItem value="RUNNING">Running</SelectItem>
-                        <SelectItem value="PENDING">Pending</SelectItem>
+                        <SelectItem value="ALL">Semua status</SelectItem>
+                        <SelectItem value="COMPLETED">Selesai</SelectItem>
+                        <SelectItem value="FAILED">Gagal</SelectItem>
+                        <SelectItem value="RUNNING">Berjalan</SelectItem>
+                        <SelectItem value="PENDING">Menunggu</SelectItem>
                     </SelectContent>
                 </Select>
             </div>
 
             <div className="grid gap-2">
-                <Label>Date Range</Label>
+                <Label>Rentang tanggal</Label>
                 <DatePickerWithRange date={date} setDate={handleDateChange} />
             </div>
 
             {hasFilters && (
-                <Button plain onClick={clearFilters} className="mb-0.5" title="Clear filters">
+                <Button plain onClick={clearFilters} className="mb-0.5" title="Hapus filter">
                     <X className="h-4 w-4" data-slot="icon" />
                 </Button>
             )}

@@ -9,8 +9,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-    title: "Social Media Statistics",
-    description: "Analytics dashboard for social media performance",
+    title: "Statistik Media Sosial",
+    description: "Dasbor analitik performa media sosial",
 };
 
 export default function RootLayout({
@@ -19,7 +19,7 @@ export default function RootLayout({
     children: React.ReactNode;
 }>) {
     return (
-        <html lang="en">
+        <html lang="id">
             <body
                 className={`${inter.variable} font-sans antialiased text-zinc-950 dark:text-white dark:bg-zinc-950`}
             >

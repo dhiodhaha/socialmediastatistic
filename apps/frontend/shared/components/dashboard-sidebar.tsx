@@ -22,22 +22,23 @@ import {
     SidebarItem,
     SidebarLabel,
 } from "@/shared/components/catalyst/sidebar";
+import { isDemoMode } from "@/shared/lib/demo-mode";
 
 export function DashboardSidebar() {
     const pathname = usePathname();
+    const showInternalTools = process.env.NODE_ENV !== "production" && !isDemoMode;
 
     return (
         <Sidebar>
             <SidebarHeader>
-                {/* Placeholder for Team Switcher if needed later */}
                 <div className="flex items-center gap-3">
                     <Avatar className="size-10 bg-zinc-900 text-white" initials="SM" />
                     <div>
                         <div className="text-sm font-medium text-zinc-950 dark:text-white">
-                            Social Stats
+                            Statistik Sosial
                         </div>
                         <div className="text-xs text-zinc-500 dark:text-zinc-400">
-                            Analytics Dashboard
+                            Persiapan laporan
                         </div>
                     </div>
                 </div>
@@ -45,43 +46,47 @@ export function DashboardSidebar() {
             <SidebarBody>
                 <SidebarItem href="/dashboard" current={pathname === "/dashboard"}>
                     <HomeIcon />
-                    <SidebarLabel>Overview</SidebarLabel>
-                </SidebarItem>
-                <SidebarItem href="/accounts" current={pathname === "/accounts"}>
-                    <UsersIcon />
-                    <SidebarLabel>Accounts</SidebarLabel>
-                </SidebarItem>
-                <SidebarItem href="/categories" current={pathname === "/categories"}>
-                    <FolderIcon />
-                    <SidebarLabel>Categories</SidebarLabel>
-                </SidebarItem>
-                <SidebarItem href="/history" current={pathname === "/history"}>
-                    <ClockIcon />
-                    <SidebarLabel>History</SidebarLabel>
+                    <SidebarLabel>Pusat laporan</SidebarLabel>
                 </SidebarItem>
                 <SidebarItem href="/reports" current={pathname === "/reports"}>
                     <ChartBarIcon />
-                    <SidebarLabel>Reports</SidebarLabel>
+                    <SidebarLabel>Laporan portofolio</SidebarLabel>
                 </SidebarItem>
                 <SidebarItem
                     href="/individual-reports"
                     current={pathname === "/individual-reports"}
                 >
                     <PresentationChartLineIcon />
-                    <SidebarLabel>Individual Reports</SidebarLabel>
+                    <SidebarLabel>Laporan individu</SidebarLabel>
                 </SidebarItem>
-                <SidebarDivider />
-                <SidebarItem href="/docs" current={pathname === "/docs"}>
-                    <BookOpenIcon />
-                    <SidebarLabel>Documentation</SidebarLabel>
+                <SidebarItem href="/history" current={pathname === "/history"}>
+                    <ClockIcon />
+                    <SidebarLabel>Data scraping</SidebarLabel>
                 </SidebarItem>
-                <SidebarItem href="/design" current={pathname === "/design"}>
-                    <SwatchIcon />
-                    <SidebarLabel>Design System</SidebarLabel>
+                <SidebarItem href="/accounts" current={pathname === "/accounts"}>
+                    <UsersIcon />
+                    <SidebarLabel>Akun</SidebarLabel>
                 </SidebarItem>
+                <SidebarItem href="/categories" current={pathname === "/categories"}>
+                    <FolderIcon />
+                    <SidebarLabel>Grup laporan</SidebarLabel>
+                </SidebarItem>
+                {showInternalTools && (
+                    <>
+                        <SidebarDivider />
+                        <SidebarItem href="/docs" current={pathname === "/docs"}>
+                            <BookOpenIcon />
+                            <SidebarLabel>Panduan impor</SidebarLabel>
+                        </SidebarItem>
+                        <SidebarItem href="/design" current={pathname === "/design"}>
+                            <SwatchIcon />
+                            <SidebarLabel>Sistem desain</SidebarLabel>
+                        </SidebarItem>
+                    </>
+                )}
                 <SidebarItem href="/settings" current={pathname === "/settings"}>
                     <Cog6ToothIcon />
-                    <SidebarLabel>Settings</SidebarLabel>
+                    <SidebarLabel>Pengaturan</SidebarLabel>
                 </SidebarItem>
             </SidebarBody>
             <SidebarFooter>{/* Footer content if needed */}</SidebarFooter>

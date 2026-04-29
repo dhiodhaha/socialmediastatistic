@@ -180,214 +180,241 @@ export function IndividualQuarterComparisonPanel({
             );
             toast.success("PDF perbandingan diekspor");
         } catch (err) {
-            toast.error(err instanceof Error ? err.message : "Export failed");
+            toast.error(err instanceof Error ? err.message : "Ekspor gagal");
         } finally {
             setIsExporting(false);
         }
     };
 
     return (
-        <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                <div>
-                    <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                        Statistik Quarter-to-Quarter
+        <section className="overflow-hidden rounded-3xl border border-zinc-950/10 bg-white shadow-sm dark:border-white/10 dark:bg-zinc-900">
+            <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_360px]">
+                <div className="p-6">
+                    <div className="text-base/7 font-medium text-blue-600 sm:text-sm/6">
+                        Perbandingan statistik
                     </div>
-                    <h2 className="mt-1 text-xl font-semibold text-zinc-950 dark:text-white">
-                        Q{quarter} {year} dibandingkan dengan Q{comparisonQuarter} {comparisonYear}
+                    <h2 className="mt-1 text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white">
+                        Cek perubahan antar kuartal
                     </h2>
-                    <p className="mt-1 text-sm text-zinc-500">
-                        {demoMode
-                            ? "Menggunakan snapshot tersimpan dari database demo."
-                            : "Menggunakan snapshot tersimpan. Jika data scraping belum ada, tambahkan snapshot manual dengan label sumber."}
+                    <p className="mt-2 max-w-2xl text-base/7 text-zinc-500 sm:text-sm/6 dark:text-zinc-400">
+                        Bandingkan statistik akun dari snapshot tersimpan. Jika baseline belum
+                        tersedia, operator bisa menambahkan angka manual dengan catatan sumber.
                     </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                    <Button type="button" outline onClick={handleLoadQuarterComparison}>
-                        Load Stats
-                    </Button>
-                    {!demoMode && (
-                        <Button
-                            type="button"
-                            outline
-                            onClick={handleExportQuarterComparison}
-                            disabled={isExporting}
-                        >
-                            {isExporting ? (
-                                <Loader2 className="h-4 w-4 animate-spin" data-slot="icon" />
-                            ) : (
-                                <Download className="h-4 w-4" data-slot="icon" />
-                            )}
-                            Export Q-to-Q PDF
-                        </Button>
-                    )}
-                </div>
-            </div>
 
-            <div className="mt-5 grid gap-4 md:grid-cols-4">
-                <QuarterSelect
-                    label="Pembanding Tahun"
-                    value={comparisonYear}
-                    values={[currentYear, currentYear - 1, currentYear - 2]}
-                    onChange={setComparisonYear}
-                />
-
-                <div className="space-y-2">
-                    <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                        Pembanding Kuartal
+                    <div className="mt-5 grid max-w-2xl gap-3 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
+                        <PeriodBadge label="Saat ini" value={`Q${quarter} ${year}`} />
+                        <div className="hidden h-px bg-zinc-950/10 sm:block dark:bg-white/10" />
+                        <PeriodBadge
+                            label="Pembanding"
+                            value={`Q${comparisonQuarter} ${comparisonYear}`}
+                        />
                     </div>
-                    <Select value={comparisonQuarter} onValueChange={setComparisonQuarter}>
-                        <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Choose quarter" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {QUARTER_OPTIONS.map((value) => (
-                                <SelectItem key={value} value={String(value)}>
-                                    Q{value}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
                 </div>
 
-                {!demoMode && (
-                    <>
-                        <div className="space-y-2">
-                            <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                                Manual Target
-                            </div>
-                            <Select
-                                value={manualSnapshotForm.target}
-                                onValueChange={(value) =>
-                                    setManualSnapshotForm((prev) => ({
-                                        ...prev,
-                                        target: value as "current" | "comparison",
-                                    }))
-                                }
-                            >
-                                <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="Choose target" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="comparison">
-                                        Pembanding Q{comparisonQuarter} {comparisonYear}
-                                    </SelectItem>
-                                    <SelectItem value="current">
-                                        Current Q{quarter} {year}
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
+                <div className="border-t border-zinc-950/10 bg-zinc-50 p-6 lg:border-t-0 lg:border-l dark:border-white/10 dark:bg-zinc-950/40">
+                    <div className="text-base/7 font-medium text-zinc-950 sm:text-sm/6 dark:text-white">
+                        Atur pembanding
+                    </div>
+                    <div className="mt-4 grid gap-3">
+                        <QuarterSelect
+                            label="Tahun pembanding"
+                            value={comparisonYear}
+                            values={[currentYear, currentYear - 1, currentYear - 2]}
+                            onChange={setComparisonYear}
+                        />
 
                         <div className="space-y-2">
-                            <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                                Manual Platform
+                            <div className="text-base/7 font-medium text-zinc-500 sm:text-sm/6">
+                                Kuartal pembanding
                             </div>
-                            <Select
-                                value={manualSnapshotForm.platform}
-                                onValueChange={(value) =>
-                                    setManualSnapshotForm((prev) => ({
-                                        ...prev,
-                                        platform: value as Platform,
-                                    }))
-                                }
-                            >
-                                <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="Choose platform" />
+                            <Select value={comparisonQuarter} onValueChange={setComparisonQuarter}>
+                                <SelectTrigger className="w-full bg-white dark:bg-zinc-900">
+                                    <SelectValue placeholder="Pilih kuartal" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {availablePlatforms.map((option) => (
-                                        <SelectItem key={option.id} value={option.id}>
-                                            {option.label}
+                                    {QUARTER_OPTIONS.map((value) => (
+                                        <SelectItem key={value} value={String(value)}>
+                                            Q{value}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
                         </div>
-                    </>
-                )}
+                    </div>
+
+                    <div className="mt-5 flex flex-col gap-2">
+                        <Button type="button" onClick={handleLoadQuarterComparison}>
+                            Cek Perbandingan
+                        </Button>
+                        {!demoMode && (
+                            <Button
+                                type="button"
+                                outline
+                                onClick={handleExportQuarterComparison}
+                                disabled={isExporting}
+                            >
+                                {isExporting ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" data-slot="icon" />
+                                ) : (
+                                    <Download className="h-4 w-4" data-slot="icon" />
+                                )}
+                                Ekspor PDF
+                            </Button>
+                        )}
+                    </div>
+                </div>
             </div>
 
             {!demoMode && (
-                <div className="mt-3 grid gap-3 md:grid-cols-4">
-                    <ManualNumberInput
-                        value={manualSnapshotForm.followers}
-                        placeholder="Followers (required)"
-                        onChange={(followers) =>
-                            setManualSnapshotForm((prev) => ({
-                                ...prev,
-                                followers,
-                            }))
-                        }
-                    />
-                    <ManualNumberInput
-                        value={manualSnapshotForm.posts}
-                        placeholder="Posts (optional)"
-                        onChange={(posts) =>
-                            setManualSnapshotForm((prev) => ({
-                                ...prev,
-                                posts,
-                            }))
-                        }
-                    />
-                    <ManualNumberInput
-                        value={manualSnapshotForm.likes}
-                        placeholder="Likes (optional)"
-                        onChange={(likes) =>
-                            setManualSnapshotForm((prev) => ({
-                                ...prev,
-                                likes,
-                            }))
-                        }
-                    />
-                    <Button
-                        type="button"
-                        onClick={handleSaveManualSnapshot}
-                        disabled={isPending || !manualSnapshotForm.followers}
-                    >
-                        Simpan Snapshot Manual
-                    </Button>
-                </div>
-            )}
+                <div className="border-t border-zinc-950/10 p-6 dark:border-white/10">
+                    <div className="grid gap-5 lg:grid-cols-[260px_minmax(0,1fr)]">
+                        <div>
+                            <div className="text-base/7 font-medium text-zinc-950 sm:text-sm/6 dark:text-white">
+                                Baseline manual
+                            </div>
+                            <p className="mt-1 text-base/7 text-zinc-500 sm:text-sm/6 dark:text-zinc-400">
+                                Opsional. Isi hanya jika data snapshot belum tersedia dari scraping.
+                            </p>
+                        </div>
 
-            {!demoMode && (
-                <div className="mt-3 grid gap-3 md:grid-cols-2">
-                    <ManualNumberInput
-                        value={manualSnapshotForm.engagement}
-                        placeholder="Engagement (optional)"
-                        step="0.01"
-                        onChange={(engagement) =>
-                            setManualSnapshotForm((prev) => ({
-                                ...prev,
-                                engagement,
-                            }))
-                        }
-                    />
-                    <input
-                        type="text"
-                        value={manualSnapshotForm.sourceNote}
-                        onChange={(event) =>
-                            setManualSnapshotForm((prev) => ({
-                                ...prev,
-                                sourceNote: event.target.value,
-                            }))
-                        }
-                        className="h-10 rounded-md border border-zinc-300 bg-white px-3 text-sm dark:border-zinc-700 dark:bg-zinc-950"
-                        placeholder="Catatan sumber manual, contoh: angka dari laporan internal Des 2025"
-                    />
+                        <div className="space-y-3">
+                            <div className="grid gap-3 md:grid-cols-2">
+                                <div className="space-y-2">
+                                    <div className="text-base/7 font-medium text-zinc-500 sm:text-sm/6">
+                                        Target baseline
+                                    </div>
+                                    <Select
+                                        value={manualSnapshotForm.target}
+                                        onValueChange={(value) =>
+                                            setManualSnapshotForm((prev) => ({
+                                                ...prev,
+                                                target: value as "current" | "comparison",
+                                            }))
+                                        }
+                                    >
+                                        <SelectTrigger className="w-full bg-white dark:bg-zinc-900">
+                                            <SelectValue placeholder="Pilih target" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="comparison">
+                                                Pembanding Q{comparisonQuarter} {comparisonYear}
+                                            </SelectItem>
+                                            <SelectItem value="current">
+                                                Saat ini Q{quarter} {year}
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <div className="text-base/7 font-medium text-zinc-500 sm:text-sm/6">
+                                        Platform
+                                    </div>
+                                    <Select
+                                        value={manualSnapshotForm.platform}
+                                        onValueChange={(value) =>
+                                            setManualSnapshotForm((prev) => ({
+                                                ...prev,
+                                                platform: value as Platform,
+                                            }))
+                                        }
+                                    >
+                                        <SelectTrigger className="w-full bg-white dark:bg-zinc-900">
+                                            <SelectValue placeholder="Pilih platform" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {availablePlatforms.map((option) => (
+                                                <SelectItem key={option.id} value={option.id}>
+                                                    {option.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+
+                            <div className="grid gap-3 md:grid-cols-4">
+                                <ManualNumberInput
+                                    value={manualSnapshotForm.followers}
+                                    placeholder="Pengikut (wajib)"
+                                    onChange={(followers) =>
+                                        setManualSnapshotForm((prev) => ({
+                                            ...prev,
+                                            followers,
+                                        }))
+                                    }
+                                />
+                                <ManualNumberInput
+                                    value={manualSnapshotForm.posts}
+                                    placeholder="Postingan (opsional)"
+                                    onChange={(posts) =>
+                                        setManualSnapshotForm((prev) => ({
+                                            ...prev,
+                                            posts,
+                                        }))
+                                    }
+                                />
+                                <ManualNumberInput
+                                    value={manualSnapshotForm.likes}
+                                    placeholder="Suka (opsional)"
+                                    onChange={(likes) =>
+                                        setManualSnapshotForm((prev) => ({
+                                            ...prev,
+                                            likes,
+                                        }))
+                                    }
+                                />
+                                <ManualNumberInput
+                                    value={manualSnapshotForm.engagement}
+                                    placeholder="Interaksi (opsional)"
+                                    step="0.01"
+                                    onChange={(engagement) =>
+                                        setManualSnapshotForm((prev) => ({
+                                            ...prev,
+                                            engagement,
+                                        }))
+                                    }
+                                />
+                            </div>
+
+                            <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
+                                <input
+                                    type="text"
+                                    value={manualSnapshotForm.sourceNote}
+                                    onChange={(event) =>
+                                        setManualSnapshotForm((prev) => ({
+                                            ...prev,
+                                            sourceNote: event.target.value,
+                                        }))
+                                    }
+                                    className="h-10 rounded-md border border-zinc-300 bg-white px-3 text-sm dark:border-zinc-700 dark:bg-zinc-950"
+                                    placeholder="Catatan sumber manual, contoh: angka dari laporan internal Des 2025"
+                                />
+                                <Button
+                                    type="button"
+                                    onClick={handleSaveManualSnapshot}
+                                    disabled={isPending || !manualSnapshotForm.followers}
+                                >
+                                    Simpan baseline
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
 
             {quarterComparison?.success && (
-                <div className="mt-5 grid gap-4 lg:grid-cols-3">
+                <div className="grid gap-4 border-t border-zinc-950/10 p-6 lg:grid-cols-3 dark:border-white/10">
                     {quarterComparison.data.platforms.map((platform) => (
                         <QuarterComparisonCard key={platform.platform} comparison={platform} />
                     ))}
                 </div>
             )}
             {quarterComparison && !quarterComparison.success && (
-                <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-300">
-                    {quarterComparison.error}
+                <div className="border-t border-zinc-950/10 p-6 dark:border-white/10">
+                    <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-300">
+                        {quarterComparison.error}
+                    </div>
                 </div>
             )}
         </section>
@@ -407,12 +434,10 @@ function QuarterSelect({
 }) {
     return (
         <div className="space-y-2">
-            <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                {label}
-            </div>
+            <div className="text-base/7 font-medium text-zinc-500 sm:text-sm/6">{label}</div>
             <Select value={value} onValueChange={onChange}>
-                <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Choose year" />
+                <SelectTrigger className="w-full bg-white dark:bg-zinc-900">
+                    <SelectValue placeholder="Pilih tahun" />
                 </SelectTrigger>
                 <SelectContent>
                     {values.map((option) => (
@@ -422,6 +447,17 @@ function QuarterSelect({
                     ))}
                 </SelectContent>
             </Select>
+        </div>
+    );
+}
+
+function PeriodBadge({ label, value }: { label: string; value: string }) {
+    return (
+        <div className="rounded-2xl bg-zinc-50 p-4 ring-1 ring-zinc-950/5 dark:bg-zinc-950 dark:ring-white/10">
+            <div className="text-base/7 font-medium text-zinc-500 sm:text-sm/6">{label}</div>
+            <div className="mt-1 text-2xl font-semibold tracking-tight tabular-nums text-zinc-950 dark:text-white">
+                {value}
+            </div>
         </div>
     );
 }
@@ -459,7 +495,7 @@ function QuarterComparisonCard({ comparison }: { comparison: PlatformQuarterComp
                         {platformDisplayName(comparison.platform)}
                     </div>
                     <div className="mt-1 text-xs text-zinc-500">
-                        Current: {comparison.current.sourceLabel}
+                        Saat ini: {comparison.current.sourceLabel}
                     </div>
                     <div className="mt-1 text-xs text-zinc-500">
                         Pembanding: {comparison.comparison.sourceLabel}
@@ -473,8 +509,8 @@ function QuarterComparisonCard({ comparison }: { comparison: PlatformQuarterComp
                     }`}
                 >
                     {comparison.current.snapshot && comparison.comparison.snapshot
-                        ? "Comparable"
-                        : "Need data"}
+                        ? "Dapat dibandingkan"
+                        : "Perlu data"}
                 </span>
             </div>
 
@@ -487,7 +523,7 @@ function QuarterComparisonCard({ comparison }: { comparison: PlatformQuarterComp
                                     {metric.label}
                                 </div>
                                 <div className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-                                    Current {formatNullableNumber(metric.currentValue)} • Base{" "}
+                                    Saat ini {formatNullableNumber(metric.currentValue)} • Dasar{" "}
                                     {formatNullableNumber(metric.comparisonValue)}
                                 </div>
                             </div>

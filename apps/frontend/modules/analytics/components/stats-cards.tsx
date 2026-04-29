@@ -13,7 +13,7 @@ interface StatsCardsProps {
 export function StatsCards({ stats }: StatsCardsProps) {
     const cards = [
         {
-            title: "Total Accounts",
+            title: "Total akun",
             value: stats.totalAccounts,
             icon: (
                 <svg
@@ -32,7 +32,7 @@ export function StatsCards({ stats }: StatsCardsProps) {
             ),
         },
         {
-            title: "Active Accounts",
+            title: "Akun aktif",
             value: stats.activeAccounts,
             icon: (
                 <svg
@@ -51,7 +51,7 @@ export function StatsCards({ stats }: StatsCardsProps) {
             ),
         },
         {
-            title: "Total Snapshots",
+            title: "Total snapshot",
             value: stats.totalSnapshots,
             icon: (
                 <svg
@@ -76,13 +76,13 @@ export function StatsCards({ stats }: StatsCardsProps) {
             ),
         },
         {
-            title: "Last Scrape",
+            title: "Scraping terakhir",
             value: stats.lastScrapeDate
-                ? new Date(stats.lastScrapeDate).toLocaleDateString("en-US", {
-                      month: "short",
+                ? new Date(stats.lastScrapeDate).toLocaleDateString("id-ID", {
                       day: "numeric",
+                      month: "short",
                   })
-                : "Never",
+                : "Belum pernah",
             icon: (
                 <svg
                     className="w-4 h-4 text-muted-foreground"

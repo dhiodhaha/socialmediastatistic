@@ -10,9 +10,9 @@ import type { AccountInput } from "@/shared/lib/schemas";
 
 // Template for account import (client-side, no server cost)
 const ACCOUNT_TEMPLATE = `name,instagram,tiktok,x,category
-Kementerian Keuangan,kemenkeuri,kemenkeuri,KemenkeuRI,Lingkungan Kementerian
-Sekretariat Kabinet,setkabgoid,,setkabgoid,Lingkungan Kementerian
-Menteri Pendidikan,mendikdasmen,mendikdasmen_ri,Aborsi,Menteri-Menteri`;
+Brand Contoh,brandcontoh,brandcontoh_id,brandcontoh,Portofolio Utama
+Tim Produk,produkcontoh,,produkcontoh,Divisi Produk
+Tokoh Publik,tokohcontoh,tokohcontoh,,Personal Brand`;
 
 export function CsvUpload() {
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -90,7 +90,7 @@ export function CsvUpload() {
                         setStatus({
                             type: "error",
                             message:
-                                "No valid accounts found. Ensure headers: name, tiktok, instagram, x",
+                                "Tidak ada akun valid ditemukan. Pastikan header: name, tiktok, instagram, x",
                         });
                         setLoading(false);
                         return;
@@ -101,16 +101,16 @@ export function CsvUpload() {
                     if (result.success) {
                         setStatus({
                             type: "success",
-                            message: `Successfully imported ${result.count} accounts.`,
+                            message: `Berhasil mengimpor ${result.count} akun.`,
                             details: result.errors,
                         });
                         if (fileInputRef.current) fileInputRef.current.value = "";
                     } else {
-                        setStatus({ type: "error", message: result.error || "Upload failed" });
+                        setStatus({ type: "error", message: result.error || "Unggah gagal" });
                     }
                 } catch (error) {
                     console.error(error);
-                    setStatus({ type: "error", message: "Failed to parse or upload CSV." });
+                    setStatus({ type: "error", message: "Gagal memproses atau mengunggah CSV." });
                 } finally {
                     setLoading(false);
                 }
@@ -138,7 +138,7 @@ export function CsvUpload() {
                 </Button>
                 <Button outline onClick={() => fileInputRef.current?.click()} disabled={loading}>
                     <Upload data-slot="icon" />
-                    {loading ? "Uploading..." : "Import CSV"}
+                    {loading ? "Sedang mengimpor..." : "Impor CSV"}
                 </Button>
             </div>
 
@@ -156,13 +156,13 @@ export function CsvUpload() {
                     ) : (
                         <AlertCircle className="h-4 w-4" />
                     )}
-                    <AlertTitle>{status.type === "success" ? "Success" : "Error"}</AlertTitle>
+                    <AlertTitle>{status.type === "success" ? "Berhasil" : "Galat"}</AlertTitle>
                     <AlertDescription>
                         {status.message}
                         {status.details && status.details.length > 0 && (
                             <ul className="mt-2 text-xs list-disc pl-5 opacity-90">
-                                {status.details.slice(0, 5).map((err, i) => (
-                                    <li key={i}>{err}</li>
+                                {status.details.slice(0, 5).map((err) => (
+                                    <li key={err}>{err}</li>
                                 ))}
                                 {status.details.length > 5 && (
                                     <li>...and {status.details.length - 5} more errors</li>

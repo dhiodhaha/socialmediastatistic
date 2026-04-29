@@ -83,7 +83,7 @@ export function ReportsClient({
             id: job.id,
             label: job.label,
             sub: job.sourceLabel,
-            desc: idx === 0 ? "Latest reporting anchor" : "Archived reporting anchor",
+            desc: idx === 0 ? "Patokan laporan terbaru" : "Patokan laporan arsip",
             icon: FileText,
         }));
         setJobs(jobOptions);
@@ -101,7 +101,7 @@ export function ReportsClient({
         setSelectedPeriod(jobOptions[0]);
         if (jobOptions.length > 1) {
             const previous = jobOptions[1];
-            setSelectedComparison({ ...previous, desc: `vs ${previous.label}` });
+            setSelectedComparison({ ...previous, desc: `banding ${previous.label}` });
         }
 
         const latestJob = initialJobs[0];
@@ -222,8 +222,8 @@ export function ReportsClient({
                     }),
                 );
             } catch (error) {
-                console.error("Quarterly export failed:", error);
-                alert("Quarterly export failed. Please check console.");
+                console.error("Ekspor triwulan gagal:", error);
+                alert("Ekspor triwulan gagal. Silakan periksa konsol.");
             } finally {
                 setExporting(false);
             }
@@ -275,8 +275,8 @@ export function ReportsClient({
                 }),
             );
         } catch (error) {
-            console.error("Export failed:", error);
-            alert("Export failed. Please check console.");
+            console.error("Ekspor gagal:", error);
+            alert("Ekspor gagal. Silakan periksa konsol.");
         } finally {
             setExporting(false);
         }
@@ -304,8 +304,8 @@ export function ReportsClient({
                     }),
                 );
             } catch (error) {
-                console.error("Quarterly export all failed:", error);
-                alert("Quarterly export all failed. Please check console.");
+                console.error("Ekspor triwulan semua gagal:", error);
+                alert("Ekspor triwulan semua gagal. Silakan periksa konsol.");
             } finally {
                 setExportingAll(false);
             }
@@ -363,8 +363,8 @@ export function ReportsClient({
                 }),
             );
         } catch (error) {
-            console.error("Export All failed:", error);
-            alert("Export All failed. Please check console.");
+            console.error("Ekspor semua gagal:", error);
+            alert("Ekspor semua gagal. Silakan periksa konsol.");
         } finally {
             setExportingAll(false);
         }
@@ -414,8 +414,8 @@ export function ReportsClient({
                 }),
             );
         } catch (error) {
-            console.error("Export Latest failed:", error);
-            alert("Export Latest failed. Please check console.");
+            console.error("Ekspor data terbaru gagal:", error);
+            alert("Ekspor data terbaru gagal. Silakan periksa konsol.");
         } finally {
             setExportingLatest(false);
         }
@@ -435,7 +435,7 @@ export function ReportsClient({
     const platformLabel = (platform: Platform) => {
         if (platform === "INSTAGRAM") return "Instagram";
         if (platform === "TIKTOK") return "TikTok";
-        return "Twitter X";
+        return "Twitter / X";
     };
 
     const quarterlyPeriodLabel = (preview: QuarterlyPlatformPreview) =>
@@ -463,7 +463,7 @@ export function ReportsClient({
         .filter((job) => job.id !== selectedPeriod?.id)
         .map((job) => ({
             ...job,
-            desc: `vs ${job.label}`,
+            desc: `banding ${job.label}`,
         }));
 
     const quarterYears = Array.from(
@@ -652,12 +652,14 @@ function mapQuarterlyRowsToDisplayRows(
             isNA: false,
             isRanked: row.rankingEligible,
             badges: [
-                ...(row.sharedAccount ? [{ label: "Shared", tone: "blue" as const }] : []),
-                ...(row.performanceIssue ? [{ label: "Performance", tone: "rose" as const }] : []),
+                ...(row.sharedAccount ? [{ label: "Berbagi", tone: "blue" as const }] : []),
+                ...(row.performanceIssue ? [{ label: "Performa", tone: "rose" as const }] : []),
                 ...(row.dataQualityIssue
-                    ? [{ label: "Data quality", tone: "amber" as const }]
+                    ? [{ label: "Kualitas data", tone: "amber" as const }]
                     : []),
-                ...(!row.rankingEligible ? [{ label: "Unranked", tone: "zinc" as const }] : []),
+                ...(!row.rankingEligible
+                    ? [{ label: "Tidak dirangking", tone: "zinc" as const }]
+                    : []),
             ],
             detailNote: row.detailNote,
             rawOldFollowers: row.oldStats.followers ?? 0,

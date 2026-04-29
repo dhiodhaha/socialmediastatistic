@@ -14,30 +14,45 @@ export default async function CategoriesPage() {
     try {
         const result = await getCategories();
         if (result?.success && result?.data) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            data = result.data as any[];
+            data = result.data as Category[];
         }
     } catch (e) {
         console.error("Failed to fetch categories:", e);
     }
 
     return (
-        <div className="flex-1 space-y-4 p-8 pt-6">
-            <div className="flex items-center justify-between space-y-2">
-                <h2 className="text-3xl font-bold tracking-tight">Categories</h2>
-                <div className="flex items-center space-x-2">
+        <div className="mx-auto flex max-w-7xl flex-col gap-8 p-6 sm:p-8 lg:p-10">
+            <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-end">
+                <div className="max-w-3xl">
+                    <div className="text-base/7 font-medium text-blue-600 sm:text-sm/6">
+                        Penataan laporan
+                    </div>
+                    <h1 className="mt-1 text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">
+                        Grup laporan
+                    </h1>
+                    <p className="mt-3 text-base/7 text-zinc-500 sm:text-sm/6 dark:text-zinc-400">
+                        Kelompokkan akun untuk pelaporan berikutnya. Grup tidak membuat scraping
+                        duplikat; grup hanya mengatur bagaimana laporan ekspor difilter dan
+                        ditinjau.
+                    </p>
+                </div>
+                <div className="flex items-center lg:justify-end">
                     <CategoryDialog
                         trigger={
                             <Button>
-                                <Plus className="h-4 w-4" data-slot="icon" /> Add Category
+                                <Plus className="size-4" data-slot="icon" /> Tambah grup
                             </Button>
                         }
                     />
                 </div>
             </div>
-            <div className="hidden h-full flex-1 flex-col space-y-8 md:flex">
-                <DataTable data={data} columns={columns} />
-            </div>
+
+            <DataTable
+                data={data}
+                columns={columns}
+                emptyTitle="Belum ada grup laporan"
+                emptyDescription="Buat grup saat akun yang sama perlu muncul di cakupan laporan tertentu."
+            />
         </div>
     );
 }

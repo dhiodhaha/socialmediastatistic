@@ -42,7 +42,7 @@ export function ReportsMonthlyControls({
         <div className="bg-white dark:bg-zinc-900 p-2 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-wrap gap-2 items-center">
             <div className="relative z-30">
                 <FilterListbox
-                    title="Filter Kategori"
+                    title="Saring kategori"
                     value={selectedCategory}
                     onChange={setSelectedCategory}
                     options={categories}
@@ -54,8 +54,8 @@ export function ReportsMonthlyControls({
 
             <div className="relative z-20">
                 <FilterListbox
-                    title="Pilih Laporan Bulanan"
-                    value={selectedPeriod || { id: "", label: "Loading..." }}
+                    title="Pilih laporan bulanan"
+                    value={selectedPeriod || { id: "", label: "Memuat..." }}
                     onChange={setSelectedPeriod}
                     options={jobs}
                     icon={Calendar}
@@ -64,8 +64,8 @@ export function ReportsMonthlyControls({
 
             <div className="relative z-10">
                 <FilterListbox
-                    title="Bandingkan Dengan"
-                    value={selectedComparison || { id: "", label: "Select..." }}
+                    title="Bandingkan dengan"
+                    value={selectedComparison || { id: "", label: "Pilih..." }}
                     onChange={setSelectedComparison}
                     options={comparisonOptions}
                     prefix="vs"
@@ -92,7 +92,7 @@ export function ReportsMonthlyControls({
                     onChange={(e) => setIncludeNA(e.target.checked)}
                     className="hidden"
                 />
-                <span className="whitespace-nowrap">Include N/A</span>
+                <span className="whitespace-nowrap">Sertakan N/A</span>
             </label>
 
             <div className="h-6 w-px bg-zinc-200 dark:bg-zinc-700 mx-1 hidden md:block" />
@@ -106,7 +106,7 @@ export function ReportsMonthlyControls({
                 ) : (
                     <Search className="w-3 h-3" />
                 )}
-                View Report
+                Lihat laporan
             </Button>
         </div>
     );

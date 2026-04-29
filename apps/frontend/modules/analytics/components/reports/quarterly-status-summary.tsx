@@ -21,7 +21,7 @@ export function QuarterlyStatusSummary({ status }: QuarterlyStatusSummaryProps) 
                 <div className="space-y-2">
                     <div className="flex items-center gap-2 text-sm font-medium text-zinc-500">
                         <ShieldCheck className="h-4 w-4 text-emerald-500" />
-                        Status Tinjauan Kuartal
+                        Status tinjauan kuartal
                     </div>
                     <h2 className="text-xl font-semibold text-zinc-900 dark:text-white">
                         Q{status.selectedQuarter} {status.selectedYear}
@@ -34,18 +34,18 @@ export function QuarterlyStatusSummary({ status }: QuarterlyStatusSummaryProps) 
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                     <StatusCard
                         icon={DatabaseZap}
-                        label="Cakupan Akhir Kuartal"
+                        label="Cakupan akhir kuartal"
                         value={coverageLabel}
                     />
                     <StatusCard
                         icon={CalendarClock}
-                        label="Cakupan Kuartal Penuh"
+                        label="Cakupan kuartal penuh"
                         value={fullQuarterLabel}
                     />
                     <StatusCard
                         icon={ShieldCheck}
-                        label="Awal Kuartal"
-                        value={status.baseline.hasAnchor ? status.baseline.label : "Tidak Tersedia"}
+                        label="Awal kuartal"
+                        value={status.baseline.hasAnchor ? status.baseline.label : "Tidak tersedia"}
                     />
                 </div>
             </div>
@@ -53,7 +53,7 @@ export function QuarterlyStatusSummary({ status }: QuarterlyStatusSummaryProps) 
             <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
                 <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950/40">
                     <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                        Bulan Sumber
+                        Bulan sumber
                     </div>
                     <div className="mt-3 flex flex-wrap gap-2">
                         {status.sourceMonths.map(
@@ -69,8 +69,8 @@ export function QuarterlyStatusSummary({ status }: QuarterlyStatusSummaryProps) 
                                     <div className="font-medium">{month.label}</div>
                                     <div className="text-xs opacity-80">
                                         {month.hasAnchor
-                                            ? month.sourceLabel || "Anchor siap"
-                                            : "Anchor tidak ada"}
+                                            ? month.sourceLabel || "Patokan siap"
+                                            : "Patokan tidak ada"}
                                     </div>
                                 </div>
                             ),
@@ -80,14 +80,14 @@ export function QuarterlyStatusSummary({ status }: QuarterlyStatusSummaryProps) 
 
                 <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950/40">
                     <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                        Baseline Awal Kuartal
+                        Baseline awal kuartal
                     </div>
                     <div className="mt-3 text-sm text-zinc-700 dark:text-zinc-300">
                         {status.baseline.label}
                     </div>
                     <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
                         {status.baseline.hasAnchor
-                            ? status.baseline.sourceLabel || "Anchor awal kuartal tersedia"
+                            ? status.baseline.sourceLabel || "Patokan awal kuartal tersedia"
                             : "Laporan kuartal tetap dapat dibuat, namun pertumbuhan tidak dapat diperingkat tanpa data awal kuartal"}
                     </div>
                 </div>

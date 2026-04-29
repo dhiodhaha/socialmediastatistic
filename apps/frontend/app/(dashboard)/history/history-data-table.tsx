@@ -2,11 +2,10 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { DataTable } from "@/shared/components/ui/data-table";
-import { columns } from "./columns";
+import { columns, type ScrapingJob } from "./columns";
 
 interface HistoryDataTableProps {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    data: any[];
+    data: ScrapingJob[];
     pageCount: number;
     currentPage: number;
 }
@@ -31,6 +30,8 @@ export function HistoryDataTable({ data, pageCount, currentPage }: HistoryDataTa
                 pageSize: 10,
             }}
             onPaginationChange={handlePaginationChange}
+            emptyTitle="No scraping runs found"
+            emptyDescription="Run scraping, import historical data, or clear filters to see available report snapshots."
         />
     );
 }

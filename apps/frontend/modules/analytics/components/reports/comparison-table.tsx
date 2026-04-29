@@ -61,19 +61,19 @@ export function ComparisonTable({ data, job1Date, job2Date, platform }: Comparis
                 <TableHeader>
                     <TableRow>
                         <TableHead className="w-[200px]">Akun</TableHead>
-                        <TableHead>Handle</TableHead>
+                        <TableHead>Nama pengguna</TableHead>
                         <TableHead className="text-right">
                             <div className="flex flex-col">
-                                <span>Followers</span>
+                                <span>Pengikut</span>
                                 <span className="text-[10px] font-normal text-muted-foreground">
                                     {format(job1Date, "dd MMM")} → {format(job2Date, "dd MMM")}
                                 </span>
                             </div>
                         </TableHead>
                         <TableHead className="text-right">Pertumbuhan</TableHead>
-                        <TableHead className="text-right">Posts</TableHead>
+                        <TableHead className="text-right">Postingan</TableHead>
                         {(platform === "INSTAGRAM" || platform === "TIKTOK") && (
-                            <TableHead className="text-right">Likes</TableHead>
+                            <TableHead className="text-right">Suka</TableHead>
                         )}
                     </TableRow>
                 </TableHeader>

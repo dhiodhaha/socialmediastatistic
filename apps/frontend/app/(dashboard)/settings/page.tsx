@@ -24,23 +24,28 @@ import { cn } from "@/shared/lib/utils";
 
 // Schedule presets with friendly names
 const SCHEDULE_OPTIONS = [
-    { id: "daily", label: "Every Day", description: "Runs once every day", cron: "0 {hour} * * *" },
+    {
+        id: "daily",
+        label: "Setiap hari",
+        description: "Jalan sekali setiap hari",
+        cron: "0 {hour} * * *",
+    },
     {
         id: "weekly",
-        label: "Every Week",
-        description: "Runs once every week on Monday",
+        label: "Setiap minggu",
+        description: "Jalan sekali setiap minggu pada Senin",
         cron: "0 {hour} * * 1",
     },
     {
         id: "monthly",
-        label: "Last Day of Month",
-        description: "Runs on the last day of each month",
+        label: "Hari terakhir bulan",
+        description: "Jalan pada hari terakhir tiap bulan",
         cron: "0 {hour} L * *",
     },
     {
         id: "hourly",
-        label: "Every Hour",
-        description: "Runs every hour (for testing)",
+        label: "Setiap jam",
+        description: "Jalan tiap jam (untuk pengujian)",
         cron: "0 * * * *",
     },
 ];
@@ -49,12 +54,12 @@ const HOUR_OPTIONS = Array.from({ length: 24 }, (_, i) => ({
     value: String(i),
     label:
         i === 0
-            ? "12:00 AM (Midnight)"
+            ? "00:00 (Tengah malam)"
             : i === 12
-              ? "12:00 PM (Noon)"
+              ? "12:00 (Siang)"
               : i < 12
-                ? `${i}:00 AM`
-                : `${i - 12}:00 PM`,
+                ? `${i}:00`
+                : `${i - 12}:00`,
 }));
 
 function cronToSchedule(cron: string): { scheduleId: string; hour: string } {
@@ -99,9 +104,9 @@ export default function SettingsPage() {
         const newCron = scheduleToCron(scheduleId, hour);
         const result = await updateCronSchedule(newCron);
         if (result.success) {
-            toast.success("Schedule updated successfully!");
+            toast.success("Jadwal berhasil diperbarui!");
         } else {
-            toast.error(result.error || "Failed to update");
+            toast.error(result.error || "Gagal memperbarui");
         }
         setLoading(false);
     };
@@ -112,8 +117,8 @@ export default function SettingsPage() {
     return (
         <div className="space-y-6">
             <div>
-                <h1 className="text-2xl font-bold">Settings</h1>
-                <p className="text-muted-foreground mt-1">Manage your application preferences</p>
+                <h1 className="text-2xl font-bold">Pengaturan</h1>
+                <p className="text-muted-foreground mt-1">Kelola preferensi aplikasi</p>
             </div>
 
             {/* Scraping Schedule */}
@@ -121,23 +126,23 @@ export default function SettingsPage() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <Clock className="h-5 w-5" />
-                        Auto-Scraping Schedule
+                        Jadwal scraping otomatis
                     </CardTitle>
                     <CardDescription>
-                        Configure when the worker automatically scrapes all account data
+                        Atur kapan worker otomatis mengambil semua data akun
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                     {cronLoading ? (
                         <div className="flex items-center gap-2 text-muted-foreground">
                             <Loader2 className="h-4 w-4 animate-spin" />
-                            Loading...
+                            Memuat...
                         </div>
                     ) : (
                         <>
                             {/* Frequency Selection - Using styled buttons instead of radio */}
                             <div className="space-y-3">
-                                <Label>Frequency</Label>
+                                <Label>Frekuensi</Label>
                                 <div className="grid gap-2">
                                     {SCHEDULE_OPTIONS.map((option) => (
                                         <button
@@ -174,13 +179,13 @@ export default function SettingsPage() {
                                 </div>
                             </div>
 
-                            {/* Time Selection (not for hourly) */}
+                            {/* Pilihan waktu (bukan untuk mode per jam) */}
                             {scheduleId !== "hourly" && (
                                 <div className="space-y-2">
-                                    <Label>Time of Day (UTC)</Label>
+                                    <Label>Waktu hari (UTC)</Label>
                                     <Select value={hour} onValueChange={setHour}>
                                         <SelectTrigger className="w-[200px]">
-                                            <SelectValue placeholder="Select time" />
+                                            <SelectValue placeholder="Pilih waktu" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {HOUR_OPTIONS.map((opt) => (
@@ -195,11 +200,11 @@ export default function SettingsPage() {
 
                             {/* Preview */}
                             <div className="p-3 bg-muted rounded-md text-sm">
-                                <span className="font-medium">Current schedule:</span>{" "}
+                                <span className="font-medium">Jadwal saat ini:</span>{" "}
                                 <span className="text-muted-foreground">
-                                    {selectedOption?.label} at{" "}
+                                    {selectedOption?.label} pukul{" "}
                                     {HOUR_OPTIONS.find((h) => h.value === hour)?.label ||
-                                        "Midnight"}
+                                        "Tengah malam"}
                                 </span>
                                 <br />
                                 <span className="font-mono text-xs opacity-60">
@@ -213,7 +218,7 @@ export default function SettingsPage() {
                                 ) : (
                                     <Save className="h-4 w-4" data-slot="icon" />
                                 )}
-                                Save Schedule
+                                Simpan jadwal
                             </Button>
                         </>
                     )}
@@ -223,12 +228,12 @@ export default function SettingsPage() {
             {/* Profile placeholder */}
             <Card>
                 <CardHeader>
-                    <CardTitle>Profile</CardTitle>
-                    <CardDescription>Manage your account information</CardDescription>
+                    <CardTitle>Profil</CardTitle>
+                    <CardDescription>Kelola informasi akun Anda</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <p className="text-sm text-muted-foreground">
-                        Profile management coming soon. Currently logged in as admin.
+                        Pengelolaan profil segera hadir. Saat ini masuk sebagai admin.
                     </p>
                 </CardContent>
             </Card>

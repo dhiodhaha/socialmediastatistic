@@ -25,7 +25,7 @@ import {
 import { Strong, Text } from "@/shared/components/catalyst/text";
 
 // Interface matching the real data structure from Prisma
-interface ScrapingJob {
+export interface ScrapingJob {
     id: string;
     status: "PENDING" | "RUNNING" | "COMPLETED" | "FAILED";
     totalAccounts: number;
@@ -50,20 +50,20 @@ function ActionMenu({ job }: { job: ScrapingJob }) {
     const router = useRouter();
 
     const handleDelete = async () => {
-        if (!confirm("Delete this job and all associated snapshot data?")) return;
+        if (!confirm("Hapus tugas ini beserta semua data snapshot yang terkait?")) return;
 
         const result = await deleteScrapingJob(job.id);
         if (result.success) {
-            toast.success("Job deleted successfully");
+            toast.success("Tugas berhasil dihapus");
             router.refresh();
         } else {
-            toast.error(result.error || "Failed to delete job");
+            toast.error(result.error || "Gagal menghapus tugas");
         }
     };
 
     return (
         <Dropdown>
-            <DropdownButton plain aria-label="More options">
+            <DropdownButton plain aria-label="Opsi lainnya">
                 <MoreHorizontal className="w-4 h-4" data-slot="icon" />
             </DropdownButton>
             <DropdownMenu>
@@ -73,14 +73,14 @@ function ActionMenu({ job }: { job: ScrapingJob }) {
                         trigger={
                             <DropdownItem>
                                 <PencilLine className="w-4 h-4 ml-auto" data-slot="icon" />
-                                Assign Reporting Month
+                                Tetapkan bulan pelaporan
                             </DropdownItem>
                         }
                     />
                 )}
                 <DropdownItem onClick={handleDelete} className="text-red-600 dark:text-red-500">
                     <Trash2 className="w-4 h-4 ml-auto" data-slot="icon" />
-                    Delete Job
+                    Hapus tugas
                 </DropdownItem>
             </DropdownMenu>
         </Dropdown>
@@ -90,7 +90,7 @@ function ActionMenu({ job }: { job: ScrapingJob }) {
 export const columns: ColumnDef<ScrapingJob>[] = [
     {
         accessorKey: "status",
-        header: "STATUS",
+        header: "Status",
         cell: ({ row }) => {
             const status = row.original.status;
             const color = status === "COMPLETED" ? "green" : status === "FAILED" ? "red" : "amber"; // Running/Pending
@@ -98,12 +98,12 @@ export const columns: ColumnDef<ScrapingJob>[] = [
             // Map status text to be friendlier if needed, or keep generic
             const label =
                 status === "COMPLETED"
-                    ? "Success"
+                    ? "Berhasil"
                     : status === "FAILED"
-                      ? "Failed"
+                      ? "Gagal"
                       : status === "RUNNING"
-                        ? "Running"
-                        : "Pending";
+                        ? "Berjalan"
+                        : "Menunggu";
 
             return (
                 <Badge color={color}>
@@ -128,20 +128,19 @@ export const columns: ColumnDef<ScrapingJob>[] = [
     },
     {
         id: "trigger",
-        header: "TRIGGER INFO",
+        header: "Sumber",
         cell: () => {
-            // Placeholder as real data for trigger source isn't in ScrapingJob yet
             return (
                 <div className="flex flex-col">
-                    <Strong>Scheduled Job</Strong>
-                    <Text>by System</Text>
+                    <Strong>Tugas terjadwal</Strong>
+                    <Text>oleh sistem</Text>
                 </div>
             );
         },
     },
     {
         id: "timing",
-        header: "TIMING",
+        header: "Waktu",
         cell: ({ row }) => {
             const startVal = row.original.startedAt || row.original.createdAt;
             const startDate = new Date(startVal);
@@ -165,7 +164,7 @@ export const columns: ColumnDef<ScrapingJob>[] = [
     },
     {
         id: "metrics",
-        header: "METRICS",
+        header: "Akun",
         cell: ({ row }) => {
             const {
                 totalAccounts: total,
@@ -221,7 +220,7 @@ export const columns: ColumnDef<ScrapingJob>[] = [
     },
     {
         id: "reporting",
-        header: "REPORTING",
+        header: "Bulan pelaporan",
         cell: ({ row }) => {
             const reporting = describeReportingAssignment({
                 status: row.original.status,
@@ -232,7 +231,7 @@ export const columns: ColumnDef<ScrapingJob>[] = [
             });
 
             if (row.original.status !== "COMPLETED") {
-                return <Text className="text-muted-foreground">Available after completion</Text>;
+                return <Text className="text-muted-foreground">Tersedia setelah selesai</Text>;
             }
 
             return (
@@ -240,8 +239,8 @@ export const columns: ColumnDef<ScrapingJob>[] = [
                     <Strong>{reporting.label}</Strong>
                     <Text>
                         {reporting.source === "manual"
-                            ? "Manual reporting month"
-                            : "Auto from completion month"}
+                            ? "Bulan pelaporan manual"
+                            : "Otomatis dari bulan selesai"}
                     </Text>
                 </div>
             );
@@ -249,7 +248,7 @@ export const columns: ColumnDef<ScrapingJob>[] = [
     },
     {
         id: "actions",
-        header: "ACTIONS",
+        header: "Aksi",
         cell: ({ row }) => <ActionMenu job={row.original} />,
     },
 ];

@@ -38,7 +38,7 @@ export function QuarterlyPlatformSummary({
             <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                 <div>
                     <div className="text-sm font-medium text-zinc-500">
-                        Ringkasan Platform Kuartal
+                        Ringkasan platform kuartal
                     </div>
                     <h3 className="mt-1 text-2xl font-semibold text-zinc-900 dark:text-white">
                         {platformLabel(platform)}
@@ -54,23 +54,23 @@ export function QuarterlyPlatformSummary({
                 <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                     <SummaryCard
                         icon={BarChart3}
-                        label="Peringkat Memenuhi Syarat"
+                        label="Peringkat memenuhi syarat"
                         value={`${summary.rankingEligibleCount}/${summary.totalAccounts}`}
                     />
                     <SummaryCard
                         icon={TrendingUp}
-                        label="Pertumbuhan Pengikut Bersih"
+                        label="Pertumbuhan pengikut bersih"
                         value={formatGrowth(summary.netFollowerGrowth)}
                         growthValue={summary.netFollowerGrowth}
                     />
                     <SummaryCard
                         icon={TrendingDown}
-                        label="Masalah Performa"
+                        label="Masalah performa"
                         value={String(summary.performanceIssueCount)}
                     />
                     <SummaryCard
                         icon={AlertTriangle}
-                        label="Masalah Kualitas Data"
+                        label="Masalah kualitas data"
                         value={String(summary.dataQualityIssueCount)}
                     />
                 </div>
@@ -78,13 +78,13 @@ export function QuarterlyPlatformSummary({
 
             <div className="mt-5 grid gap-4 lg:grid-cols-2">
                 <MoverList
-                    title="Peningkatan Tertinggi"
-                    emptyLabel="Belum ada peringkat dalam kuartal ini untuk platform ini."
+                    title="Peningkatan tertinggi"
+                    emptyLabel="Belum ada peringkat pada kuartal ini untuk platform ini."
                     movers={summary.topGainers}
                     tone="emerald"
                 />
                 <MoverList
-                    title="Penurunan Tertinggi"
+                    title="Penurunan tertinggi"
                     emptyLabel="Tidak ada penurunan untuk platform ini."
                     movers={summary.topDecliners}
                     tone="rose"
@@ -94,7 +94,7 @@ export function QuarterlyPlatformSummary({
             {methodologyNote && (
                 <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-200">
                     <div className="mb-1 text-xs font-semibold uppercase tracking-wide">
-                        Metodologi Kategori
+                        Metodologi kategori
                     </div>
                     <p>{methodologyNote}</p>
                 </div>

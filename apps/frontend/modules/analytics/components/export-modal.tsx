@@ -32,6 +32,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/shared/components/ui/select";
+import { cn } from "@/shared/lib/utils";
 
 interface ExportModalProps {
     trigger?: React.ReactNode;
@@ -208,133 +209,91 @@ export function ExportModal({ trigger, defaultCategoryId }: ExportModalProps) {
                     </Button>
                 )}
             </DialogTrigger>
-            <DialogContent className="sm:max-w max-h-[90vh] flex flex-col">
+            <DialogContent className="flex max-h-[90vh] flex-col sm:max-w-3xl">
                 <DialogHeader>
-                    <DialogTitle>Export Report</DialogTitle>
+                    <DialogTitle>Buat PDF laporan</DialogTitle>
                 </DialogHeader>
 
-                <div className="space-y-6 py-4 overflow-y-auto flex-1">
-                    {/* ===== SECTION 1: KONFIGURASI DATA ===== */}
-                    <div className="space-y-4">
-                        <div className="flex items-center gap-2">
-                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground">
-                                1
-                            </span>
-                            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                                Konfigurasi Data
-                            </h3>
-                        </div>
-
-                        <div className="rounded-lg border bg-muted/30 p-4 space-y-4">
-                            {/* Mode Export */}
-                            <div className="space-y-2">
-                                <Label className="text-xs text-muted-foreground">Mode Export</Label>
-                                <Select
-                                    value={mode}
-                                    onValueChange={(v) => setMode(v as "single" | "comparison")}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Pilih mode" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="comparison">
-                                            Pertumbuhan (2 tanggal)
-                                        </SelectItem>
-                                        <SelectItem value="single">Snapshot tunggal</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            {/* Periode Perbandingan with Arrow */}
-                            {mode === "comparison" && (
+                <div className="flex-1 space-y-5 overflow-y-auto py-4">
+                    <ExportSection
+                        number={1}
+                        title="Periode laporan"
+                        description="Pilih data lama dan data baru yang akan dibandingkan."
+                    >
+                        <div className="grid gap-4">
+                            <div className="grid gap-3 sm:grid-cols-[220px_minmax(0,1fr)]">
                                 <div className="space-y-2">
-                                    <Label className="text-xs text-muted-foreground">
-                                        Periode Perbandingan
+                                    <Label className="text-base/7 font-medium text-zinc-500 sm:text-sm/6">
+                                        Jenis laporan
                                     </Label>
-                                    <div className="flex items-center gap-3">
-                                        <div className="flex-1 space-y-1">
-                                            <span className="text-xs text-muted-foreground">
-                                                Awal (Data Lama)
-                                            </span>
-                                            <Select value={job1} onValueChange={setJob1}>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Pilih tanggal" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {jobs.map((job) => (
-                                                        <SelectItem key={job.id} value={job.id}>
-                                                            {formatJobLabel(job)}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                        <ArrowRight className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-5" />
-                                        <div className="flex-1 space-y-1">
-                                            <span className="text-xs text-muted-foreground">
-                                                Akhir (Data Baru)
-                                            </span>
-                                            <Select value={job2} onValueChange={setJob2}>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Pilih tanggal" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {jobs.map((job) => (
-                                                        <SelectItem key={job.id} value={job.id}>
-                                                            {formatJobLabel(job)}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Single mode date picker */}
-                            {mode === "single" && (
-                                <div className="space-y-2">
-                                    <Label className="text-xs text-muted-foreground">
-                                        Tanggal Snapshot
-                                    </Label>
-                                    <Select value={job1} onValueChange={setJob1}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Pilih tanggal" />
+                                    <Select
+                                        value={mode}
+                                        onValueChange={(v) => setMode(v as "single" | "comparison")}
+                                    >
+                                        <SelectTrigger className="w-full">
+                                            <SelectValue placeholder="Pilih mode" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {jobs.map((job) => (
-                                                <SelectItem key={job.id} value={job.id}>
-                                                    {formatJobLabel(job)}
-                                                </SelectItem>
-                                            ))}
+                                            <SelectItem value="comparison">Pertumbuhan</SelectItem>
+                                            <SelectItem value="single">Snapshot tunggal</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
+                                <div className="rounded-2xl bg-blue-50 p-4 text-base/7 text-blue-950 sm:text-sm/6 dark:bg-blue-950/30 dark:text-blue-100">
+                                    {mode === "comparison"
+                                        ? "Rekomendasi: gunakan mode pertumbuhan untuk PDF laporan bulanan."
+                                        : "Snapshot tunggal hanya menampilkan kondisi satu periode tanpa pertumbuhan."}
+                                </div>
+                            </div>
+
+                            {mode === "comparison" ? (
+                                <div className="grid gap-3 sm:grid-cols-[1fr_auto_1fr] sm:items-end">
+                                    <SnapshotSelect
+                                        label="Data awal"
+                                        value={job1}
+                                        jobs={jobs}
+                                        onChange={setJob1}
+                                        formatJobLabel={formatJobLabel}
+                                    />
+                                    <div className="hidden pb-2 sm:block">
+                                        <ArrowRight className="size-5 text-zinc-400" />
+                                    </div>
+                                    <SnapshotSelect
+                                        label="Data akhir"
+                                        value={job2}
+                                        jobs={jobs}
+                                        onChange={setJob2}
+                                        formatJobLabel={formatJobLabel}
+                                    />
+                                </div>
+                            ) : (
+                                <SnapshotSelect
+                                    label="Snapshot laporan"
+                                    value={job1}
+                                    jobs={jobs}
+                                    onChange={setJob1}
+                                    formatJobLabel={formatJobLabel}
+                                />
                             )}
                         </div>
-                    </div>
+                    </ExportSection>
 
-                    {/* ===== SECTION 2: FILTER & CAKUPAN ===== */}
-                    <div className="space-y-4">
-                        <div className="flex items-center gap-2">
-                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground">
-                                2
-                            </span>
-                            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                                Filter & Cakupan
-                            </h3>
-                        </div>
-
-                        <div className="space-y-4">
-                            {/* Category Filter */}
+                    <ExportSection
+                        number={2}
+                        title="Cakupan laporan"
+                        description="Tentukan grup akun dan platform yang masuk ke PDF."
+                    >
+                        <div className="grid gap-4">
                             <div className="space-y-2">
-                                <Label className="text-xs text-muted-foreground">Kategori</Label>
+                                <Label className="text-base/7 font-medium text-zinc-500 sm:text-sm/6">
+                                    Grup laporan
+                                </Label>
                                 <Select value={categoryId} onValueChange={setCategoryId}>
-                                    <SelectTrigger>
+                                    <SelectTrigger className="w-full">
                                         <SelectValue placeholder="Pilih kategori" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="ALL">Semua Kategori</SelectItem>
+                                        <SelectItem value="ALL">Semua grup</SelectItem>
                                         {categories.map((cat) => (
                                             <SelectItem key={cat.id} value={cat.id}>
                                                 {cat.name}
@@ -344,158 +303,198 @@ export function ExportModal({ trigger, defaultCategoryId }: ExportModalProps) {
                                 </Select>
                             </div>
 
-                            {/* Platform as Horizontal Tiles */}
                             <div className="space-y-3">
-                                <Label className="text-xs text-muted-foreground">Platform</Label>
-
-                                {/* Select All */}
-                                <div className="flex items-center space-x-2">
-                                    <Checkbox
-                                        id="all"
-                                        checked={allSelected}
-                                        onCheckedChange={(checked) => handleSelectAll(!!checked)}
-                                    />
-                                    <Label
-                                        htmlFor="all"
-                                        className="text-sm font-normal cursor-pointer"
-                                    >
-                                        Pilih Semua
+                                <div className="flex items-center justify-between gap-3">
+                                    <Label className="text-base/7 font-medium text-zinc-500 sm:text-sm/6">
+                                        Platform
                                     </Label>
+                                    <label
+                                        htmlFor="all"
+                                        className="flex cursor-pointer items-center gap-2 text-base/7 text-zinc-500 sm:text-sm/6"
+                                    >
+                                        <Checkbox
+                                            id="all"
+                                            checked={allSelected}
+                                            onCheckedChange={(checked) =>
+                                                handleSelectAll(!!checked)
+                                            }
+                                        />
+                                        Pilih semua
+                                    </label>
                                 </div>
 
-                                {/* Horizontal Platform Tiles */}
-                                <div className="flex items-center gap-2">
-                                    <label
-                                        htmlFor="instagram"
-                                        className={`flex items-center justify-center gap-2 rounded-lg border p-3 cursor-pointer transition-colors ${
-                                            platforms.INSTAGRAM
-                                                ? "border-primary bg-primary/5"
-                                                : "border-border hover:bg-muted/50"
-                                        }`}
-                                    >
-                                        <Checkbox
-                                            id="instagram"
-                                            checked={platforms.INSTAGRAM}
-                                            onCheckedChange={() =>
-                                                handlePlatformToggle("INSTAGRAM")
-                                            }
-                                            className="sr-only"
-                                        />
-                                        <span
-                                            className={`text-sm font-medium ${platforms.INSTAGRAM ? "text-primary" : ""}`}
-                                        >
-                                            Instagram
-                                        </span>
-                                    </label>
-
-                                    <label
-                                        htmlFor="tiktok"
-                                        className={`flex items-center justify-center gap-2 rounded-lg border p-3 cursor-pointer transition-colors ${
-                                            platforms.TIKTOK
-                                                ? "border-primary bg-primary/5"
-                                                : "border-border hover:bg-muted/50"
-                                        }`}
-                                    >
-                                        <Checkbox
-                                            id="tiktok"
-                                            checked={platforms.TIKTOK}
-                                            onCheckedChange={() => handlePlatformToggle("TIKTOK")}
-                                            className="sr-only"
-                                        />
-                                        <span
-                                            className={`text-sm font-medium ${platforms.TIKTOK ? "text-primary" : ""}`}
-                                        >
-                                            TikTok
-                                        </span>
-                                    </label>
-
-                                    <label
-                                        htmlFor="twitter"
-                                        className={`flex items-center justify-center gap-2 rounded-lg border p-3 cursor-pointer transition-colors ${
-                                            platforms.TWITTER
-                                                ? "border-primary bg-primary/5"
-                                                : "border-border hover:bg-muted/50"
-                                        }`}
-                                    >
-                                        <Checkbox
-                                            id="twitter"
-                                            checked={platforms.TWITTER}
-                                            onCheckedChange={() => handlePlatformToggle("TWITTER")}
-                                            className="sr-only"
-                                        />
-                                        <span
-                                            className={`text-sm font-medium ${platforms.TWITTER ? "text-primary" : ""}`}
-                                        >
-                                            Twitter/X
-                                        </span>
-                                    </label>
+                                <div className="grid gap-2 sm:grid-cols-3">
+                                    <PlatformTile
+                                        id="instagram"
+                                        label="Instagram"
+                                        checked={platforms.INSTAGRAM}
+                                        onToggle={() => handlePlatformToggle("INSTAGRAM")}
+                                    />
+                                    <PlatformTile
+                                        id="tiktok"
+                                        label="TikTok"
+                                        checked={platforms.TIKTOK}
+                                        onToggle={() => handlePlatformToggle("TIKTOK")}
+                                    />
+                                    <PlatformTile
+                                        id="twitter"
+                                        label="Twitter / X"
+                                        checked={platforms.TWITTER}
+                                        onToggle={() => handlePlatformToggle("TWITTER")}
+                                    />
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </ExportSection>
 
-                    {/* ===== SECTION 3: PREFERENSI FILE ===== */}
-                    <div className="space-y-4">
-                        <div className="flex items-center gap-2">
-                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground">
-                                3
-                            </span>
-                            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                                Preferensi File
-                            </h3>
-                        </div>
-
-                        <div className="space-y-4">
-                            {/* Custom Title */}
+                    <ExportSection
+                        number={3}
+                        title="Detail PDF"
+                        description="Judul dan halaman pembuka untuk file laporan."
+                    >
+                        <div className="grid gap-4">
                             <div className="space-y-2">
-                                <Label className="text-xs text-muted-foreground">
-                                    Judul Laporan (Opsional)
+                                <Label className="text-base/7 font-medium text-zinc-500 sm:text-sm/6">
+                                    Judul laporan
                                 </Label>
                                 <Input
-                                    placeholder="Masukkan judul custom..."
+                                    placeholder="Kosongkan untuk memakai judul otomatis"
                                     value={customTitle}
                                     onChange={(e) => setCustomTitle(e.target.value)}
                                 />
                             </div>
 
-                            {/* Cover Page Toggle */}
-                            <div className="flex items-center space-x-2">
+                            <label
+                                htmlFor="cover"
+                                className="flex cursor-pointer items-start gap-3 rounded-2xl bg-zinc-50 p-4 ring-1 ring-zinc-950/5 dark:bg-zinc-950 dark:ring-white/10"
+                            >
                                 <Checkbox
                                     id="cover"
                                     checked={includeCover}
                                     onCheckedChange={(checked) => setIncludeCover(!!checked)}
                                 />
-                                <Label
-                                    htmlFor="cover"
-                                    className="text-sm font-normal cursor-pointer"
-                                >
-                                    Sertakan Halaman Cover
-                                </Label>
-                            </div>
+                                <span>
+                                    <span className="block text-base/7 font-medium text-zinc-950 sm:text-sm/6 dark:text-white">
+                                        Sertakan halaman cover
+                                    </span>
+                                    <span className="block text-base/7 text-zinc-500 sm:text-sm/6 dark:text-zinc-400">
+                                        Cocok untuk versi PDF yang akan dibagikan.
+                                    </span>
+                                </span>
+                            </label>
                         </div>
-                    </div>
+                    </ExportSection>
                 </div>
 
-                {/* Footer with Cancel + Export buttons */}
-                <DialogFooter className="gap-2 sm:gap-0">
+                <DialogFooter className="border-t border-zinc-950/10 pt-4 dark:border-white/10">
                     <DialogClose asChild>
-                        <Button plain>Cancel</Button>
+                        <Button plain>Batal</Button>
                     </DialogClose>
                     <Button onClick={handleExport} disabled={isExporting || noneSelected}>
                         {isExporting ? (
                             <>
                                 <Loader2 className="h-4 w-4 animate-spin" data-slot="icon" />
-                                Exporting...
+                                Mengekspor...
                             </>
                         ) : (
                             <>
                                 <Download className="h-4 w-4" data-slot="icon" />
-                                Export PDF
+                                Ekspor PDF
                             </>
                         )}
                     </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
+    );
+}
+
+function ExportSection({
+    number,
+    title,
+    description,
+    children,
+}: {
+    number: number;
+    title: string;
+    description: string;
+    children: React.ReactNode;
+}) {
+    return (
+        <section className="grid gap-4 rounded-3xl border border-zinc-950/10 p-4 sm:grid-cols-[180px_minmax(0,1fr)] dark:border-white/10">
+            <div className="flex gap-3 sm:block">
+                <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-zinc-950 text-sm font-semibold text-white sm:mb-3 dark:bg-white dark:text-zinc-950">
+                    {number}
+                </div>
+                <div>
+                    <h3 className="text-base/7 font-semibold text-zinc-950 sm:text-sm/6 dark:text-white">
+                        {title}
+                    </h3>
+                    <p className="mt-1 text-base/7 text-zinc-500 sm:text-sm/6 dark:text-zinc-400">
+                        {description}
+                    </p>
+                </div>
+            </div>
+            <div>{children}</div>
+        </section>
+    );
+}
+
+function SnapshotSelect({
+    label,
+    value,
+    jobs,
+    onChange,
+    formatJobLabel,
+}: {
+    label: string;
+    value: string;
+    jobs: MonthlyReportingAnchor[];
+    onChange: (value: string) => void;
+    formatJobLabel: (job: MonthlyReportingAnchor) => string;
+}) {
+    return (
+        <div className="space-y-2">
+            <Label className="text-base/7 font-medium text-zinc-500 sm:text-sm/6">{label}</Label>
+            <Select value={value} onValueChange={onChange}>
+                <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Pilih tanggal" />
+                </SelectTrigger>
+                <SelectContent>
+                    {jobs.map((job) => (
+                        <SelectItem key={job.id} value={job.id}>
+                            {formatJobLabel(job)}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+        </div>
+    );
+}
+
+function PlatformTile({
+    id,
+    label,
+    checked,
+    onToggle,
+}: {
+    id: string;
+    label: string;
+    checked: boolean;
+    onToggle: () => void;
+}) {
+    return (
+        <label
+            htmlFor={id}
+            className={cn(
+                "flex cursor-pointer items-center justify-between rounded-2xl border p-3 transition",
+                checked
+                    ? "border-blue-600 bg-blue-50 text-blue-900 dark:border-blue-400 dark:bg-blue-950/30 dark:text-blue-100"
+                    : "border-zinc-950/10 text-zinc-600 hover:bg-zinc-50 dark:border-white/10 dark:text-zinc-400 dark:hover:bg-zinc-950",
+            )}
+        >
+            <span className="text-base/7 font-medium sm:text-sm/6">{label}</span>
+            <Checkbox id={id} checked={checked} onCheckedChange={onToggle} />
+        </label>
     );
 }

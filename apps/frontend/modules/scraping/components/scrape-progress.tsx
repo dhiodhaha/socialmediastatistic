@@ -49,9 +49,9 @@ export function ScrapeProgress({ jobId, onComplete }: ScrapeProgressProps) {
                 clearInterval(intervalRef.current);
 
                 if (job.status === "COMPLETED") {
-                    toast.success("Scraping completed successfully!");
+                    toast.success("Scraping selesai dengan sukses!");
                 } else {
-                    toast.error("Scraping job failed or finished with errors.");
+                    toast.error("Tugas scraping gagal atau selesai dengan galat.");
                 }
 
                 router.refresh();
@@ -72,9 +72,9 @@ export function ScrapeProgress({ jobId, onComplete }: ScrapeProgressProps) {
         setStopping(true);
         const result = await stopScrape(jobId);
         if (result.success) {
-            toast.info("Stopping scrape... It will stop after the current batch completes.");
+            toast.info("Menghentikan scraping... Akan berhenti setelah batch saat ini selesai.");
         } else {
-            toast.error(result.error || "Failed to stop scrape");
+            toast.error(result.error || "Gagal menghentikan scraping");
             setStopping(false);
         }
     };
@@ -88,11 +88,13 @@ export function ScrapeProgress({ jobId, onComplete }: ScrapeProgressProps) {
             <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                    <span className="font-medium text-sm">Scraping in progress... ({status})</span>
+                    <span className="font-medium text-sm">
+                        Scraping sedang berjalan... ({status})
+                    </span>
                 </div>
                 <div className="flex items-center gap-3">
                     <span className="text-sm text-muted-foreground">
-                        {stats.completed} / {stats.total} accounts
+                        {stats.completed} / {stats.total} akun
                     </span>
                     <Button color="red" onClick={handleStop} disabled={stopping}>
                         {stopping ? (
@@ -100,7 +102,7 @@ export function ScrapeProgress({ jobId, onComplete }: ScrapeProgressProps) {
                         ) : (
                             <Square className="h-3 w-3" data-slot="icon" />
                         )}
-                        Stop
+                        Hentikan
                     </Button>
                 </div>
             </div>

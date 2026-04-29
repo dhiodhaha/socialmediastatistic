@@ -90,7 +90,7 @@ export function DataImportUpload() {
                         setStatus({
                             type: "error",
                             message:
-                                "No valid rows found. Ensure required headers: account_username, platform, scraped_at, followers",
+                                "Tidak ada baris valid. Pastikan header wajib: account_username, platform, scraped_at, followers",
                         });
                         setLoading(false);
                         return;
@@ -101,22 +101,22 @@ export function DataImportUpload() {
                     if (result.success) {
                         setStatus({
                             type: result.imported > 0 ? "success" : "error",
-                            message: `Imported ${result.imported} snapshots. Skipped ${result.skipped}.`,
+                            message: `Berhasil mengimpor ${result.imported} snapshot. Dilewati ${result.skipped}.`,
                             details: result.errors,
                         });
                         if (fileInputRef.current) fileInputRef.current.value = "";
                     } else {
-                        setStatus({ type: "error", message: "Import failed" });
+                        setStatus({ type: "error", message: "Impor gagal" });
                     }
                 } catch (error) {
                     console.error(error);
-                    setStatus({ type: "error", message: "Failed to parse or upload CSV." });
+                    setStatus({ type: "error", message: "Gagal memproses atau mengunggah CSV." });
                 } finally {
                     setLoading(false);
                 }
             },
             error: (error) => {
-                setStatus({ type: "error", message: `CSV Parsing Error: ${error.message}` });
+                setStatus({ type: "error", message: `Galat parsing CSV: ${error.message}` });
                 setLoading(false);
             },
         });
@@ -130,19 +130,19 @@ export function DataImportUpload() {
             </Button>
 
             <Dialog open={open} onClose={setOpen}>
-                <DialogTitle>Import Historical Data</DialogTitle>
+                <DialogTitle>Impor data historis</DialogTitle>
                 <DialogDescription>
-                    Upload a CSV file containing snapshot data to import into the system.
+                    Unggah file CSV berisi data snapshot untuk dimasukkan ke sistem.
                 </DialogDescription>
 
                 <div className="mt-4 flex flex-col gap-4">
                     <div className="flex items-center gap-2">
                         <Button outline onClick={handleDownloadTemplate}>
                             <Download className="w-4 h-4" data-slot="icon" />
-                            Download Template
+                            Unduh template
                         </Button>
                         <span className="text-xs text-muted-foreground">
-                            Use this template to format your data.
+                            Gunakan template ini untuk memformat data Anda.
                         </span>
                     </div>
 
@@ -160,7 +160,7 @@ export function DataImportUpload() {
                             className="w-full justify-center"
                         >
                             <Upload className="w-4 h-4" data-slot="icon" />
-                            {loading ? "Importing..." : "Select CSV File"}
+                            {loading ? "Sedang mengimpor..." : "Pilih file CSV"}
                         </Button>
                     </div>
 
@@ -179,14 +179,14 @@ export function DataImportUpload() {
                                 <AlertCircle className="h-4 w-4" />
                             )}
                             <AlertTitle>
-                                {status.type === "success" ? "Success" : "Error"}
+                                {status.type === "success" ? "Berhasil" : "Galat"}
                             </AlertTitle>
                             <AlertDescription>
                                 {status.message}
                                 {status.details && status.details.length > 0 && (
                                     <ul className="mt-2 text-xs list-disc pl-5 opacity-90 max-h-32 overflow-y-auto">
-                                        {status.details.slice(0, 10).map((err, i) => (
-                                            <li key={i}>{err}</li>
+                                        {status.details.slice(0, 10).map((err) => (
+                                            <li key={err}>{err}</li>
                                         ))}
                                         {status.details.length > 10 && (
                                             <li>...and {status.details.length - 10} more</li>
@@ -198,11 +198,11 @@ export function DataImportUpload() {
                     )}
 
                     <div className="text-xs text-muted-foreground border-t pt-4">
-                        <p className="font-medium mb-1">Required columns:</p>
+                        <p className="font-medium mb-1">Kolom wajib:</p>
                         <code className="bg-muted p-1 rounded">
                             account_username, platform, scraped_at, followers
                         </code>
-                        <p className="font-medium mt-2 mb-1">Optional columns:</p>
+                        <p className="font-medium mt-2 mb-1">Kolom opsional:</p>
                         <code className="bg-muted p-1 rounded">
                             following, posts, engagement, likes
                         </code>

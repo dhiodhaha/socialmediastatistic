@@ -241,7 +241,7 @@ export function useReportsColumns(selectedPlatform: string) {
 
         baseCols.push({
             id: "effort",
-            header: "Aktivitas Postingan",
+            header: "Aktivitas postingan",
             accessorFn: (row) => row.newPosts,
             cell: ({ row }) => {
                 const account = row.original;
@@ -268,7 +268,7 @@ export function useReportsColumns(selectedPlatform: string) {
                             {account.currentPosts >= 0 ? (
                                 <>
                                     {account.newPosts >= 0 ? "+" : ""}
-                                    {account.newPosts} Baru
+                                    {account.newPosts} baru
                                 </>
                             ) : (
                                 "Tidak ada data akhir kuartal"
@@ -283,7 +283,7 @@ export function useReportsColumns(selectedPlatform: string) {
             id: "actions",
             header: () => (
                 <div className="!pr-6 w-10">
-                    <span className="sr-only">Actions</span>
+                    <span className="sr-only">Aksi</span>
                 </div>
             ),
             cell: () => (
