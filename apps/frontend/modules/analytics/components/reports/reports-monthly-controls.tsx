@@ -37,77 +37,85 @@ export function ReportsMonthlyControls({
     loading,
     loadingData,
     onViewReport,
+    selectedPlatform,
 }: ReportsMonthlyControlsProps) {
     return (
-        <div className="bg-white dark:bg-zinc-900 p-2 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-wrap gap-2 items-center">
-            <div className="relative z-30">
-                <FilterListbox
-                    title="Saring kategori"
-                    value={selectedCategory}
-                    onChange={setSelectedCategory}
-                    options={categories}
-                    icon={Layers}
-                />
-            </div>
-
-            <div className="w-px h-6 bg-zinc-100 dark:bg-zinc-700 mx-1" />
-
-            <div className="relative z-20">
-                <FilterListbox
-                    title="Pilih laporan bulanan"
-                    value={selectedPeriod || { id: "", label: "Memuat..." }}
-                    onChange={setSelectedPeriod}
-                    options={jobs}
-                    icon={Calendar}
-                />
-            </div>
-
-            <div className="relative z-10">
-                <FilterListbox
-                    title="Bandingkan dengan"
-                    value={selectedComparison || { id: "", label: "Pilih..." }}
-                    onChange={setSelectedComparison}
-                    options={comparisonOptions}
-                    prefix="vs"
-                />
-            </div>
-
-            <div className="flex-1" />
-
-            <div className="h-6 w-px bg-zinc-200 dark:bg-zinc-700 mx-1 hidden md:block" />
-            <label className="flex items-center gap-2 text-xs font-medium text-zinc-600 dark:text-zinc-400 cursor-pointer hover:text-zinc-900 dark:hover:text-white select-none px-2 py-1 rounded hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">
-                <div
-                    className={cn(
-                        "w-4 h-4 rounded border flex items-center justify-center transition-colors",
-                        includeNA
-                            ? "bg-blue-600 border-blue-600"
-                            : "bg-white dark:bg-zinc-800 border-zinc-300 dark:border-zinc-600 hover:border-zinc-400",
-                    )}
-                >
-                    {includeNA && <Check size={10} className="text-white stroke-[3px]" />}
+        <div className="space-y-4 rounded-[1.25rem] border border-slate-200/80 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-slate-950/70">
+            <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]">
+                <div className="relative z-30">
+                    <FilterListbox
+                        title="Grup laporan"
+                        value={selectedCategory}
+                        onChange={setSelectedCategory}
+                        options={categories}
+                        icon={Layers}
+                    />
                 </div>
-                <input
-                    type="checkbox"
-                    checked={includeNA}
-                    onChange={(e) => setIncludeNA(e.target.checked)}
-                    className="hidden"
-                />
-                <span className="whitespace-nowrap">Sertakan N/A</span>
-            </label>
 
-            <div className="h-6 w-px bg-zinc-200 dark:bg-zinc-700 mx-1 hidden md:block" />
-            <Button
-                onClick={onViewReport}
-                disabled={loading || loadingData || !selectedPeriod || !selectedComparison}
-                className="ml-2 !py-2 !px-4 !text-xs !h-9"
-            >
-                {loadingData ? (
-                    <Loader2 className="animate-spin w-3 h-3" />
-                ) : (
-                    <Search className="w-3 h-3" />
-                )}
-                Lihat laporan
-            </Button>
+                <div className="relative z-20">
+                    <FilterListbox
+                        title="Periode utama"
+                        value={selectedPeriod || { id: "", label: "Memuat..." }}
+                        onChange={setSelectedPeriod}
+                        options={jobs}
+                        icon={Calendar}
+                    />
+                </div>
+
+                <div className="relative z-10">
+                    <FilterListbox
+                        title="Periode pembanding"
+                        value={selectedComparison || { id: "", label: "Pilih..." }}
+                        onChange={setSelectedComparison}
+                        options={comparisonOptions}
+                        prefix="vs"
+                    />
+                </div>
+            </div>
+
+            <div className="flex flex-col gap-3 border-t border-slate-200/80 pt-4 md:flex-row md:items-center md:justify-between dark:border-white/10">
+                <label className="flex cursor-pointer select-none items-center gap-2 rounded-full px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-white">
+                    <div
+                        className={cn(
+                            "flex h-4 w-4 items-center justify-center rounded border transition-colors",
+                            includeNA
+                                ? "bg-blue-600 border-blue-600"
+                                : "border-slate-300 bg-white hover:border-slate-400 dark:border-slate-600 dark:bg-slate-800",
+                        )}
+                    >
+                        {includeNA && <Check size={10} className="text-white stroke-[3px]" />}
+                    </div>
+                    <input
+                        type="checkbox"
+                        checked={includeNA}
+                        onChange={(e) => setIncludeNA(e.target.checked)}
+                        className="hidden"
+                    />
+                    <span className="whitespace-nowrap">Sertakan N/A</span>
+                </label>
+
+                <div className="flex items-center gap-3">
+                    <div className="text-sm text-slate-500 dark:text-slate-400">
+                        {selectedPlatform === "INSTAGRAM"
+                            ? "Urutan tabel mengikuti jumlah pengikut terbaru Instagram."
+                            : selectedPlatform === "TIKTOK"
+                              ? "Urutan tabel mengikuti jumlah pengikut terbaru TikTok."
+                              : "Urutan tabel mengikuti jumlah pengikut terbaru Twitter / X."}
+                    </div>
+                    <Button
+                        onClick={onViewReport}
+                        disabled={loading || loadingData || !selectedPeriod || !selectedComparison}
+                        className="h-11 rounded-full !px-5 !py-2 !text-sm"
+                    >
+                        {loadingData ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                            <Search className="h-4 w-4" />
+                        )}
+                        Lihat laporan
+                    </Button>
+                </div>
+            </div>
         </div>
     );
 }

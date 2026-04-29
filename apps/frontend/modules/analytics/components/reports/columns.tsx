@@ -85,7 +85,7 @@ export function useReportsColumns(selectedPlatform: string) {
         const baseCols: ColumnDef<DisplayRow>[] = [
             {
                 id: "identity",
-                header: () => <div className="!pl-6">Identitas Akun</div>,
+                header: () => <div className="pl-6">Identitas Akun</div>,
                 accessorFn: (row) => row.name, // Allow sorting by name if needed
                 cell: ({ row }) => {
                     const account = row.original;
@@ -96,7 +96,7 @@ export function useReportsColumns(selectedPlatform: string) {
                     );
 
                     return (
-                        <div className="flex items-center gap-4 !pl-6">
+                        <div className="flex items-center gap-4 py-3 pl-6 pr-4">
                             <div className="flex-shrink-0">
                                 <span
                                     className={cn(
@@ -114,7 +114,6 @@ export function useReportsColumns(selectedPlatform: string) {
                                     <Strong className="text-zinc-900 dark:text-white truncate max-w-[200px]">
                                         {account.name}
                                     </Strong>
-                                    {/* Ternary kept for rendering condition, but cleaner */}
                                     {account.rank <= 2 &&
                                         !account.isNA &&
                                         account.isRanked !== false && (
@@ -173,7 +172,7 @@ export function useReportsColumns(selectedPlatform: string) {
                     const account = row.original;
 
                     return (
-                        <div>
+                        <div className="py-3">
                             <span className="block text-lg font-bold text-zinc-900 dark:text-white tracking-tight">
                                 {account.currentFollowers >= 0
                                     ? formatNumber(account.currentFollowers)
@@ -210,7 +209,7 @@ export function useReportsColumns(selectedPlatform: string) {
                 cell: ({ row }) => {
                     const account = row.original;
                     return (
-                        <div>
+                        <div className="py-3">
                             <span className="block text-lg font-bold text-zinc-900 dark:text-white tracking-tight">
                                 {account.currentLikes !== undefined && account.currentLikes >= 0
                                     ? formatNumber(account.currentLikes)
@@ -248,7 +247,7 @@ export function useReportsColumns(selectedPlatform: string) {
                 const badgeClass = getNewPostsBadgeStyles(account.newPosts);
 
                 return (
-                    <div>
+                    <div className="py-3">
                         {account.currentPosts >= 0 ? (
                             <div className="text-zinc-900 dark:text-white font-semibold text-sm">
                                 {account.currentPosts}{" "}
@@ -287,7 +286,7 @@ export function useReportsColumns(selectedPlatform: string) {
                 </div>
             ),
             cell: () => (
-                <div className="!pr-6 text-right">
+                <div className="!pr-6 py-3 text-right">
                     <button
                         type="button"
                         className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors inline-flex"

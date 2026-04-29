@@ -3,6 +3,7 @@ import { FailedAccountsAlert } from "@/modules/accounts/components/failed-accoun
 import { getScrapingHistory } from "@/modules/analytics/actions/history.actions";
 import { HistoryToolbar } from "@/modules/analytics/components/history-toolbar";
 import { DataImportUpload } from "@/modules/scraping/components/data-import-upload";
+import { PageHero, Surface, SurfaceHeader, WorkspacePage } from "@/shared/components/ui/workspace";
 import { FixOrphanButton } from "./fix-orphan-button";
 import { HistoryDataTable } from "./history-data-table";
 
@@ -41,47 +42,35 @@ export default async function HistoryPage({
     }
 
     return (
-        <div className="mx-auto flex max-w-7xl flex-col gap-8 p-6 sm:p-8 lg:p-10">
-            <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-end">
-                <div className="max-w-3xl">
-                    <div className="text-base/7 font-medium text-blue-600 sm:text-sm/6">
-                        Kesiapan data
+        <WorkspacePage>
+            <PageHero
+                eyebrow="Operasional data"
+                title="Pantau scraping, snapshot, dan kesiapan pelaporan."
+                description="Gunakan halaman ini untuk melihat data yang siap dipakai, memperbaiki akun gagal, dan mengelola snapshot terdahulu dari satu tempat."
+                actions={
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                        <DataImportUpload />
+                        <FixOrphanButton />
                     </div>
-                    <h1 className="mt-1 text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">
-                        Data scraping
-                    </h1>
-                    <p className="mt-3 text-base/7 text-zinc-500 sm:text-sm/6 dark:text-zinc-400">
-                        Cek proses scraping yang siap dipakai untuk laporan bulanan atau kuartalan.
-                        Gunakan halaman ini untuk menetapkan bulan pelaporan, meninjau akun yang
-                        gagal, atau mengimpor snapshot terdahulu.
-                    </p>
-                </div>
-                <div className="flex flex-col gap-2 sm:flex-row lg:justify-end">
-                    <DataImportUpload />
-                    <FixOrphanButton />
-                </div>
-            </div>
+                }
+            />
 
             <FailedAccountsAlert />
 
             <HistoryToolbar activeJobId={activeJob?.id} />
 
-            <section className="space-y-4">
-                <div>
-                    <h2 className="text-lg/7 font-semibold text-zinc-900 dark:text-white">
-                        Snapshot pelaporan
-                    </h2>
-                    <p className="mt-1 text-base/7 text-zinc-500 sm:text-sm/6 dark:text-zinc-400">
-                        Tugas yang selesai bisa dipakai sebagai patokan laporan. Tugas yang gagal
-                        sebaiknya diperbaiki sebelum dipakai untuk keluaran PDF.
-                    </p>
-                </div>
+            <Surface>
+                <SurfaceHeader
+                    eyebrow="Riwayat"
+                    title="Snapshot pelaporan"
+                    description="Tugas yang selesai bisa dipakai sebagai patokan laporan. Tugas yang gagal sebaiknya diperbaiki sebelum dipakai untuk keluaran PDF."
+                />
                 <HistoryDataTable
                     data={jobs || []}
                     pageCount={pagination?.totalPages || 1}
                     currentPage={page}
                 />
-            </section>
-        </div>
+            </Surface>
+        </WorkspacePage>
     );
 }

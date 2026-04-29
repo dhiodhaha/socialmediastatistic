@@ -17,6 +17,7 @@ import {
     TableCell,
     TableHead,
     TableHeader,
+    TableHeadRow,
     TableRow,
 } from "@/shared/components/ui/table";
 
@@ -81,12 +82,12 @@ export function DataTable<TData, TValue>({
 
     return (
         <div className="space-y-4">
-            <div className="-mx-4 -my-2 overflow-x-auto whitespace-nowrap sm:-mx-6 lg:-mx-8">
-                <div className="inline-block min-w-full px-4 py-2 align-middle sm:px-6 lg:px-8">
+            <div className="overflow-hidden">
+                <div className="min-w-full align-middle">
                     <Table>
                         <TableHeader>
                             {table.getHeaderGroups().map((headerGroup) => (
-                                <TableRow key={headerGroup.id}>
+                                <TableHeadRow key={headerGroup.id}>
                                     {headerGroup.headers.map((header) => {
                                         return (
                                             <TableHead key={header.id} className="text-zinc-500">
@@ -99,7 +100,7 @@ export function DataTable<TData, TValue>({
                                             </TableHead>
                                         );
                                     })}
-                                </TableRow>
+                                </TableHeadRow>
                             ))}
                         </TableHeader>
                         <TableBody>
@@ -141,7 +142,7 @@ export function DataTable<TData, TValue>({
                 </div>
             </div>
 
-            <div className="flex flex-col gap-3 border-t border-zinc-950/10 pt-4 sm:flex-row sm:items-center sm:justify-between dark:border-white/10">
+            <div className="flex flex-col gap-3 rounded-[1.25rem] border border-slate-200/80 bg-slate-50/90 px-4 py-3 sm:flex-row sm:items-center sm:justify-between dark:border-white/10 dark:bg-white/5">
                 <div className="text-base/7 text-zinc-500 sm:text-sm/6 dark:text-zinc-400">
                     Halaman{" "}
                     <span className="font-medium tabular-nums text-zinc-900 dark:text-white">
@@ -162,6 +163,7 @@ export function DataTable<TData, TValue>({
                         outline
                         onClick={() => table.previousPage()}
                         disabled={!table.getCanPreviousPage()}
+                        className="rounded-full"
                     >
                         Sebelumnya
                     </Button>
@@ -169,6 +171,7 @@ export function DataTable<TData, TValue>({
                         outline
                         onClick={() => table.nextPage()}
                         disabled={!table.getCanNextPage()}
+                        className="rounded-full"
                     >
                         Berikutnya
                     </Button>

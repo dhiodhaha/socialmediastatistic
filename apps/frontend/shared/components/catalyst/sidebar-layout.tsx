@@ -60,9 +60,25 @@ export function SidebarLayout({
     const [showSidebar, setShowSidebar] = useState(false);
 
     return (
-        <div className="relative isolate flex min-h-svh w-full bg-white max-lg:flex-col lg:bg-zinc-100 dark:bg-zinc-900 dark:lg:bg-zinc-950">
+        <div className="relative isolate flex min-h-svh w-full max-lg:flex-col">
+            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,#f8fafc_0%,#eef2ff_42%,#f8fafc_100%)] dark:bg-[linear-gradient(180deg,#020617_0%,#0f172a_42%,#020617_100%)]" />
+            <div className="relative z-10 flex min-h-svh flex-1 items-center justify-center px-6 py-10 lg:hidden">
+                <div className="w-full max-w-md rounded-[2rem] border border-slate-300/80 bg-white p-8 text-center shadow-sm ring-1 ring-slate-200/70 dark:border-white/10 dark:bg-slate-950 dark:ring-white/10">
+                    <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
+                        Desktop lebih ideal
+                    </div>
+                    <h1 className="mt-4 text-3xl font-medium tracking-[-0.04em] text-slate-950 dark:text-white">
+                        Buka aplikasi ini di layar desktop.
+                    </h1>
+                    <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                        Dashboard, tabel laporan, dan alur ekspor PDF paling baik digunakan di
+                        desktop atau laptop.
+                    </p>
+                    {navbar ? <div className="mt-6">{navbar}</div> : null}
+                </div>
+            </div>
             {/* Sidebar on desktop */}
-            <div className="fixed inset-y-0 left-0 w-64 max-lg:hidden">{sidebar}</div>
+            <div className="fixed inset-y-0 left-0 z-30 w-64 max-lg:hidden">{sidebar}</div>
 
             {/* Sidebar on mobile */}
             <MobileSidebar open={showSidebar} close={() => setShowSidebar(false)}>
@@ -70,7 +86,7 @@ export function SidebarLayout({
             </MobileSidebar>
 
             {/* Navbar on mobile */}
-            <header className="flex items-center px-4 lg:hidden">
+            <header className="hidden border-b border-slate-200/70 bg-white/95 px-4 lg:hidden dark:border-white/10 dark:bg-slate-950/95">
                 <div className="py-2.5">
                     <button
                         onClick={() => setShowSidebar(true)}
@@ -85,9 +101,9 @@ export function SidebarLayout({
 
             {/* Content Area - The Inset Magic */}
             {/* lg:pt-2 lg:pr-2 lg:pl-64 -> Creates the floating card effect */}
-            <main className="flex flex-1 flex-col pb-2 lg:min-w-0 lg:pt-2 lg:pr-2 lg:pl-64">
-                <div className="grow p-6 lg:rounded-lg lg:bg-white lg:p-10 lg:shadow-sm lg:ring-1 lg:ring-zinc-950/5 dark:lg:bg-zinc-900 dark:lg:ring-white/10">
-                    <div className="mx-auto max-w-6xl">{children}</div>
+            <main className="relative z-0 hidden flex-1 flex-col px-3 pb-3 lg:flex lg:min-w-0 lg:pl-64 lg:pr-3 lg:pt-3">
+                <div className="grow overflow-hidden rounded-[2rem] border border-slate-300/80 bg-white p-5 shadow-sm ring-1 ring-slate-200/70 lg:p-8 dark:border-white/10 dark:bg-slate-950 dark:ring-white/10">
+                    <div className="mx-auto max-w-7xl">{children}</div>
                 </div>
             </main>
         </div>
