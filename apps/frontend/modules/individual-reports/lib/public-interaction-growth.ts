@@ -64,10 +64,22 @@ export function asInteractionResultJson(value: unknown): InteractionResultJson |
     return value as InteractionResultJson;
 }
 
+export function requireInteractionResultJson(
+    value: unknown,
+    platform: Platform,
+): InteractionResultJson {
+    const parsed = asInteractionResultJson(value);
+    if (!parsed) {
+        throw new Error(`Stored ${platform} result is not valid for interaction growth.`);
+    }
+
+    return parsed;
+}
+
 export function determineInteractionCoverage(
     platform: Platform,
     coverageStatus: string,
-    isPopularMode: boolean,
+    _isPopularMode: boolean,
 ): InteractionCoverageStatus {
     if (platform === "TWITTER") {
         return "limited-platform-coverage";
