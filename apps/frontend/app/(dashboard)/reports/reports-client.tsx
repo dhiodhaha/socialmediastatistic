@@ -489,7 +489,7 @@ export function ReportsClient({
         null;
 
     return (
-        <div className="mx-auto flex max-w-7xl flex-col space-y-8 p-10">
+        <div className="mx-auto flex max-w-7xl flex-col space-y-8 lg:space-y-10">
             <ReportHeader
                 reportMode={reportMode}
                 demoMode={isDemoMode}
@@ -534,25 +534,27 @@ export function ReportsClient({
                 onViewReport={handleViewReport}
             />
 
-            {reportMode === "QUARTERLY" && quarterlyStatus && (
-                <QuarterlyStatusSummary status={quarterlyStatus} />
-            )}
+            <div className="space-y-6">
+                {reportMode === "QUARTERLY" && quarterlyStatus && (
+                    <QuarterlyStatusSummary status={quarterlyStatus} />
+                )}
 
-            {reportMode === "QUARTERLY" && quarterlyPreview && selectedQuarterSummary && (
-                <QuarterlyPlatformSummary
-                    platform={selectedPlatform}
-                    categoryLabel={selectedCategory.label}
-                    methodologyNote={quarterlyPreview.methodologyNote}
-                    summary={selectedQuarterSummary}
-                />
-            )}
+                {reportMode === "QUARTERLY" && quarterlyPreview && selectedQuarterSummary && (
+                    <QuarterlyPlatformSummary
+                        platform={selectedPlatform}
+                        categoryLabel={selectedCategory.label}
+                        methodologyNote={quarterlyPreview.methodologyNote}
+                        summary={selectedQuarterSummary}
+                    />
+                )}
 
-            {reportMode === "MONTHLY" && hasViewed && (
-                <MonthlySourceSummary
-                    currentPeriod={selectedPeriod}
-                    comparisonPeriod={selectedComparison}
-                />
-            )}
+                {reportMode === "MONTHLY" && hasViewed && (
+                    <MonthlySourceSummary
+                        currentPeriod={selectedPeriod}
+                        comparisonPeriod={selectedComparison}
+                    />
+                )}
+            </div>
 
             <ReportsTable
                 data={comparisonData}
