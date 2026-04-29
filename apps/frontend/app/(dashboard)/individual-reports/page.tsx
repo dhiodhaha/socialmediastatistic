@@ -1,12 +1,12 @@
-import { getIndividualReportAccountOptions } from "@/modules/individual-reports/actions/individual-report.actions";
 import { IndividualQuarterlyReportClient } from "@/modules/individual-reports/components/individual-quarterly-report-client";
+import { getIndividualReportAccountOptionsQuery } from "@/modules/individual-reports/queries/individual-report.queries";
 import { DemoModeNotice } from "@/shared/components/demo-mode-notice";
 import { isDemoMode } from "@/shared/lib/demo-mode";
 
 export const dynamic = "force-dynamic";
 
 export default async function IndividualReportsPage() {
-    const accounts = await getIndividualReportAccountOptions();
+    const accounts = await getIndividualReportAccountOptionsQuery();
 
     return (
         <div className="mx-auto flex max-w-7xl flex-col space-y-8 p-10">

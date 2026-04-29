@@ -1,7 +1,10 @@
 import { type Platform, prisma } from "@repo/database";
 import { FailedAccountsAlert } from "@/modules/accounts/components/failed-accounts-alert";
-import { getScrapingHistory } from "@/modules/analytics/actions/history.actions";
 import { HistoryToolbar } from "@/modules/analytics/components/history-toolbar";
+import {
+    getActiveScrapingJobQuery,
+    getScrapingHistoryQuery,
+} from "@/modules/analytics/queries/history.queries";
 import { DataImportUpload } from "@/modules/scraping/components/data-import-upload";
 import { PageHero, Surface, SurfaceHeader, WorkspacePage } from "@/shared/components/ui/workspace";
 import { FixOrphanButton } from "./fix-orphan-button";
@@ -22,18 +25,14 @@ export default async function HistoryPage({
         platform: (params?.platform as Platform) || null,
     };
 
-    const { data: jobs, pagination } = await getScrapingHistory(page, 10, filters);
+    const { data: jobs, pagination } = await getScrapingHistoryQuery(page, 10, filters);
 
     // Cek tugas yang sedang berjalan agar progres langsung terlihat
     let activeJob: { id: string } | null = null;
 
     if (process.env.DATABASE_URL) {
         try {
-            activeJob = await prisma.scrapingJob.findFirst({
-                where: { status: { in: ["PENDING", "RUNNING"] } },
-                orderBy: { createdAt: "desc" },
-                select: { id: true },
-            });
+            activeJob = await getActiveScrapingJobQuery();
         } catch {
             console.warn(
                 "Gagal mengambil tugas aktif (mungkin saat build atau DB tidak terjangkau)",

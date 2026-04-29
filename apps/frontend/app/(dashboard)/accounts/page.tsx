@@ -1,5 +1,5 @@
-import { getAccounts } from "@/modules/accounts/actions/account.actions";
-import { getCategories } from "@/modules/categories/actions/category.actions";
+import { getAccountsQuery } from "@/modules/accounts/queries/account.queries";
+import { getCategoriesQuery } from "@/modules/categories/queries/category.queries";
 import { AccountsClient } from "./accounts-client";
 import type { Account } from "./columns";
 
@@ -15,28 +15,20 @@ export default async function AccountsPage({
     const search = params.search || "";
     const categoryId = params.categoryId || "ALL";
 
-    // Fetch data via server action
     let data: Account[] = [];
     let totalPages = 1;
     let categories: { id: string; name: string }[] = [];
 
-    // Fetch categories regardless (for filter)
     try {
-        const catRes = await getCategories();
-        if (catRes.success && catRes.data) {
-            categories = catRes.data;
-        }
+        categories = await getCategoriesQuery();
     } catch {
         // ignore
     }
 
-    // Fetch accounts
     try {
-        const result = await getAccounts(page, 10, search, categoryId);
-        if (result?.success && result?.data) {
-            data = result.data as Account[];
-            totalPages = result.pagination?.totalPages || 1;
-        }
+        const result = await getAccountsQuery(page, 10, search, categoryId);
+        data = result.data as Account[];
+        totalPages = result.pagination.totalPages || 1;
     } catch (e) {
         console.error("Failed to fetch accounts:", e);
     }

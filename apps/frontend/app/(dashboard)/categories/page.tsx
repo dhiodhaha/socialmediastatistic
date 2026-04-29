@@ -1,9 +1,8 @@
-import { getCategories } from "@/modules/categories/actions/category.actions";
-
 export const dynamic = "force-dynamic";
 
 import { Plus } from "lucide-react";
 import { CategoryDialog } from "@/modules/categories/components/category-dialog";
+import { getCategoriesQuery } from "@/modules/categories/queries/category.queries";
 import { Button } from "@/shared/components/catalyst/button";
 import { DataTable } from "@/shared/components/ui/data-table";
 import { PageHero, Surface, WorkspacePage } from "@/shared/components/ui/workspace";
@@ -13,10 +12,7 @@ export default async function CategoriesPage() {
     let data: Category[] = [];
 
     try {
-        const result = await getCategories();
-        if (result?.success && result?.data) {
-            data = result.data as Category[];
-        }
+        data = (await getCategoriesQuery()) as Category[];
     } catch (e) {
         console.error("Failed to fetch categories:", e);
     }
