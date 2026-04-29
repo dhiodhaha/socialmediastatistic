@@ -23,7 +23,8 @@
                 "NODE_ENV",
                 "NEXTAUTH_SECRET",
                 "NEXTAUTH_URL",
-                "AUTH_SECRET"
+                "AUTH_SECRET",
+                "DIRECT_URL"
             ],
             "outputs": [".next/**", "!.next/cache/**", "dist/**", "build/**"]
         },
