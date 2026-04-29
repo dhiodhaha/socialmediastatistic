@@ -27,6 +27,9 @@
             ],
             "outputs": [".next/**", "!.next/cache/**", "dist/**", "build/**"]
         },
+        "@repo/database#build": {
+            "cache": false
+        },
         "dev": {
             "cache": false,
             "persistent": true
