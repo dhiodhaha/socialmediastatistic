@@ -33,6 +33,7 @@ interface IndividualQuarterComparisonPanelProps {
     currentYear: number;
     availablePlatforms: PlatformOption[];
     selectedPlatforms: Set<Platform>;
+    demoMode?: boolean;
 }
 
 type QuarterComparisonResult = Awaited<ReturnType<typeof getIndividualQuarterComparison>>;
@@ -59,6 +60,7 @@ export function IndividualQuarterComparisonPanel({
     currentYear,
     availablePlatforms,
     selectedPlatforms,
+    demoMode = false,
 }: IndividualQuarterComparisonPanelProps) {
     const initialComparison = previousQuarter(currentYear, 1);
     const [comparisonYear, setComparisonYear] = useState(String(initialComparison.year));
@@ -195,27 +197,30 @@ export function IndividualQuarterComparisonPanel({
                         Q{quarter} {year} dibandingkan dengan Q{comparisonQuarter} {comparisonYear}
                     </h2>
                     <p className="mt-1 text-sm text-zinc-500">
-                        Menggunakan snapshot tersimpan. Jika data scraping belum ada, tambahkan
-                        snapshot manual dengan label sumber.
+                        {demoMode
+                            ? "Menggunakan snapshot tersimpan dari database demo."
+                            : "Menggunakan snapshot tersimpan. Jika data scraping belum ada, tambahkan snapshot manual dengan label sumber."}
                     </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                     <Button type="button" outline onClick={handleLoadQuarterComparison}>
                         Load Stats
                     </Button>
-                    <Button
-                        type="button"
-                        outline
-                        onClick={handleExportQuarterComparison}
-                        disabled={isExporting}
-                    >
-                        {isExporting ? (
-                            <Loader2 className="h-4 w-4 animate-spin" data-slot="icon" />
-                        ) : (
-                            <Download className="h-4 w-4" data-slot="icon" />
-                        )}
-                        Export Q-to-Q PDF
-                    </Button>
+                    {!demoMode && (
+                        <Button
+                            type="button"
+                            outline
+                            onClick={handleExportQuarterComparison}
+                            disabled={isExporting}
+                        >
+                            {isExporting ? (
+                                <Loader2 className="h-4 w-4 animate-spin" data-slot="icon" />
+                            ) : (
+                                <Download className="h-4 w-4" data-slot="icon" />
+                            )}
+                            Export Q-to-Q PDF
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -245,125 +250,133 @@ export function IndividualQuarterComparisonPanel({
                     </Select>
                 </div>
 
-                <div className="space-y-2">
-                    <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                        Manual Target
-                    </div>
-                    <Select
-                        value={manualSnapshotForm.target}
-                        onValueChange={(value) =>
+                {!demoMode && (
+                    <>
+                        <div className="space-y-2">
+                            <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                                Manual Target
+                            </div>
+                            <Select
+                                value={manualSnapshotForm.target}
+                                onValueChange={(value) =>
+                                    setManualSnapshotForm((prev) => ({
+                                        ...prev,
+                                        target: value as "current" | "comparison",
+                                    }))
+                                }
+                            >
+                                <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Choose target" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="comparison">
+                                        Pembanding Q{comparisonQuarter} {comparisonYear}
+                                    </SelectItem>
+                                    <SelectItem value="current">
+                                        Current Q{quarter} {year}
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                            <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                                Manual Platform
+                            </div>
+                            <Select
+                                value={manualSnapshotForm.platform}
+                                onValueChange={(value) =>
+                                    setManualSnapshotForm((prev) => ({
+                                        ...prev,
+                                        platform: value as Platform,
+                                    }))
+                                }
+                            >
+                                <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Choose platform" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {availablePlatforms.map((option) => (
+                                        <SelectItem key={option.id} value={option.id}>
+                                            {option.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </>
+                )}
+            </div>
+
+            {!demoMode && (
+                <div className="mt-3 grid gap-3 md:grid-cols-4">
+                    <ManualNumberInput
+                        value={manualSnapshotForm.followers}
+                        placeholder="Followers (required)"
+                        onChange={(followers) =>
                             setManualSnapshotForm((prev) => ({
                                 ...prev,
-                                target: value as "current" | "comparison",
+                                followers,
                             }))
                         }
-                    >
-                        <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Choose target" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="comparison">
-                                Pembanding Q{comparisonQuarter} {comparisonYear}
-                            </SelectItem>
-                            <SelectItem value="current">
-                                Current Q{quarter} {year}
-                            </SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-
-                <div className="space-y-2">
-                    <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                        Manual Platform
-                    </div>
-                    <Select
-                        value={manualSnapshotForm.platform}
-                        onValueChange={(value) =>
+                    />
+                    <ManualNumberInput
+                        value={manualSnapshotForm.posts}
+                        placeholder="Posts (optional)"
+                        onChange={(posts) =>
                             setManualSnapshotForm((prev) => ({
                                 ...prev,
-                                platform: value as Platform,
+                                posts,
                             }))
                         }
+                    />
+                    <ManualNumberInput
+                        value={manualSnapshotForm.likes}
+                        placeholder="Likes (optional)"
+                        onChange={(likes) =>
+                            setManualSnapshotForm((prev) => ({
+                                ...prev,
+                                likes,
+                            }))
+                        }
+                    />
+                    <Button
+                        type="button"
+                        onClick={handleSaveManualSnapshot}
+                        disabled={isPending || !manualSnapshotForm.followers}
                     >
-                        <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Choose platform" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {availablePlatforms.map((option) => (
-                                <SelectItem key={option.id} value={option.id}>
-                                    {option.label}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                        Simpan Snapshot Manual
+                    </Button>
                 </div>
-            </div>
+            )}
 
-            <div className="mt-3 grid gap-3 md:grid-cols-4">
-                <ManualNumberInput
-                    value={manualSnapshotForm.followers}
-                    placeholder="Followers (required)"
-                    onChange={(followers) =>
-                        setManualSnapshotForm((prev) => ({
-                            ...prev,
-                            followers,
-                        }))
-                    }
-                />
-                <ManualNumberInput
-                    value={manualSnapshotForm.posts}
-                    placeholder="Posts (optional)"
-                    onChange={(posts) =>
-                        setManualSnapshotForm((prev) => ({
-                            ...prev,
-                            posts,
-                        }))
-                    }
-                />
-                <ManualNumberInput
-                    value={manualSnapshotForm.likes}
-                    placeholder="Likes (optional)"
-                    onChange={(likes) =>
-                        setManualSnapshotForm((prev) => ({
-                            ...prev,
-                            likes,
-                        }))
-                    }
-                />
-                <Button
-                    type="button"
-                    onClick={handleSaveManualSnapshot}
-                    disabled={isPending || !manualSnapshotForm.followers}
-                >
-                    Simpan Snapshot Manual
-                </Button>
-            </div>
-
-            <div className="mt-3 grid gap-3 md:grid-cols-2">
-                <ManualNumberInput
-                    value={manualSnapshotForm.engagement}
-                    placeholder="Engagement (optional)"
-                    step="0.01"
-                    onChange={(engagement) =>
-                        setManualSnapshotForm((prev) => ({
-                            ...prev,
-                            engagement,
-                        }))
-                    }
-                />
-                <input
-                    type="text"
-                    value={manualSnapshotForm.sourceNote}
-                    onChange={(event) =>
-                        setManualSnapshotForm((prev) => ({
-                            ...prev,
-                            sourceNote: event.target.value,
-                        }))
-                    }
-                    className="h-10 rounded-md border border-zinc-300 bg-white px-3 text-sm dark:border-zinc-700 dark:bg-zinc-950"
-                    placeholder="Catatan sumber manual, contoh: angka dari laporan internal Des 2025"
-                />
-            </div>
+            {!demoMode && (
+                <div className="mt-3 grid gap-3 md:grid-cols-2">
+                    <ManualNumberInput
+                        value={manualSnapshotForm.engagement}
+                        placeholder="Engagement (optional)"
+                        step="0.01"
+                        onChange={(engagement) =>
+                            setManualSnapshotForm((prev) => ({
+                                ...prev,
+                                engagement,
+                            }))
+                        }
+                    />
+                    <input
+                        type="text"
+                        value={manualSnapshotForm.sourceNote}
+                        onChange={(event) =>
+                            setManualSnapshotForm((prev) => ({
+                                ...prev,
+                                sourceNote: event.target.value,
+                            }))
+                        }
+                        className="h-10 rounded-md border border-zinc-300 bg-white px-3 text-sm dark:border-zinc-700 dark:bg-zinc-950"
+                        placeholder="Catatan sumber manual, contoh: angka dari laporan internal Des 2025"
+                    />
+                </div>
+            )}
 
             {quarterComparison?.success && (
                 <div className="mt-5 grid gap-4 lg:grid-cols-3">

@@ -7,6 +7,11 @@ import { Button } from "@/shared/components/catalyst/button";
 import { Card } from "@/shared/components/ui/card";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
+import { isDemoMode } from "@/shared/lib/demo-mode";
+
+const demoEmail = process.env.NEXT_PUBLIC_DEMO_EMAIL;
+const demoPassword = process.env.NEXT_PUBLIC_DEMO_PASSWORD;
+const hasDemoCredentials = Boolean(demoEmail && demoPassword);
 
 export default function LoginPage() {
     const [email, setEmail] = useState("");
@@ -14,6 +19,13 @@ export default function LoginPage() {
     const [error, setError] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
+
+    function fillDemoCredentials() {
+        if (!demoEmail || !demoPassword) return;
+        setEmail(demoEmail);
+        setPassword(demoPassword);
+        setError("");
+    }
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
@@ -66,6 +78,23 @@ export default function LoginPage() {
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
+                    {isDemoMode && hasDemoCredentials && (
+                        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                            <div className="font-semibold">Demo account available</div>
+                            <p className="mt-1 text-amber-800">
+                                This deployment uses saved Neon data with scraping and PDF export
+                                disabled.
+                            </p>
+                            <button
+                                type="button"
+                                onClick={fillDemoCredentials}
+                                className="mt-3 text-sm font-semibold text-amber-950 underline underline-offset-4"
+                            >
+                                Use demo credentials
+                            </button>
+                        </div>
+                    )}
+
                     {error && (
                         <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20 text-destructive text-sm text-center">
                             {error}

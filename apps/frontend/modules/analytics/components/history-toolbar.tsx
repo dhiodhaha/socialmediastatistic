@@ -11,6 +11,7 @@ import { getCategories } from "@/modules/categories/actions/category.actions";
 import { triggerScrape } from "@/modules/scraping/actions/scrape.actions";
 import { ScrapeProgress } from "@/modules/scraping/components/scrape-progress";
 import { Button } from "@/shared/components/catalyst/button";
+import { DemoModeNotice } from "@/shared/components/demo-mode-notice";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -29,6 +30,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/shared/components/ui/select";
+import { isDemoMode } from "@/shared/lib/demo-mode";
 
 export function HistoryToolbar({ activeJobId }: { activeJobId?: string }) {
     const router = useRouter();
@@ -181,6 +183,7 @@ export function HistoryToolbar({ activeJobId }: { activeJobId?: string }) {
 
     return (
         <div className="flex flex-col gap-4">
+            {isDemoMode && <DemoModeNotice compact />}
             {currentJobId && (
                 <ScrapeProgress jobId={currentJobId} onComplete={handleScrapeComplete} />
             )}
@@ -211,52 +214,57 @@ export function HistoryToolbar({ activeJobId }: { activeJobId?: string }) {
                     </Select>
                 </div>
 
-                <div className="flex gap-2">
-                    <ExportModal />
+                {!isDemoMode && (
+                    <div className="flex gap-2">
+                        <ExportModal />
 
-                    <Select value={scrapeCategoryId} onValueChange={setScrapeCategoryId}>
-                        <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Urgent Scrape Scope" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="ALL">Scrape All</SelectItem>
-                            {categories.map((cat) => (
-                                <SelectItem key={cat.id} value={cat.id}>
-                                    Scrape {cat.name}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                        <Select value={scrapeCategoryId} onValueChange={setScrapeCategoryId}>
+                            <SelectTrigger className="w-[180px]">
+                                <SelectValue placeholder="Urgent Scrape Scope" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="ALL">Scrape All</SelectItem>
+                                {categories.map((cat) => (
+                                    <SelectItem key={cat.id} value={cat.id}>
+                                        Scrape {cat.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
 
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button disabled={isScraping || !!currentJobId}>
-                                {isScraping ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" data-slot="icon" />
-                                ) : (
-                                    <Play className="h-4 w-4" data-slot="icon" />
-                                )}
-                                Scrape Now
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Mulai Proses Scraping?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    {scrapeCategoryId === "ALL"
-                                        ? "Ini akan menjalankan scraping untuk SEMUA akun. Proses ini bisa memakan waktu beberapa menit."
-                                        : `Ini akan menjalankan scraping untuk kategori yang dipilih. Proses ini bisa memakan waktu beberapa menit.`}
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Batal</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleScrape}>
-                                    Ya, Mulai Scraping
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                </div>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button disabled={isScraping || !!currentJobId}>
+                                    {isScraping ? (
+                                        <Loader2
+                                            className="h-4 w-4 animate-spin"
+                                            data-slot="icon"
+                                        />
+                                    ) : (
+                                        <Play className="h-4 w-4" data-slot="icon" />
+                                    )}
+                                    Scrape Now
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Mulai Proses Scraping?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        {scrapeCategoryId === "ALL"
+                                            ? "Ini akan menjalankan scraping untuk SEMUA akun. Proses ini bisa memakan waktu beberapa menit."
+                                            : "Ini akan menjalankan scraping untuk kategori yang dipilih. Proses ini bisa memakan waktu beberapa menit."}
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Batal</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleScrape}>
+                                        Ya, Mulai Scraping
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
+                )}
             </div>
         </div>
     );
