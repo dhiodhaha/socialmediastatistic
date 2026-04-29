@@ -1,5 +1,5 @@
 import { resolve } from "node:path";
-import dotenv from "dotenv";
+import * as dotenv from "dotenv";
 
 // Load .env BEFORE importing prisma
 dotenv.config({ path: resolve(process.cwd(), ".env") });
@@ -11,20 +11,35 @@ async function main() {
 
     console.log("🌱 Seeding database...");
 
-    // Create admin user
-    const hashedPassword = await hash("admin123", 12);
+    const seedAdminEmail = process.env.SEED_ADMIN_EMAIL;
+    const seedAdminPassword = process.env.SEED_ADMIN_PASSWORD;
 
-    const adminUser = await prisma.user.upsert({
-        where: { email: "admin@socialmedia.gov" },
-        update: {},
-        create: {
-            email: "admin@socialmedia.gov",
-            password: hashedPassword,
-            name: "Admin User",
-        },
-    });
+    if ((seedAdminEmail && !seedAdminPassword) || (!seedAdminEmail && seedAdminPassword)) {
+        throw new Error("Set both SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD, or neither.");
+    }
 
-    console.log("✅ Created admin user:", adminUser.email);
+    if (seedAdminEmail && seedAdminPassword) {
+        const hashedPassword = await hash(seedAdminPassword, 12);
+
+        const adminUser = await prisma.user.upsert({
+            where: { email: seedAdminEmail },
+            update: {
+                password: hashedPassword,
+                name: "Admin User",
+            },
+            create: {
+                email: seedAdminEmail,
+                password: hashedPassword,
+                name: "Admin User",
+            },
+        });
+
+        console.log("✅ Upserted admin user:", adminUser.email);
+    } else {
+        console.log(
+            "ℹ️ Skipping admin user seed. Set SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD to create one.",
+        );
+    }
 
     // Create sample accounts
     const sampleAccounts = [
