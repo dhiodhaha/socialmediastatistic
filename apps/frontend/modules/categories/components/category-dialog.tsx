@@ -81,12 +81,14 @@ export function CategoryDialog({
             if (result?.success) {
                 setIsOpen?.(false);
                 if (mode === "create") reset();
-                toast.success(mode === "create" ? "Category created" : "Category updated");
+                toast.success(
+                    mode === "create" ? "Kategori berhasil dibuat" : "Kategori berhasil diperbarui",
+                );
             } else {
-                toast.error(result?.error || "An unknown error occurred");
+                toast.error(result?.error || "Terjadi kendala yang tidak diketahui");
             }
         } catch {
-            toast.error("Something went wrong");
+            toast.error("Terjadi kendala");
         } finally {
             setLoading(false);
         }
@@ -98,22 +100,22 @@ export function CategoryDialog({
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
                     <DialogTitle>
-                        {mode === "create" ? "Add Category" : "Edit Category"}
+                        {mode === "create" ? "Tambah kategori" : "Ubah kategori"}
                     </DialogTitle>
                     <DialogDescription>
                         {mode === "create"
-                            ? "Create a new category for grouping accounts."
-                            : "Update the category name."}
+                            ? "Buat kategori baru untuk mengelompokkan akun."
+                            : "Perbarui nama kategori."}
                     </DialogDescription>
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 py-4">
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="name" className="text-right">
-                            Name
+                            Nama
                         </Label>
                         <div className="col-span-3">
-                            <Input id="name" {...register("name")} placeholder="Gov Accounts" />
+                            <Input id="name" {...register("name")} placeholder="Portofolio utama" />
                             {errors.name && (
                                 <p className="text-sm text-destructive mt-1">
                                     {errors.name.message}
@@ -124,7 +126,7 @@ export function CategoryDialog({
 
                     <DialogFooter>
                         <Button type="submit" disabled={loading}>
-                            {loading ? "Saving..." : "Save changes"}
+                            {loading ? "Menyimpan..." : "Simpan perubahan"}
                         </Button>
                     </DialogFooter>
                 </form>

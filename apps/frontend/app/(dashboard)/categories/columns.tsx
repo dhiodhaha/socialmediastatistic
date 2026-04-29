@@ -28,18 +28,18 @@ export type Category = {
 export const columns: ColumnDef<Category>[] = [
     {
         accessorKey: "name",
-        header: "Name",
+        header: "Grup",
     },
     {
         accessorKey: "_count.accounts",
-        header: "Accounts",
+        header: "Akun",
         cell: ({ row }) => {
             return <span>{row.original._count.accounts}</span>;
         },
     },
     {
         accessorKey: "createdAt",
-        header: "Created At",
+        header: "Dibuat",
         cell: ({ row }) => {
             return new Date(row.original.createdAt).toLocaleDateString();
         },
@@ -52,14 +52,14 @@ export const columns: ColumnDef<Category>[] = [
             const [openEdit, setOpenEdit] = useState(false);
 
             const handleDelete = async () => {
-                const confirmed = confirm(`Are you sure you want to delete "${category.name}"?`);
+                const confirmed = confirm(`Yakin ingin menghapus "${category.name}"?`);
                 if (!confirmed) return;
 
                 const result = await deleteCategory(category.id);
                 if (result.success) {
-                    toast.success("Category deleted");
+                    toast.success("Grup berhasil dihapus");
                 } else {
-                    toast.error(result.error || "Failed to delete");
+                    toast.error(result.error || "Gagal menghapus");
                 }
             };
 
@@ -74,18 +74,18 @@ export const columns: ColumnDef<Category>[] = [
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button plain className="h-8 w-8 p-0">
-                                <span className="sr-only">Open menu</span>
+                                <span className="sr-only">Buka menu</span>
                                 <MoreHorizontal className="h-4 w-4" data-slot="icon" />
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuLabel>Aksi</DropdownMenuLabel>
                             <DropdownMenuItem onClick={() => setOpenEdit(true)}>
-                                <Pencil className="mr-2 h-4 w-4" /> Edit
+                                <Pencil className="mr-2 h-4 w-4" /> Ubah
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={handleDelete} className="text-red-600">
-                                <Trash className="mr-2 h-4 w-4" /> Delete
+                                <Trash className="mr-2 h-4 w-4" /> Hapus
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>

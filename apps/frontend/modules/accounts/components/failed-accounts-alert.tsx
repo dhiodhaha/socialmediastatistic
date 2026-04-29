@@ -71,13 +71,15 @@ export function FailedAccountsAlert() {
         try {
             const result = await retryFailedAccounts();
             if (result.success) {
-                toast.success(`Retry job started for ${result.failedCount} failed accounts`);
+                toast.success(
+                    `Tugas percobaan ulang dimulai untuk ${result.failedCount} akun gagal`,
+                );
                 router.push("/history");
             } else {
-                toast.error(result.error || "Failed to retry");
+                toast.error(result.error || "Gagal mencoba ulang");
             }
         } catch {
-            toast.error("Failed to retry failed accounts");
+            toast.error("Gagal mencoba ulang akun yang gagal");
         } finally {
             setRetrying(false);
         }
@@ -110,7 +112,7 @@ export function FailedAccountsAlert() {
                             ) : (
                                 <RefreshCw className="h-3 w-3" data-slot="icon" />
                             )}
-                            {retrying ? "Retrying..." : "Retry Failed"}
+                            {retrying ? "Sedang mencoba ulang..." : "Coba ulang gagal"}
                         </Button>
                         <Button plain onClick={() => setExpanded(!expanded)}>
                             {expanded ? (
@@ -136,8 +138,8 @@ export function FailedAccountsAlert() {
                                     <div>
                                         <span className="font-medium">{acc.username}</span>
                                         <div className="text-sm text-muted-foreground">
-                                            {acc.errors.map((e, i) => (
-                                                <div key={i}>
+                                            {acc.errors.map((e) => (
+                                                <div key={`${e.platform}-${e.handle}-${e.error}`}>
                                                     <span className="font-mono">@{e.handle}</span> (
                                                     {e.platform}): {e.error}
                                                 </div>
@@ -146,13 +148,13 @@ export function FailedAccountsAlert() {
                                     </div>
                                     <Button outline onClick={() => setEditingAccount(acc)}>
                                         <Pencil className="h-3 w-3" data-slot="icon" />
-                                        Edit Handle
+                                        Ubah handle
                                     </Button>
                                 </div>
                             ))}
                         </div>
                         <p className="text-sm mt-3 text-muted-foreground">
-                            Klik &quot;Edit Handle&quot; untuk memperbarui username yang telah
+                            Klik &quot;Ubah handle&quot; untuk memperbarui username yang telah
                             berubah atau akun yang suspended.
                         </p>
                     </AlertDescription>

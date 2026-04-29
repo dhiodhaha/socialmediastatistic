@@ -9,15 +9,16 @@ import {
     useReactTable,
 } from "@tanstack/react-table";
 import { Filter, Loader2, Search } from "lucide-react";
+import { Strong, Text } from "@/shared/components/catalyst/text";
 import {
     Table,
     TableBody,
     TableCell,
     TableHead,
     TableHeader,
+    TableHeadRow,
     TableRow,
-} from "@/shared/components/catalyst/table";
-import { Strong, Text } from "@/shared/components/catalyst/text";
+} from "@/shared/components/ui/table";
 import { type DisplayRow, useReportsColumns } from "./columns";
 import type { ReportMode } from "./report-mode";
 
@@ -55,19 +56,19 @@ export function ReportsTable({
     });
 
     return (
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm overflow-hidden min-h-[400px]">
+        <div className="min-h-[400px] overflow-hidden rounded-[1.75rem] border border-slate-300/80 bg-white shadow-sm ring-1 ring-slate-200/70 dark:border-white/10 dark:bg-slate-950 dark:ring-white/10">
             {/* Empty State: Not viewed yet */}
             {!hasViewed && !loadingData && (
                 <div className="flex flex-col items-center justify-center py-20 text-center ">
-                    <div className="bg-zinc-100 dark:bg-zinc-800 p-4 rounded-full mb-4">
-                        <Search className="h-8 w-8 text-zinc-400" />
+                    <div className="mb-4 rounded-full bg-slate-100 p-4 dark:bg-white/5">
+                        <Search className="h-8 w-8 text-slate-400" />
                     </div>
-                    <Strong className="text-lg text-zinc-900 dark:text-white">
+                    <Strong className="text-lg text-slate-900 dark:text-white">
                         {reportMode === "QUARTERLY"
                             ? "Siapkan Laporan Triwulanan"
                             : "Bandingkan Data"}
                     </Strong>
-                    <Text className="text-zinc-500 max-w-sm mt-2">
+                    <Text className="mt-2 max-w-sm text-slate-500 dark:text-slate-400">
                         {reportMode === "QUARTERLY"
                             ? "Pilih tahun dan kuartal di panel atas untuk meninjau performa platform, ranking, dan bukti akun per kuartal."
                             : "Pilih dua periode (snapshot) di panel atas untuk melihat analisis pertumbuhan akun."}
@@ -77,8 +78,8 @@ export function ReportsTable({
 
             {/* Loading State */}
             {loadingData && (
-                <div className="py-20 flex justify-center items-center">
-                    <Loader2 className="w-8 h-8 animate-spin text-zinc-400" />
+                <div className="flex items-center justify-center py-20">
+                    <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
                 </div>
             )}
 
@@ -87,30 +88,27 @@ export function ReportsTable({
                 !loadingData &&
                 (data.length > 0 ? (
                     <Table>
-                        <TableHead>
+                        <TableHeader>
                             {table.getHeaderGroups().map((headerGroup) => (
-                                <TableRow key={headerGroup.id}>
+                                <TableHeadRow key={headerGroup.id}>
                                     {headerGroup.headers.map((header) => (
-                                        <TableHeader key={header.id}>
+                                        <TableHead key={header.id}>
                                             {header.isPlaceholder
                                                 ? null
                                                 : flexRender(
                                                       header.column.columnDef.header,
                                                       header.getContext(),
                                                   )}
-                                        </TableHeader>
+                                        </TableHead>
                                     ))}
-                                </TableRow>
+                                </TableHeadRow>
                             ))}
-                        </TableHead>
+                        </TableHeader>
                         <TableBody>
                             {table.getRowModel().rows.map((row) => (
-                                <TableRow
-                                    key={row.id}
-                                    className="group hover:bg-zinc-50/50 dark:hover:bg-zinc-800/50"
-                                >
+                                <TableRow key={row.id} className="group">
                                     {row.getVisibleCells().map((cell) => (
-                                        <TableCell key={cell.id} className="p-0">
+                                        <TableCell key={cell.id} className="px-0 py-0">
                                             {flexRender(
                                                 cell.column.columnDef.cell,
                                                 cell.getContext(),
@@ -123,14 +121,14 @@ export function ReportsTable({
                     </Table>
                 ) : (
                     // No Data Found State
-                    <div className="p-12 text-center text-zinc-500 flex flex-col items-center">
-                        <Filter size={48} className="text-zinc-200 dark:text-zinc-700 mb-4" />
-                        <Strong className="text-lg text-zinc-900 dark:text-white">
+                    <div className="flex flex-col items-center p-12 text-center text-slate-500 dark:text-slate-400">
+                        <Filter size={48} className="mb-4 text-slate-200 dark:text-slate-700" />
+                        <Strong className="text-lg text-slate-900 dark:text-white">
                             {reportMode === "QUARTERLY"
                                 ? "Tidak ada baris platform kuartal yang tersedia"
                                 : "Tidak ada data ditemukan"}
                         </Strong>
-                        <Text className="mt-1 max-w-sm">
+                        <Text className="mt-1 max-w-sm text-slate-500 dark:text-slate-400">
                             {reportMode === "QUARTERLY"
                                 ? "Platform ini tidak memiliki data akun kuartal yang diturunkan untuk kuartal dan filter yang dipilih."
                                 : "Coba ganti filter kategori atau pilih platform lain."}

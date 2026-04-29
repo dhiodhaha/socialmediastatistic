@@ -93,7 +93,7 @@ export function ReportingMonthDialog({ job, trigger }: ReportingMonthDialogProps
 
     const handleSubmit = () => {
         if (!selectedPeriod) {
-            toast.error("No valid reporting month is available");
+            toast.error("Tidak ada bulan pelaporan yang valid");
             return;
         }
 
@@ -108,13 +108,13 @@ export function ReportingMonthDialog({ job, trigger }: ReportingMonthDialogProps
             const result = await assignReportingMonth(payload);
 
             if (result.success) {
-                toast.success(`Reporting month set to ${selectedPeriod.label}`);
+                toast.success(`Bulan pelaporan disetel ke ${selectedPeriod.label}`);
                 setOpen(false);
                 router.refresh();
                 return;
             }
 
-            toast.error(result.error || "Failed to assign reporting month");
+            toast.error(result.error || "Gagal menetapkan bulan pelaporan");
         });
     };
 
@@ -124,35 +124,35 @@ export function ReportingMonthDialog({ job, trigger }: ReportingMonthDialogProps
                 {trigger || (
                     <Button type="button" outline>
                         <PencilLine className="h-4 w-4" data-slot="icon" />
-                        Assign Reporting Month
+                        Tetapkan Bulan Pelaporan
                     </Button>
                 )}
             </DialogTrigger>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Assign Reporting Month</DialogTitle>
+                    <DialogTitle>Tetapkan Bulan Pelaporan</DialogTitle>
                     <DialogDescription>
-                        Keep the real completion date, but choose which reporting month this
-                        completed job should represent for monthly and quarterly reports.
+                        Pertahankan tanggal selesai yang sebenarnya, lalu pilih bulan pelaporan yang
+                        diwakili tugas selesai ini untuk laporan bulanan dan triwulan.
                     </DialogDescription>
                 </DialogHeader>
 
                 <div className="space-y-4">
                     <div className="rounded border p-3 text-xs">
-                        <div className="font-medium">Current reporting basis</div>
+                        <div className="font-medium">Dasar pelaporan saat ini</div>
                         <div className="mt-1 text-muted-foreground">
                             {currentAssignment.label} •{" "}
                             {currentAssignment.source === "manual"
-                                ? "manual assignment"
-                                : "automatic inference"}
+                                ? "penetapan manual"
+                                : "inferensi otomatis"}
                         </div>
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor={`reporting-period-${job.id}`}>Reporting month</Label>
+                        <Label htmlFor={`reporting-period-${job.id}`}>Bulan pelaporan</Label>
                         <Select value={selectedPeriodKey} onValueChange={setSelectedPeriodKey}>
                             <SelectTrigger id={`reporting-period-${job.id}`} className="w-full">
-                                <SelectValue placeholder="Choose reporting month" />
+                                <SelectValue placeholder="Pilih bulan pelaporan" />
                             </SelectTrigger>
                             <SelectContent>
                                 {availablePeriods.map((period) => (
@@ -165,10 +165,10 @@ export function ReportingMonthDialog({ job, trigger }: ReportingMonthDialogProps
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor={`reporting-reason-${job.id}`}>Reason</Label>
+                        <Label htmlFor={`reporting-reason-${job.id}`}>Alasan</Label>
                         <Textarea
                             id={`reporting-reason-${job.id}`}
-                            placeholder="Explain why this completed job should represent that reporting month."
+                            placeholder="Jelaskan mengapa tugas selesai ini harus mewakili bulan pelaporan tersebut."
                             value={reason}
                             onChange={(event) => setReason(event.target.value)}
                         />
@@ -177,13 +177,13 @@ export function ReportingMonthDialog({ job, trigger }: ReportingMonthDialogProps
 
                 <DialogFooter>
                     <Button outline type="button" onClick={() => setOpen(false)}>
-                        Cancel
+                        Batal
                     </Button>
                     <Button type="button" onClick={handleSubmit} disabled={isPending}>
                         {isPending ? (
                             <Loader2 className="h-4 w-4 animate-spin" data-slot="icon" />
                         ) : null}
-                        Save Reporting Month
+                        Simpan Bulan Pelaporan
                     </Button>
                 </DialogFooter>
             </DialogContent>

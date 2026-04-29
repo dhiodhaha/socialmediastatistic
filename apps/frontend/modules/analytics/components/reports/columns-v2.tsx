@@ -1,5 +1,4 @@
 import type { ColumnDef } from "@tanstack/react-table";
-import { format } from "date-fns";
 import { useMemo } from "react";
 import { cn } from "@/shared/lib/utils";
 import type { DisplayRow } from "./columns"; // We reuse the type
@@ -30,7 +29,7 @@ export function useReportsColumnsV2(selectedPlatform: string) {
             {
                 id: "identity",
                 header: () => (
-                    <div className="text-left font-bold uppercase tracking-wider">Nama Unit</div>
+                    <div className="text-left font-bold uppercase tracking-wider">Nama unit</div>
                 ),
                 accessorFn: (row) => row.name,
                 cell: ({ row }) => {
@@ -53,7 +52,7 @@ export function useReportsColumnsV2(selectedPlatform: string) {
                     <div className="flex flex-col items-end uppercase tracking-wider">
                         <span className="font-bold">Pengikut</span>
                         <span className="text-[10px] opacity-80 font-normal normal-case">
-                            Total & Pertumbuhan
+                            Total & pertumbuhan
                         </span>
                     </div>
                 ),
@@ -110,9 +109,9 @@ export function useReportsColumnsV2(selectedPlatform: string) {
                 id: "likes",
                 header: () => (
                     <div className="flex flex-col items-end uppercase tracking-wider">
-                        <span className="font-bold">Likes</span>
+                        <span className="font-bold">Suka</span>
                         <span className="text-[10px] opacity-80 font-normal normal-case">
-                            Total & Pertumbuhan
+                            Total & pertumbuhan
                         </span>
                     </div>
                 ),
@@ -173,7 +172,7 @@ export function useReportsColumnsV2(selectedPlatform: string) {
                 <div className="flex flex-col items-end uppercase tracking-wider">
                     <span className="font-bold">Postingan</span>
                     <span className="text-[10px] opacity-80 font-normal normal-case">
-                        Total & Pertumbuhan
+                        Total & pertumbuhan
                     </span>
                 </div>
             ),

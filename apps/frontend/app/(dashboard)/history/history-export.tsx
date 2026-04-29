@@ -40,19 +40,23 @@ export function HistoryExport() {
             const result = await getAllScrapingHistory(filters);
 
             if (!result.success || !result.data) {
-                console.error("Failed to fetch data for CSV export");
+                console.error("Gagal mengambil data untuk ekspor CSV");
                 return;
             }
 
             const csvData = result.data.map((job) => ({
                 ID: job.id,
                 Status: job.status,
-                "Total Accounts": job.totalAccounts,
-                "Success Count": job.completedCount,
-                "Failed Count": job.failedCount,
-                "Created At": new Date(job.createdAt).toLocaleString(),
-                "Started At": job.startedAt ? new Date(job.startedAt).toLocaleString() : "-",
-                "Completed At": job.completedAt ? new Date(job.completedAt).toLocaleString() : "-",
+                "Total Akun": job.totalAccounts,
+                "Jumlah Sukses": job.completedCount,
+                "Jumlah Gagal": job.failedCount,
+                "Dibuat Pada": new Date(job.createdAt).toLocaleString("id-ID"),
+                "Dimulai Pada": job.startedAt
+                    ? new Date(job.startedAt).toLocaleString("id-ID")
+                    : "-",
+                "Selesai Pada": job.completedAt
+                    ? new Date(job.completedAt).toLocaleString("id-ID")
+                    : "-",
             }));
 
             const csv = Papa.unparse(csvData);
@@ -65,7 +69,7 @@ export function HistoryExport() {
             link.click();
             document.body.removeChild(link);
         } catch (error) {
-            console.error("CSV Export error:", error);
+            console.error("Galat ekspor CSV:", error);
         } finally {
             setIsExporting(false);
         }
@@ -78,7 +82,7 @@ export function HistoryExport() {
             const result = await exportHistoryPdf(filters);
 
             if (!result.success || !result.data) {
-                console.error("Failed to fetch data for PDF export", result.error);
+                console.error("Gagal mengambil data untuk ekspor PDF", result.error);
                 return;
             }
 
@@ -99,7 +103,7 @@ export function HistoryExport() {
             link.click();
             document.body.removeChild(link);
         } catch (error) {
-            console.error("PDF Export error:", error);
+            console.error("Galat ekspor PDF:", error);
         } finally {
             setIsExporting(false);
         }
@@ -114,17 +118,17 @@ export function HistoryExport() {
                     ) : (
                         <Download className="h-4 w-4" data-slot="icon" />
                     )}
-                    Export
+                    Ekspor
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={handleExportCsv}>
                     <FileJson className="mr-2 h-4 w-4" />
-                    Export as CSV
+                    Ekspor sebagai CSV
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleExportPdf}>
                     <FileText className="mr-2 h-4 w-4" />
-                    Export as PDF
+                    Ekspor sebagai PDF
                 </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>

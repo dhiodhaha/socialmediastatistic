@@ -15,10 +15,10 @@ export function Header({ user }: HeaderProps) {
         <header className="h-16 bg-background border-b flex items-center justify-between px-6">
             <div>
                 <h2 className="text-lg font-semibold">
-                    Welcome back, {user.name || user.email?.split("@")[0] || "User"}
+                    Selamat datang kembali, {user.name || user.email?.split("@")[0] || "Pengguna"}
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                    {new Date().toLocaleDateString("en-US", {
+                    {new Date().toLocaleDateString("id-ID", {
                         weekday: "long",
                         year: "numeric",
                         month: "long",
@@ -28,7 +28,7 @@ export function Header({ user }: HeaderProps) {
             </div>
 
             <div className="flex items-center gap-4">
-                {/* Notifications */}
+                {/* Notifikasi */}
                 <Button plain className="relative text-muted-foreground">
                     <svg
                         className="w-5 h-5"
@@ -47,7 +47,7 @@ export function Header({ user }: HeaderProps) {
                     <span className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full" />
                 </Button>
 
-                {/* User menu */}
+                {/* Menu pengguna */}
                 <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center font-semibold text-sm">
                         {(user.name || user.email)?.[0]?.toUpperCase() || "U"}
@@ -57,7 +57,7 @@ export function Header({ user }: HeaderProps) {
                         onClick={() => signOut({ callbackUrl: "/login" })}
                         className="text-muted-foreground"
                     >
-                        Sign out
+                        Keluar
                     </Button>
                 </div>
             </div>

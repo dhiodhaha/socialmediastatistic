@@ -17,6 +17,7 @@ import {
     TableCell,
     TableHead,
     TableHeader,
+    TableHeadRow,
     TableRow,
 } from "@/shared/components/ui/table";
 
@@ -29,6 +30,8 @@ interface DataTableProps<TData, TValue> {
         pageSize: number;
     };
     onPaginationChange?: (pagination: { pageIndex: number; pageSize: number }) => void;
+    emptyTitle?: string;
+    emptyDescription?: string;
 }
 
 export function DataTable<TData, TValue>({
@@ -37,6 +40,8 @@ export function DataTable<TData, TValue>({
     pageCount,
     pagination,
     onPaginationChange,
+    emptyTitle = "Belum ada data",
+    emptyDescription = "Ubah filter atau tambahkan data sebelum membuat laporan.",
 }: DataTableProps<TData, TValue>) {
     const [sorting, setSorting] = React.useState<SortingState>([]);
 
@@ -76,66 +81,101 @@ export function DataTable<TData, TValue>({
     });
 
     return (
-        <div>
-            <div className="rounded-md border">
-                <Table>
-                    <TableHeader>
-                        {table.getHeaderGroups().map((headerGroup) => (
-                            <TableRow key={headerGroup.id}>
-                                {headerGroup.headers.map((header) => {
-                                    return (
-                                        <TableHead key={header.id}>
-                                            {header.isPlaceholder
-                                                ? null
-                                                : flexRender(
-                                                      header.column.columnDef.header,
-                                                      header.getContext(),
-                                                  )}
-                                        </TableHead>
-                                    );
-                                })}
-                            </TableRow>
-                        ))}
-                    </TableHeader>
-                    <TableBody>
-                        {table.getRowModel().rows?.length ? (
-                            table.getRowModel().rows.map((row) => (
-                                <TableRow
-                                    key={row.id}
-                                    data-state={row.getIsSelected() && "selected"}
-                                >
-                                    {row.getVisibleCells().map((cell) => (
-                                        <TableCell key={cell.id}>
-                                            {flexRender(
-                                                cell.column.columnDef.cell,
-                                                cell.getContext(),
-                                            )}
-                                        </TableCell>
-                                    ))}
+        <div className="space-y-4">
+            <div className="overflow-hidden">
+                <div className="min-w-full align-middle">
+                    <Table>
+                        <TableHeader>
+                            {table.getHeaderGroups().map((headerGroup) => (
+                                <TableHeadRow key={headerGroup.id}>
+                                    {headerGroup.headers.map((header) => {
+                                        return (
+                                            <TableHead key={header.id} className="text-zinc-500">
+                                                {header.isPlaceholder
+                                                    ? null
+                                                    : flexRender(
+                                                          header.column.columnDef.header,
+                                                          header.getContext(),
+                                                      )}
+                                            </TableHead>
+                                        );
+                                    })}
+                                </TableHeadRow>
+                            ))}
+                        </TableHeader>
+                        <TableBody>
+                            {table.getRowModel().rows?.length ? (
+                                table.getRowModel().rows.map((row) => (
+                                    <TableRow
+                                        key={row.id}
+                                        data-state={row.getIsSelected() && "selected"}
+                                    >
+                                        {row.getVisibleCells().map((cell) => (
+                                            <TableCell key={cell.id}>
+                                                {flexRender(
+                                                    cell.column.columnDef.cell,
+                                                    cell.getContext(),
+                                                )}
+                                            </TableCell>
+                                        ))}
+                                    </TableRow>
+                                ))
+                            ) : (
+                                <TableRow>
+                                    <TableCell
+                                        colSpan={columns.length}
+                                        className="py-16 text-center"
+                                    >
+                                        <div className="mx-auto max-w-sm space-y-2">
+                                            <div className="text-base/7 font-semibold text-zinc-900 sm:text-sm/6 dark:text-white">
+                                                {emptyTitle}
+                                            </div>
+                                            <div className="text-base/7 text-zinc-500 sm:text-sm/6 dark:text-zinc-400">
+                                                {emptyDescription}
+                                            </div>
+                                        </div>
+                                    </TableCell>
                                 </TableRow>
-                            ))
-                        ) : (
-                            <TableRow>
-                                <TableCell colSpan={columns.length} className="h-24 text-center">
-                                    No results.
-                                </TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
+                            )}
+                        </TableBody>
+                    </Table>
+                </div>
             </div>
 
-            <div className="flex items-center justify-end space-x-2 py-4">
-                <Button
-                    outline
-                    onClick={() => table.previousPage()}
-                    disabled={!table.getCanPreviousPage()}
-                >
-                    Previous
-                </Button>
-                <Button outline onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
-                    Next
-                </Button>
+            <div className="flex flex-col gap-3 rounded-[1.25rem] border border-slate-200/80 bg-slate-50/90 px-4 py-3 sm:flex-row sm:items-center sm:justify-between dark:border-white/10 dark:bg-white/5">
+                <div className="text-base/7 text-zinc-500 sm:text-sm/6 dark:text-zinc-400">
+                    Halaman{" "}
+                    <span className="font-medium tabular-nums text-zinc-900 dark:text-white">
+                        {statePagination.pageIndex + 1}
+                    </span>
+                    {table.getPageCount() > 0 && (
+                        <>
+                            {" "}
+                            dari{" "}
+                            <span className="font-medium tabular-nums text-zinc-900 dark:text-white">
+                                {table.getPageCount()}
+                            </span>
+                        </>
+                    )}
+                </div>
+                <div className="flex items-center gap-2">
+                    <Button
+                        outline
+                        onClick={() => table.previousPage()}
+                        disabled={!table.getCanPreviousPage()}
+                        className="rounded-full"
+                    >
+                        Sebelumnya
+                    </Button>
+                    <Button
+                        outline
+                        onClick={() => table.nextPage()}
+                        disabled={!table.getCanNextPage()}
+                        className="rounded-full"
+                    >
+                        Berikutnya
+                    </Button>
+                </div>
             </div>
         </div>
     );

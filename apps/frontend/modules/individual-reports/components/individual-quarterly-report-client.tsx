@@ -1,7 +1,17 @@
 "use client";
 
 import type { Platform } from "@repo/database";
-import { CheckCircle2, Download, Loader2, RefreshCw, Search, XCircle } from "lucide-react";
+import {
+    CheckCircle2,
+    Download,
+    FileCheck2,
+    Layers,
+    Loader2,
+    RefreshCw,
+    Search,
+    UserRound,
+    XCircle,
+} from "lucide-react";
 import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import {
@@ -13,10 +23,10 @@ import {
     retryFailedPlatforms,
     runIndividualQuarterlyLiveReview,
 } from "@/modules/individual-reports/actions/individual-report.actions";
+import { IndividualAccountCombobox } from "@/modules/individual-reports/components/individual-account-combobox";
 import { IndividualQuarterComparisonPanel } from "@/modules/individual-reports/components/individual-quarter-comparison-panel";
 import {
     DEFAULT_INDIVIDUAL_ENRICHED_CONTENT_LIMIT,
-    DEFAULT_INDIVIDUAL_LISTING_PAGE_LIMIT,
     DEFAULT_INDIVIDUAL_LIVE_LISTING_PAGE_LIMIT,
     estimateIndividualReportCredits,
     type IndividualReportRequest,
@@ -31,6 +41,7 @@ import {
     SelectValue,
 } from "@/shared/components/ui/select";
 import { buildReportPdfFilename } from "@/shared/lib/pdf-filename";
+import { cn } from "@/shared/lib/utils";
 
 interface AccountOption {
     id: string;
@@ -142,7 +153,7 @@ export function IndividualQuarterlyReportClient({
             const result = await prepareIndividualQuarterlyReportDraft(request);
             setDraft(result);
             if (result.success) {
-                toast.success("Individual quarterly draft prepared");
+                toast.success("Draf triwulan individu siap");
                 return;
             }
             toast.error(result.error);
@@ -153,7 +164,7 @@ export function IndividualQuarterlyReportClient({
         startTransition(async () => {
             const result = await getIndividualReportCreditBalance();
             setCreditBalance(result);
-            if (result.success) toast.success("Credit balance checked");
+            if (result.success) toast.success("Saldo kredit dicek");
             else toast.error(result.error);
         });
     };
@@ -172,7 +183,7 @@ export function IndividualQuarterlyReportClient({
             setLiveReview(result);
             if (result.success) {
                 await refreshData();
-                toast.success("Live review completed");
+                toast.success("Tinjauan langsung selesai");
             } else {
                 toast.error(result.error);
             }
@@ -192,7 +203,7 @@ export function IndividualQuarterlyReportClient({
             setLiveReview(result);
             if (result.success) {
                 await refreshData();
-                toast.success("Retry completed");
+                toast.success("Percobaan ulang selesai");
             } else {
                 toast.error(result.error);
             }
@@ -202,7 +213,7 @@ export function IndividualQuarterlyReportClient({
     const handleComposerExport = async () => {
         const ids = Array.from(composerSelection);
         if (ids.length === 0) {
-            toast.error("Select at least one platform result to export.");
+            toast.error("Pilih minimal satu hasil platform untuk diekspor.");
             return;
         }
         setIsComposerExporting(true);
@@ -218,9 +229,9 @@ export function IndividualQuarterlyReportClient({
                 return;
             }
             triggerDownload(result.data, buildIndividualQuarterlyFilename());
-            toast.success("PDF exported");
+            toast.success("PDF diekspor");
         } catch (err) {
-            toast.error(err instanceof Error ? err.message : "Export failed");
+            toast.error(err instanceof Error ? err.message : "Ekspor gagal");
         } finally {
             setIsComposerExporting(false);
         }
@@ -253,206 +264,292 @@ export function IndividualQuarterlyReportClient({
     const failedPlatforms = Array.from(attemptedPlatforms).filter(
         (p) => !successfulPlatformSet.has(p),
     );
+    const selectedPlatformLabels =
+        selectedPlatforms.size > 0
+            ? Array.from(selectedPlatforms).map(platformDisplayName).join(", ")
+            : "Belum dipilih";
+    const latestSuccessLabel =
+        latestSuccessful.length > 0
+            ? `${latestSuccessful.length} platform siap diekspor`
+            : "Belum ada hasil berhasil";
 
     return (
-        <div className="space-y-6">
-            {/* ── Controls ── */}
-            <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                <div className="grid gap-4 lg:grid-cols-4">
-                    <div className="space-y-2">
-                        <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                            Account
+        <div className="space-y-8">
+            <section className="rounded-3xl border border-zinc-950/10 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-zinc-900">
+                <div className="grid gap-6 xl:grid-cols-[5fr_7fr]">
+                    <div>
+                        <p className="text-base/7 font-medium text-zinc-500 sm:text-sm/6">
+                            Pembuat laporan individu
+                        </p>
+                        <h2 className="mt-2 text-2xl font-semibold tracking-tight text-zinc-950 text-balance dark:text-white">
+                            Siapkan laporan satu akun tanpa membuka semua fitur sekaligus.
+                        </h2>
+                        <div className="mt-5 space-y-3">
+                            <IndividualBuilderStep
+                                number={1}
+                                title="Akun dan periode"
+                                description={
+                                    selectedAccount
+                                        ? `${selectedAccount.username} · Q${quarter} ${year}`
+                                        : `Pilih akun · Q${quarter} ${year}`
+                                }
+                                active={Boolean(selectedAccount)}
+                            />
+                            <IndividualBuilderStep
+                                number={2}
+                                title="Platform"
+                                description={selectedPlatformLabels}
+                                active={selectedPlatforms.size > 0}
+                            />
+                            <IndividualBuilderStep
+                                number={3}
+                                title="Data tersimpan"
+                                description={latestSuccessLabel}
+                                active={latestSuccessful.length > 0}
+                            />
                         </div>
-                        <Select value={accountId} onValueChange={setAccountId}>
-                            <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Choose account" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {accounts.map((account) => (
-                                    <SelectItem key={account.id} value={account.id}>
-                                        {account.username}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
                     </div>
 
-                    <div className="space-y-2">
-                        <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                            Year
-                        </div>
-                        <Select value={year} onValueChange={setYear}>
-                            <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Choose year" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {[currentYear, currentYear - 1, currentYear - 2].map((v) => (
-                                    <SelectItem key={v} value={String(v)}>
-                                        {v}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
+                    <div className="space-y-6">
+                        <section className="space-y-4">
+                            <IndividualStepLabel
+                                icon={UserRound}
+                                title="1. Pilih akun dan periode"
+                            />
+                            <div className="space-y-4">
+                                <ControlField label="Akun">
+                                    <IndividualAccountCombobox
+                                        accounts={accounts}
+                                        value={selectedAccount}
+                                        onChange={(account) => setAccountId(account?.id ?? "")}
+                                    />
+                                </ControlField>
 
-                    <div className="space-y-2">
-                        <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                            Quarter
-                        </div>
-                        <Select value={quarter} onValueChange={setQuarter}>
-                            <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Choose quarter" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {QUARTER_OPTIONS.map((v) => (
-                                    <SelectItem key={v} value={String(v)}>
-                                        Q{v}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
+                                <div className="grid gap-4 sm:grid-cols-3">
+                                    <ControlField label="Tahun">
+                                        <Select value={year} onValueChange={setYear}>
+                                            <SelectTrigger className="w-full">
+                                                <SelectValue placeholder="Pilih tahun" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {[
+                                                    currentYear,
+                                                    currentYear - 1,
+                                                    currentYear - 2,
+                                                ].map((v) => (
+                                                    <SelectItem key={v} value={String(v)}>
+                                                        {v}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </ControlField>
 
-                    <div className="space-y-2">
-                        <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                            Draft Platform
-                        </div>
-                        <Select
-                            value={draftPlatform}
-                            onValueChange={(v) => setDraftPlatform(v as Platform)}
-                        >
-                            <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Choose platform" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {PLATFORM_OPTIONS.map((option) => (
-                                    <SelectItem key={option.id} value={option.id}>
-                                        {option.label}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                                    <ControlField label="Kuartal">
+                                        <Select value={quarter} onValueChange={setQuarter}>
+                                            <SelectTrigger className="w-full">
+                                                <SelectValue placeholder="Pilih kuartal" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {QUARTER_OPTIONS.map((v) => (
+                                                    <SelectItem key={v} value={String(v)}>
+                                                        Q{v}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </ControlField>
+
+                                    <ControlField label="Platform draf">
+                                        <Select
+                                            value={draftPlatform}
+                                            onValueChange={(v) => setDraftPlatform(v as Platform)}
+                                        >
+                                            <SelectTrigger className="w-full">
+                                                <SelectValue placeholder="Pilih platform" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {PLATFORM_OPTIONS.map((option) => (
+                                                    <SelectItem key={option.id} value={option.id}>
+                                                        {option.label}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </ControlField>
+                                </div>
+                            </div>
+                        </section>
+
+                        {!demoMode && (
+                            <section className="space-y-3">
+                                <IndividualStepLabel
+                                    icon={Layers}
+                                    title="2. Pilih platform dan ambil data"
+                                />
+                                <div className="rounded-2xl border border-blue-950/10 bg-blue-50/60 p-4 dark:border-blue-400/20 dark:bg-blue-950/20">
+                                    <div className="grid gap-4">
+                                        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
+                                            <div className="space-y-3 text-base/7 text-blue-950 sm:text-sm/6 dark:text-blue-100">
+                                                <div>
+                                                    <div className="font-medium">
+                                                        Pilih platform untuk laporan ini
+                                                    </div>
+                                                    <p className="mt-1 max-w-xl opacity-75">
+                                                        Ambil hanya data yang dibutuhkan agar kredit
+                                                        tidak boros.
+                                                    </p>
+                                                </div>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {availablePlatforms.map((opt) => {
+                                                        const checked = selectedPlatforms.has(
+                                                            opt.id,
+                                                        );
+                                                        return (
+                                                            <button
+                                                                key={opt.id}
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setSelectedPlatforms((prev) => {
+                                                                        const next = new Set(prev);
+                                                                        if (next.has(opt.id)) {
+                                                                            next.delete(opt.id);
+                                                                        } else {
+                                                                            next.add(opt.id);
+                                                                        }
+                                                                        return next;
+                                                                    });
+                                                                }}
+                                                                className={cn(
+                                                                    "rounded-full px-3 py-1.5 text-base/7 font-medium ring-1 transition sm:text-sm/6",
+                                                                    checked
+                                                                        ? "bg-blue-700 text-white ring-blue-700"
+                                                                        : "bg-white text-blue-900 ring-blue-700/20 hover:ring-blue-700/40 dark:bg-blue-950 dark:text-blue-100 dark:ring-blue-300/20",
+                                                                )}
+                                                            >
+                                                                {opt.label}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+
+                                            <Button
+                                                type="button"
+                                                className="justify-center lg:min-w-56"
+                                                onClick={() =>
+                                                    handleLiveReview(Array.from(selectedPlatforms))
+                                                }
+                                                disabled={
+                                                    isPending ||
+                                                    !selectedAccount ||
+                                                    selectedPlatforms.size === 0
+                                                }
+                                            >
+                                                {isPending ? (
+                                                    <Loader2
+                                                        className="size-4 animate-spin"
+                                                        data-slot="icon"
+                                                    />
+                                                ) : null}
+                                                Ambil platform terpilih ({selectedPlatforms.size})
+                                            </Button>
+                                        </div>
+
+                                        <div className="flex flex-col gap-3 border-t border-blue-950/10 pt-4 sm:flex-row sm:items-center sm:justify-between dark:border-blue-300/20">
+                                            <div className="flex flex-wrap gap-x-5 gap-y-1 text-base/7 text-blue-950 sm:text-sm/6 dark:text-blue-100">
+                                                <ScrapeInlineMetric
+                                                    label="Dipilih"
+                                                    value={`${selectedPlatforms.size}/${availablePlatforms.length}`}
+                                                />
+                                                <ScrapeInlineMetric
+                                                    label="Estimasi"
+                                                    value={
+                                                        selectedPlatforms.size > 0
+                                                            ? `${selectedPlatformsEstimate.totalCredits} kredit`
+                                                            : "-"
+                                                    }
+                                                />
+                                                <ScrapeInlineMetric
+                                                    label="Saldo"
+                                                    value={
+                                                        creditBalance?.success
+                                                            ? `${creditBalance.data.credits ?? "?"} kredit`
+                                                            : "Belum dicek"
+                                                    }
+                                                />
+                                            </div>
+
+                                            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-base/7 sm:text-sm/6">
+                                                <button
+                                                    type="button"
+                                                    onClick={handlePrepare}
+                                                    disabled={isPending || !selectedAccount}
+                                                    className="inline-flex items-center gap-1 font-medium text-blue-800 underline-offset-4 hover:underline disabled:cursor-not-allowed disabled:opacity-50 dark:text-blue-200"
+                                                >
+                                                    {isPending ? (
+                                                        <Loader2
+                                                            className="size-4 animate-spin"
+                                                            data-slot="icon"
+                                                        />
+                                                    ) : (
+                                                        <Search
+                                                            className="size-4"
+                                                            data-slot="icon"
+                                                        />
+                                                    )}
+                                                    Pratinjau draf
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={handleCheckCredits}
+                                                    disabled={isPending}
+                                                    className="font-medium text-blue-800 underline-offset-4 hover:underline disabled:cursor-not-allowed disabled:opacity-50 dark:text-blue-200"
+                                                >
+                                                    Cek saldo
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        handleLiveReview(
+                                                            availablePlatforms.map((o) => o.id),
+                                                        )
+                                                    }
+                                                    disabled={
+                                                        isPending ||
+                                                        !selectedAccount ||
+                                                        availablePlatforms.length === 0
+                                                    }
+                                                    className="font-medium text-blue-800 underline-offset-4 hover:underline disabled:cursor-not-allowed disabled:opacity-50 dark:text-blue-200"
+                                                >
+                                                    Ambil semua ({allPlatformsEstimate.totalCredits}{" "}
+                                                    kredit)
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {failedPlatforms.length > 0 && (
+                                            <div>
+                                                <Button
+                                                    type="button"
+                                                    color="rose"
+                                                    onClick={handleRetryFailed}
+                                                    disabled={isPending || !selectedAccount}
+                                                >
+                                                    <RefreshCw
+                                                        className="size-4"
+                                                        data-slot="icon"
+                                                    />
+                                                    Ambil ulang gagal ({failedPlatforms.length})
+                                                </Button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </section>
+                        )}
                     </div>
                 </div>
-
-                {/* ── Platform selector + scrape actions ── */}
-                {!demoMode && (
-                    <div className="mt-5 rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-900/50 dark:bg-blue-950/40">
-                        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                            <div className="text-sm text-blue-900 dark:text-blue-200">
-                                <div className="font-semibold">Pilih Platform untuk Scraping</div>
-                                <div className="mt-1 flex flex-wrap gap-2">
-                                    {availablePlatforms.map((opt) => {
-                                        const checked = selectedPlatforms.has(opt.id);
-                                        return (
-                                            <button
-                                                key={opt.id}
-                                                type="button"
-                                                onClick={() => {
-                                                    setSelectedPlatforms((prev) => {
-                                                        const next = new Set(prev);
-                                                        if (next.has(opt.id)) next.delete(opt.id);
-                                                        else next.add(opt.id);
-                                                        return next;
-                                                    });
-                                                }}
-                                                className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                                                    checked
-                                                        ? "border-blue-600 bg-blue-600 text-white dark:border-blue-400 dark:bg-blue-400 dark:text-blue-950"
-                                                        : "border-blue-300 bg-white text-blue-700 dark:border-blue-700 dark:bg-blue-950 dark:text-blue-300"
-                                                }`}
-                                            >
-                                                {opt.label}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                                <div className="mt-2 text-xs opacity-80">
-                                    Semua platform (listing-only): maks{" "}
-                                    {allPlatformsEstimate.totalCredits} kredit.
-                                    {selectedPlatforms.size > 0 && (
-                                        <>
-                                            {" "}
-                                            Pilihan saat ini ({selectedPlatforms.size} platform):
-                                            maks {selectedPlatformsEstimate.totalCredits} kredit.
-                                        </>
-                                    )}
-                                    {creditBalance?.success && (
-                                        <> Saldo: {creditBalance.data.credits ?? "?"} kredit.</>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="flex flex-wrap gap-2">
-                                <Button
-                                    type="button"
-                                    outline
-                                    onClick={handleCheckCredits}
-                                    disabled={isPending}
-                                >
-                                    Cek Saldo
-                                </Button>
-                                <Button
-                                    type="button"
-                                    outline
-                                    onClick={handlePrepare}
-                                    disabled={isPending || !selectedAccount}
-                                >
-                                    {isPending ? (
-                                        <Loader2
-                                            className="h-4 w-4 animate-spin"
-                                            data-slot="icon"
-                                        />
-                                    ) : (
-                                        <Search className="h-4 w-4" data-slot="icon" />
-                                    )}
-                                    Prepare Draft
-                                </Button>
-                                <Button
-                                    type="button"
-                                    onClick={() => handleLiveReview(Array.from(selectedPlatforms))}
-                                    disabled={
-                                        isPending ||
-                                        !selectedAccount ||
-                                        selectedPlatforms.size === 0
-                                    }
-                                >
-                                    {isPending ? (
-                                        <Loader2
-                                            className="h-4 w-4 animate-spin"
-                                            data-slot="icon"
-                                        />
-                                    ) : null}
-                                    Scrape Pilihan ({selectedPlatforms.size})
-                                </Button>
-                                <Button
-                                    type="button"
-                                    onClick={() =>
-                                        handleLiveReview(availablePlatforms.map((o) => o.id))
-                                    }
-                                    disabled={
-                                        isPending ||
-                                        !selectedAccount ||
-                                        availablePlatforms.length === 0
-                                    }
-                                >
-                                    Scrape Semua ({availablePlatforms.length})
-                                </Button>
-                                {failedPlatforms.length > 0 && (
-                                    <Button
-                                        type="button"
-                                        color="rose"
-                                        onClick={handleRetryFailed}
-                                        disabled={isPending || !selectedAccount}
-                                    >
-                                        <RefreshCw className="h-4 w-4" data-slot="icon" />
-                                        Retry Gagal ({failedPlatforms.length})
-                                    </Button>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                )}
             </section>
 
             <IndividualQuarterComparisonPanel
@@ -470,7 +567,7 @@ export function IndividualQuarterlyReportClient({
             {draft?.success && (
                 <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                     <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                        Objective Report Skeleton
+                        Kerangka laporan objektif
                     </div>
                     <h2 className="mt-2 text-2xl font-semibold text-zinc-950 dark:text-white">
                         {draft.data.report.title}
@@ -501,7 +598,7 @@ export function IndividualQuarterlyReportClient({
 
                     <div className="mt-5 rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
                         <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                            Future Content-Level Plan
+                            Rencana level konten masa depan
                         </div>
                         <div className="mt-3 grid gap-3 md:grid-cols-2">
                             {draft.data.contentLevelPlan.outputSections.map((section) => (
@@ -517,10 +614,10 @@ export function IndividualQuarterlyReportClient({
                             ))}
                         </div>
                         <p className="mt-3 text-sm text-zinc-500">
-                            Plan only: fetch up to{" "}
+                            Hanya rencana: ambil hingga{" "}
                             {draft.data.contentLevelPlan.reconstruction.listingPageLimit} listing
-                            pages, then enrich up to{" "}
-                            {draft.data.contentLevelPlan.enrichment.maxItems} selected posts.
+                            halaman, lalu perkaya hingga{" "}
+                            {draft.data.contentLevelPlan.enrichment.maxItems} posting terpilih.
                         </p>
                     </div>
                 </section>
@@ -532,7 +629,7 @@ export function IndividualQuarterlyReportClient({
                     <div className="flex items-center justify-between gap-3">
                         <div>
                             <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                                Hasil Live Review Terbaru
+                                Hasil tinjauan langsung terbaru
                             </div>
                             <h2 className="mt-1 text-xl font-semibold text-zinc-950 dark:text-white">
                                 {liveReview.data.account.username} Q
@@ -546,7 +643,7 @@ export function IndividualQuarterlyReportClient({
                         </div>
                         {!demoMode && latestSuccessful.length > 0 && (
                             <div className="rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
-                                Export lewat composer di bawah.
+                                Ekspor lewat penyusun di bawah.
                             </div>
                         )}
                     </div>
@@ -565,7 +662,7 @@ export function IndividualQuarterlyReportClient({
                     <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                         <div>
                             <div className="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-400">
-                                Export Composer
+                                Penyusun ekspor
                             </div>
                             <p className="mt-1 text-sm text-emerald-900 dark:text-emerald-200">
                                 Pilih hasil platform yang ingin dimasukkan ke PDF. Default: hasil
@@ -582,7 +679,7 @@ export function IndividualQuarterlyReportClient({
                             ) : (
                                 <Download className="h-4 w-4" data-slot="icon" />
                             )}
-                            Export PDF ({composerSelection.size} platform)
+                            Ekspor PDF ({composerSelection.size} platform)
                         </Button>
                     </div>
 
@@ -632,7 +729,7 @@ export function IndividualQuarterlyReportClient({
 
                     {failedPlatforms.length > 0 && (
                         <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-300">
-                            Platform tidak tersedia (belum berhasil di-scrape):{" "}
+                            Platform tidak tersedia (belum berhasil diambil):{" "}
                             {failedPlatforms.map(platformDisplayName).join(", ")}. PDF akan dilabeli
                             sebagai laporan parsial.
                         </div>
@@ -644,7 +741,7 @@ export function IndividualQuarterlyReportClient({
             {savedRuns.length > 0 && (
                 <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                     <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                        Riwayat Scrape Attempt
+                        Riwayat percobaan scraping
                     </div>
                     <div className="mt-4 space-y-3">
                         {savedRuns
@@ -667,7 +764,7 @@ export function IndividualQuarterlyReportClient({
                         ).length > 0 && (
                             <>
                                 <div className="mt-4 text-xs font-semibold uppercase tracking-wide text-zinc-400">
-                                    Riwayat Lainnya
+                                    Riwayat lainnya
                                 </div>
                                 {savedRuns
                                     .filter(
@@ -698,6 +795,71 @@ function platformDisplayName(platform: Platform): string {
     if (platform === "INSTAGRAM") return "Instagram";
     if (platform === "TIKTOK") return "TikTok";
     return "Twitter / X";
+}
+
+function IndividualStepLabel({ icon: Icon, title }: { icon: React.ElementType; title: string }) {
+    return (
+        <div className="flex items-center gap-2 text-base/7 font-medium text-zinc-950 sm:text-sm/6 dark:text-white">
+            <Icon className="size-5 text-zinc-400 sm:size-4" />
+            {title}
+        </div>
+    );
+}
+
+function ControlField({ label, children }: { label: string; children: React.ReactNode }) {
+    return (
+        <div className="space-y-2">
+            <div className="text-base/7 font-medium text-zinc-500 sm:text-sm/6">{label}</div>
+            {children}
+        </div>
+    );
+}
+
+function ScrapeInlineMetric({ label, value }: { label: string; value: string }) {
+    return (
+        <div>
+            <span className="font-medium opacity-60">{label}</span>{" "}
+            <span className="font-semibold tabular-nums">{value}</span>
+        </div>
+    );
+}
+
+function IndividualBuilderStep({
+    number,
+    title,
+    description,
+    active,
+}: {
+    number: number;
+    title: string;
+    description: string;
+    active: boolean;
+}) {
+    return (
+        <div
+            className={cn(
+                "flex gap-3 rounded-2xl p-3 ring-1",
+                active
+                    ? "bg-emerald-50 text-emerald-950 ring-emerald-950/10 dark:bg-emerald-950/20 dark:text-emerald-100 dark:ring-emerald-400/20"
+                    : "bg-zinc-50 text-zinc-600 ring-zinc-950/5 dark:bg-zinc-950 dark:text-zinc-400 dark:ring-white/10",
+            )}
+        >
+            <div
+                className={cn(
+                    "flex size-7 shrink-0 items-center justify-center rounded-full text-sm font-semibold tabular-nums",
+                    active
+                        ? "bg-emerald-600 text-white"
+                        : "bg-zinc-200 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400",
+                )}
+            >
+                {active && number === 3 ? <FileCheck2 className="size-4" /> : number}
+            </div>
+            <div className="min-w-0">
+                <div className="truncate text-base/7 font-medium sm:text-sm/6">{title}</div>
+                <div className="truncate text-base/7 opacity-75 sm:text-sm/6">{description}</div>
+            </div>
+        </div>
+    );
 }
 
 function PlatformResultCard({
@@ -765,7 +927,7 @@ function PlatformResultCard({
                     </div>
                     {fetchedDateRange.earliest && (
                         <p className="mt-3 text-xs text-zinc-500">
-                            Range: {fetchedDateRange.earliest.slice(0, 10)} →{" "}
+                            Rentang: {fetchedDateRange.earliest.slice(0, 10)} →{" "}
                             {fetchedDateRange.latest?.slice(0, 10)}
                         </p>
                     )}
@@ -775,9 +937,7 @@ function PlatformResultCard({
                         </div>
                     )}
                     <div className="mt-3 rounded-lg bg-zinc-50 p-3 dark:bg-zinc-950">
-                        <div className="text-xs font-semibold text-zinc-500">
-                            Public Interactions
-                        </div>
+                        <div className="text-xs font-semibold text-zinc-500">Interaksi publik</div>
                         <div className="mt-1 text-lg font-bold text-zinc-900 dark:text-zinc-100">
                             {new Intl.NumberFormat("id-ID").format(
                                 normalizeQuarterInteractions(result).publicInteractions,
@@ -872,7 +1032,7 @@ function RunHistoryCard({
 
                 {!demoMode && run.status !== "FAILED" && (
                     <div className="text-sm text-zinc-500">
-                        Gunakan Export Composer untuk membuat PDF.
+                        Gunakan penyusun ekspor untuk membuat PDF.
                     </div>
                 )}
             </div>

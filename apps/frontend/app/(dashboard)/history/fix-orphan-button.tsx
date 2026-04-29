@@ -17,16 +17,16 @@ export function FixOrphanButton() {
             const result = await fixOrphanSnapshots();
             if (result.success) {
                 if (result.fixed === 0) {
-                    toast.info("No orphan snapshots found");
+                    toast.info("Tidak ada snapshot yatim");
                 } else {
                     toast.success(result.message);
                     router.refresh();
                 }
             } else {
-                toast.error(result.error || "Failed to fix orphan snapshots");
+                toast.error(result.error || "Gagal memperbaiki snapshot yatim");
             }
         } catch {
-            toast.error("An error occurred");
+            toast.error("Terjadi kendala");
         } finally {
             setLoading(false);
         }
@@ -39,7 +39,7 @@ export function FixOrphanButton() {
             ) : (
                 <Wrench className="w-4 h-4" data-slot="icon" />
             )}
-            Fix Imports
+            Perbaiki impor
         </Button>
     );
 }

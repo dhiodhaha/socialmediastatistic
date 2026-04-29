@@ -25,7 +25,7 @@ import {
 import { Strong, Text } from "@/shared/components/catalyst/text";
 
 // Interface matching the real data structure from Prisma
-interface ScrapingJob {
+export interface ScrapingJob {
     id: string;
     status: "PENDING" | "RUNNING" | "COMPLETED" | "FAILED";
     totalAccounts: number;
@@ -50,20 +50,20 @@ function ActionMenu({ job }: { job: ScrapingJob }) {
     const router = useRouter();
 
     const handleDelete = async () => {
-        if (!confirm("Delete this job and all associated snapshot data?")) return;
+        if (!confirm("Hapus tugas ini beserta semua data snapshot yang terkait?")) return;
 
         const result = await deleteScrapingJob(job.id);
         if (result.success) {
-            toast.success("Job deleted successfully");
+            toast.success("Tugas berhasil dihapus");
             router.refresh();
         } else {
-            toast.error(result.error || "Failed to delete job");
+            toast.error(result.error || "Gagal menghapus tugas");
         }
     };
 
     return (
         <Dropdown>
-            <DropdownButton plain aria-label="More options">
+            <DropdownButton plain aria-label="Opsi lainnya">
                 <MoreHorizontal className="w-4 h-4" data-slot="icon" />
             </DropdownButton>
             <DropdownMenu>
@@ -73,14 +73,14 @@ function ActionMenu({ job }: { job: ScrapingJob }) {
                         trigger={
                             <DropdownItem>
                                 <PencilLine className="w-4 h-4 ml-auto" data-slot="icon" />
-                                Assign Reporting Month
+                                Tetapkan bulan pelaporan
                             </DropdownItem>
                         }
                     />
                 )}
                 <DropdownItem onClick={handleDelete} className="text-red-600 dark:text-red-500">
                     <Trash2 className="w-4 h-4 ml-auto" data-slot="icon" />
-                    Delete Job
+                    Hapus tugas
                 </DropdownItem>
             </DropdownMenu>
         </Dropdown>
@@ -90,7 +90,7 @@ function ActionMenu({ job }: { job: ScrapingJob }) {
 export const columns: ColumnDef<ScrapingJob>[] = [
     {
         accessorKey: "status",
-        header: "STATUS",
+        header: "Status",
         cell: ({ row }) => {
             const status = row.original.status;
             const color = status === "COMPLETED" ? "green" : status === "FAILED" ? "red" : "amber"; // Running/Pending
@@ -98,12 +98,12 @@ export const columns: ColumnDef<ScrapingJob>[] = [
             // Map status text to be friendlier if needed, or keep generic
             const label =
                 status === "COMPLETED"
-                    ? "Success"
+                    ? "Berhasil"
                     : status === "FAILED"
-                      ? "Failed"
+                      ? "Gagal"
                       : status === "RUNNING"
-                        ? "Running"
-                        : "Pending";
+                        ? "Berjalan"
+                        : "Menunggu";
 
             return (
                 <Badge color={color}>
@@ -128,20 +128,21 @@ export const columns: ColumnDef<ScrapingJob>[] = [
     },
     {
         id: "trigger",
-        header: "TRIGGER INFO",
+        header: "Sumber",
         cell: () => {
-            // Placeholder as real data for trigger source isn't in ScrapingJob yet
             return (
-                <div className="flex flex-col">
-                    <Strong>Scheduled Job</Strong>
-                    <Text>by System</Text>
+                <div className="flex min-w-[160px] flex-col">
+                    <Strong className="text-slate-900 dark:text-white">Snapshot otomatis</Strong>
+                    <Text className="text-slate-500 dark:text-slate-400">
+                        Dibuat dari proses scraping
+                    </Text>
                 </div>
             );
         },
     },
     {
         id: "timing",
-        header: "TIMING",
+        header: "Waktu",
         cell: ({ row }) => {
             const startVal = row.original.startedAt || row.original.createdAt;
             const startDate = new Date(startVal);
@@ -149,12 +150,14 @@ export const columns: ColumnDef<ScrapingJob>[] = [
             const duration = calculateDuration(row.original.startedAt, row.original.completedAt);
 
             return (
-                <div className="flex flex-col">
-                    <Strong>{format(startDate, "dd MMM, HH:mm")}</Strong>
-                    <div className="flex items-center gap-2">
-                        <Text>{relative}</Text>
-                        <Text>•</Text>
-                        <Text className="flex items-center gap-1">
+                <div className="flex min-w-[190px] flex-col">
+                    <Strong className="text-slate-900 dark:text-white">
+                        {format(startDate, "dd MMM yyyy, HH:mm")}
+                    </Strong>
+                    <div className="mt-1 flex flex-wrap items-center gap-2 text-slate-500 dark:text-slate-400">
+                        <Text className="text-slate-500 dark:text-slate-400">{relative}</Text>
+                        <Text className="text-slate-400 dark:text-slate-500">•</Text>
+                        <Text className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
                             <Clock className="w-3 h-3" />
                             {duration}
                         </Text>
@@ -165,7 +168,7 @@ export const columns: ColumnDef<ScrapingJob>[] = [
     },
     {
         id: "metrics",
-        header: "METRICS",
+        header: "Akun",
         cell: ({ row }) => {
             const {
                 totalAccounts: total,
@@ -183,14 +186,17 @@ export const columns: ColumnDef<ScrapingJob>[] = [
             const isFailed = status === "FAILED";
 
             return (
-                <div className="w-full max-w-[140px] flex flex-col gap-1.5">
+                <div className="flex w-full min-w-[180px] max-w-[220px] flex-col gap-2">
                     <div className="flex justify-between items-end">
-                        <Text className="text-xs">Total</Text>
-                        <Strong>{total}</Strong>
+                        <Text className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                            Cakupan akun
+                        </Text>
+                        <Strong className="tabular-nums text-slate-900 dark:text-white">
+                            {total}
+                        </Strong>
                     </div>
 
-                    {/* Progress Bar Container */}
-                    <div className="h-2 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden flex">
+                    <div className="flex h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
                         {success > 0 && (
                             <div
                                 style={{ width: `${successPct}%` }}
@@ -205,15 +211,26 @@ export const columns: ColumnDef<ScrapingJob>[] = [
                         )}
                     </div>
 
-                    <div className="flex justify-between items-center text-xs font-medium">
-                        {isSuccess && <span className="text-emerald-600">{success} OK</span>}
-                        {isFailed && <span className="text-red-600">{failed} Err</span>}
+                    <div className="flex items-center justify-between text-xs font-medium">
+                        {isSuccess && (
+                            <span className="tabular-nums text-emerald-600">
+                                {success} berhasil
+                            </span>
+                        )}
+                        {isFailed && (
+                            <span className="tabular-nums text-red-600">{failed} gagal</span>
+                        )}
                         {!isSuccess && !isFailed && (
                             <div className="flex gap-2">
-                                <span className="text-emerald-600">{success} OK</span>
-                                <span className="text-red-600">{failed} Err</span>
+                                <span className="tabular-nums text-emerald-600">
+                                    {success} berhasil
+                                </span>
+                                <span className="tabular-nums text-red-600">{failed} gagal</span>
                             </div>
                         )}
+                        <span className="tabular-nums text-slate-500 dark:text-slate-400">
+                            {total > 0 ? Math.round((success / total) * 100) : 0}%
+                        </span>
                     </div>
                 </div>
             );
@@ -221,7 +238,7 @@ export const columns: ColumnDef<ScrapingJob>[] = [
     },
     {
         id: "reporting",
-        header: "REPORTING",
+        header: "Bulan pelaporan",
         cell: ({ row }) => {
             const reporting = describeReportingAssignment({
                 status: row.original.status,
@@ -232,16 +249,20 @@ export const columns: ColumnDef<ScrapingJob>[] = [
             });
 
             if (row.original.status !== "COMPLETED") {
-                return <Text className="text-muted-foreground">Available after completion</Text>;
+                return (
+                    <Text className="text-slate-500 dark:text-slate-400">
+                        Tersedia setelah tugas selesai
+                    </Text>
+                );
             }
 
             return (
-                <div className="flex flex-col">
-                    <Strong>{reporting.label}</Strong>
-                    <Text>
+                <div className="flex min-w-[180px] flex-col">
+                    <Strong className="text-slate-900 dark:text-white">{reporting.label}</Strong>
+                    <Text className="text-slate-500 dark:text-slate-400">
                         {reporting.source === "manual"
-                            ? "Manual reporting month"
-                            : "Auto from completion month"}
+                            ? "Bulan pelaporan manual"
+                            : "Otomatis dari bulan selesai"}
                     </Text>
                 </div>
             );
@@ -249,7 +270,7 @@ export const columns: ColumnDef<ScrapingJob>[] = [
     },
     {
         id: "actions",
-        header: "ACTIONS",
+        header: "Aksi",
         cell: ({ row }) => <ActionMenu job={row.original} />,
     },
 ];

@@ -1,9 +1,12 @@
 import { type Platform, prisma } from "@repo/database";
 import { FailedAccountsAlert } from "@/modules/accounts/components/failed-accounts-alert";
-import { getScrapingHistory } from "@/modules/analytics/actions/history.actions";
 import { HistoryToolbar } from "@/modules/analytics/components/history-toolbar";
+import {
+    getActiveScrapingJobQuery,
+    getScrapingHistoryQuery,
+} from "@/modules/analytics/queries/history.queries";
 import { DataImportUpload } from "@/modules/scraping/components/data-import-upload";
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
+import { PageHero, Surface, SurfaceHeader, WorkspacePage } from "@/shared/components/ui/workspace";
 import { FixOrphanButton } from "./fix-orphan-button";
 import { HistoryDataTable } from "./history-data-table";
 
@@ -22,55 +25,51 @@ export default async function HistoryPage({
         platform: (params?.platform as Platform) || null,
     };
 
-    const { data: jobs, pagination } = await getScrapingHistory(page, 10, filters);
+    const { data: jobs, pagination } = await getScrapingHistoryQuery(page, 10, filters);
 
-    // Check for any currently running job to show progress immediately
-    // Check for any currently running job to show progress immediately
+    // Cek tugas yang sedang berjalan agar progres langsung terlihat
     let activeJob: { id: string } | null = null;
 
     if (process.env.DATABASE_URL) {
         try {
-            activeJob = await prisma.scrapingJob.findFirst({
-                where: { status: { in: ["PENDING", "RUNNING"] } },
-                orderBy: { createdAt: "desc" },
-                select: { id: true },
-            });
+            activeJob = await getActiveScrapingJobQuery();
         } catch {
-            console.warn("Failed to fetch active job (likely build time or DB unreachable)");
+            console.warn(
+                "Gagal mengambil tugas aktif (mungkin saat build atau DB tidak terjangkau)",
+            );
         }
     }
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold">Scraping History</h1>
-                    <p className="text-muted-foreground mt-1">
-                        View and manage your automated extraction logs.
-                    </p>
-                </div>
-                <div className="flex items-center gap-2">
-                    <DataImportUpload />
-                    <FixOrphanButton />
-                </div>
-            </div>
+        <WorkspacePage>
+            <PageHero
+                eyebrow="Operasional data"
+                title="Pantau scraping, snapshot, dan kesiapan pelaporan."
+                description="Gunakan halaman ini untuk melihat data yang siap dipakai, memperbaiki akun gagal, dan mengelola snapshot terdahulu dari satu tempat."
+                actions={
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                        <DataImportUpload />
+                        <FixOrphanButton />
+                    </div>
+                }
+            />
 
             <FailedAccountsAlert />
 
             <HistoryToolbar activeJobId={activeJob?.id} />
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Job Logs</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <HistoryDataTable
-                        data={jobs || []}
-                        pageCount={pagination?.totalPages || 1}
-                        currentPage={page}
-                    />
-                </CardContent>
-            </Card>
-        </div>
+            <Surface>
+                <SurfaceHeader
+                    eyebrow="Riwayat"
+                    title="Snapshot pelaporan"
+                    description="Tugas yang selesai bisa dipakai sebagai patokan laporan. Tugas yang gagal sebaiknya diperbaiki sebelum dipakai untuk keluaran PDF."
+                />
+                <HistoryDataTable
+                    data={jobs || []}
+                    pageCount={pagination?.totalPages || 1}
+                    currentPage={page}
+                />
+            </Surface>
+        </WorkspacePage>
     );
 }

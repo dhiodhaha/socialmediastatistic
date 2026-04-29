@@ -32,32 +32,32 @@ import {
 } from "@/shared/components/ui/select";
 import { isDemoMode } from "@/shared/lib/demo-mode";
 
+type CategoryOption = { id: string; name: string };
+
 export function HistoryToolbar({ activeJobId }: { activeJobId?: string }) {
     const router = useRouter();
     const searchParams = useSearchParams();
 
-    // Local state to track the current running job ID
-    // Initially set from server prop, but updates when we trigger a new scrape
+    // State lokal untuk melacak ID tugas yang sedang berjalan
+    // Awalnya diambil dari properti server, lalu diperbarui saat scraping baru dimulai
     const [currentJobId, setCurrentJobId] = useState<string | undefined>(activeJobId);
 
-    // Parse initial state from URL
+    // Ambil state awal dari URL
     const initialStatus = searchParams.get("status") || "ALL";
     const initialPlatform = searchParams.get("platform") || "ALL";
 
-    // Parse initial state from URL
     const [status, setStatus] = useState(initialStatus);
     const [platform, setPlatform] = useState(initialPlatform);
     const [_isExporting, setIsExporting] = useState(false);
     const [isScraping, setIsScraping] = useState(false);
 
-    const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
+    const [categories, setCategories] = useState<CategoryOption[]>([]);
     const [scrapeCategoryId, setScrapeCategoryId] = useState<string>("ALL");
 
     useEffect(() => {
         getCategories().then((res) => {
             if (res.success && res.data) {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                setCategories(res.data as any[]);
+                setCategories(res.data as CategoryOption[]);
             }
         });
     }, []);
@@ -77,7 +77,7 @@ export function HistoryToolbar({ activeJobId }: { activeJobId?: string }) {
             params.delete("platform");
         }
 
-        // Reset page when filtering
+        // Reset halaman saat filter berubah
         params.set("page", "1");
 
         router.push(`?${params.toString()}`);
@@ -95,7 +95,7 @@ export function HistoryToolbar({ activeJobId }: { activeJobId?: string }) {
 
     const handleScrape = async () => {
         if (currentJobId) {
-            toast.error("A scraping job is already in progress");
+            toast.error("Satu tugas scraping sedang berjalan");
             return;
         }
 
@@ -104,24 +104,24 @@ export function HistoryToolbar({ activeJobId }: { activeJobId?: string }) {
             const catId = scrapeCategoryId === "ALL" ? undefined : scrapeCategoryId;
             const result = await triggerScrape(catId);
             if (result.success) {
-                toast.success(catId ? "Category scraping job started" : "Scraping job started");
-                // Store the new job ID to track progress
+                toast.success(catId ? "Tugas scraping kategori dimulai" : "Tugas scraping dimulai");
+                // Simpan ID tugas baru untuk melacak progres
                 if (result.jobId && result.jobId !== "unknown") {
                     setCurrentJobId(result.jobId);
                 }
                 router.refresh();
             } else {
-                toast.error(result.error || "Failed to start scraping");
+                toast.error(result.error || "Gagal memulai scraping");
             }
         } catch {
-            toast.error("An unexpected error occurred");
+            toast.error("Terjadi kesalahan yang tidak terduga");
         } finally {
             setIsScraping(false);
         }
     };
 
     const handleScrapeComplete = () => {
-        // Clear the current job ID when scrape completes
+        // Hapus ID tugas saat scraping selesai
         setCurrentJobId(undefined);
     };
 
@@ -143,11 +143,11 @@ export function HistoryToolbar({ activeJobId }: { activeJobId?: string }) {
                 link.click();
                 document.body.removeChild(link);
             } else {
-                alert(`Failed to export: ${result.error}`);
+                alert(`Gagal mengekspor: ${result.error}`);
             }
         } catch (error) {
             console.error(error);
-            alert("Export failed");
+            alert("Ekspor gagal");
         } finally {
             setIsExporting(false);
         }
@@ -171,11 +171,11 @@ export function HistoryToolbar({ activeJobId }: { activeJobId?: string }) {
                 link.click();
                 document.body.removeChild(link);
             } else {
-                alert(`Failed to export: ${result.error}`);
+                alert(`Gagal mengekspor: ${result.error}`);
             }
         } catch (error) {
             console.error(error);
-            alert("Export failed");
+            alert("Ekspor gagal");
         } finally {
             setIsExporting(false);
         }
@@ -187,82 +187,118 @@ export function HistoryToolbar({ activeJobId }: { activeJobId?: string }) {
             {currentJobId && (
                 <ScrapeProgress jobId={currentJobId} onComplete={handleScrapeComplete} />
             )}
-            <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center bg-card p-4 rounded-lg border">
-                <div className="flex flex-1 flex-col sm:flex-row gap-4 w-full">
-                    <Select value={status} onValueChange={handleStatusChange}>
-                        <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="ALL">All Statuses</SelectItem>
-                            <SelectItem value="COMPLETED">Completed</SelectItem>
-                            <SelectItem value="FAILED">Failed</SelectItem>
-                            <SelectItem value="RUNNING">Running</SelectItem>
-                        </SelectContent>
-                    </Select>
+            <div className="grid gap-5 rounded-[1.75rem] border border-slate-300/80 bg-white p-5 shadow-sm ring-1 ring-slate-200/70 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end dark:border-white/10 dark:bg-slate-950 dark:ring-white/10">
+                <div className="space-y-4">
+                    <div className="space-y-1">
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                            Filter riwayat
+                        </div>
+                        <p className="text-sm text-slate-600 dark:text-slate-300">
+                            Tampilkan snapshot yang siap dipakai, tugas yang masih berjalan, atau
+                            hasil yang perlu diperiksa ulang.
+                        </p>
+                    </div>
 
-                    <Select value={platform} onValueChange={handlePlatformChange}>
-                        <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Platform" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="ALL">All Platforms</SelectItem>
-                            <SelectItem value="INSTAGRAM">Instagram</SelectItem>
-                            <SelectItem value="TIKTOK">TikTok</SelectItem>
-                            <SelectItem value="TWITTER">Twitter</SelectItem>
-                        </SelectContent>
-                    </Select>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="space-y-2">
+                            <label
+                                htmlFor="history-status-filter"
+                                className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400"
+                            >
+                                Status kesiapan
+                            </label>
+                            <Select value={status} onValueChange={handleStatusChange}>
+                                <SelectTrigger id="history-status-filter" className="w-full">
+                                    <SelectValue placeholder="Status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="ALL">Semua status</SelectItem>
+                                    <SelectItem value="COMPLETED">Siap</SelectItem>
+                                    <SelectItem value="FAILED">Perlu ditinjau</SelectItem>
+                                    <SelectItem value="RUNNING">Sedang berjalan</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label
+                                htmlFor="history-platform-filter"
+                                className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400"
+                            >
+                                Platform
+                            </label>
+                            <Select value={platform} onValueChange={handlePlatformChange}>
+                                <SelectTrigger id="history-platform-filter" className="w-full">
+                                    <SelectValue placeholder="Platform" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="ALL">Semua platform</SelectItem>
+                                    <SelectItem value="INSTAGRAM">Instagram</SelectItem>
+                                    <SelectItem value="TIKTOK">TikTok</SelectItem>
+                                    <SelectItem value="TWITTER">Twitter / X</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
                 </div>
 
                 {!isDemoMode && (
-                    <div className="flex gap-2">
-                        <ExportModal />
+                    <div className="space-y-3">
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400 lg:text-right">
+                            Aksi cepat
+                        </div>
+                        <div className="flex flex-col gap-3 sm:flex-row lg:justify-end">
+                            <ExportModal />
 
-                        <Select value={scrapeCategoryId} onValueChange={setScrapeCategoryId}>
-                            <SelectTrigger className="w-[180px]">
-                                <SelectValue placeholder="Urgent Scrape Scope" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="ALL">Scrape All</SelectItem>
-                                {categories.map((cat) => (
-                                    <SelectItem key={cat.id} value={cat.id}>
-                                        Scrape {cat.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                            <Select value={scrapeCategoryId} onValueChange={setScrapeCategoryId}>
+                                <SelectTrigger className="w-full sm:w-[220px]">
+                                    <SelectValue placeholder="Cakupan scraping" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="ALL">Semua akun</SelectItem>
+                                    {categories.map((cat) => (
+                                        <SelectItem key={cat.id} value={cat.id}>
+                                            {cat.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
 
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button disabled={isScraping || !!currentJobId}>
-                                    {isScraping ? (
-                                        <Loader2
-                                            className="h-4 w-4 animate-spin"
-                                            data-slot="icon"
-                                        />
-                                    ) : (
-                                        <Play className="h-4 w-4" data-slot="icon" />
-                                    )}
-                                    Scrape Now
-                                </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>Mulai Proses Scraping?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        {scrapeCategoryId === "ALL"
-                                            ? "Ini akan menjalankan scraping untuk SEMUA akun. Proses ini bisa memakan waktu beberapa menit."
-                                            : "Ini akan menjalankan scraping untuk kategori yang dipilih. Proses ini bisa memakan waktu beberapa menit."}
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>Batal</AlertDialogCancel>
-                                    <AlertDialogAction onClick={handleScrape}>
-                                        Ya, Mulai Scraping
-                                    </AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button
+                                        disabled={isScraping || !!currentJobId}
+                                        className="rounded-full"
+                                    >
+                                        {isScraping ? (
+                                            <Loader2
+                                                className="size-4 animate-spin"
+                                                data-slot="icon"
+                                            />
+                                        ) : (
+                                            <Play className="size-4" data-slot="icon" />
+                                        )}
+                                        Mulai scraping
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Mulai proses scraping?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            {scrapeCategoryId === "ALL"
+                                                ? "Ini akan menjalankan scraping untuk semua akun. Proses ini bisa memakan waktu beberapa menit."
+                                                : "Ini akan menjalankan scraping untuk grup akun yang dipilih. Proses ini bisa memakan waktu beberapa menit."}
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Batal</AlertDialogCancel>
+                                        <AlertDialogAction onClick={handleScrape}>
+                                            Ya, mulai scraping
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </div>
                     </div>
                 )}
             </div>

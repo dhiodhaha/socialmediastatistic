@@ -30,16 +30,16 @@ export type Account = {
 };
 
 const HandleLink = ({ handle, urlPrefix }: { handle: string | null; urlPrefix: string }) => {
-    if (!handle) return <span className="text-muted-foreground text-xs">N/A</span>;
+    if (!handle) return <div className="text-base/7 text-zinc-400 sm:text-sm/6">Not set</div>;
     return (
         <a
             href={`${urlPrefix}${handle}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center hover:underline text-sm"
+            className="flex items-center text-base/7 hover:underline sm:text-sm/6"
         >
             {handle}
-            <ExternalLink className="ml-1 h-3 w-3 opacity-50" />
+            <ExternalLink className="ml-1 size-3 opacity-50" />
         </a>
     );
 };
@@ -63,18 +63,18 @@ export const columns: ColumnDef<Account>[] = [
         cell: ({ row }) => {
             const growth = row.original.growth;
             if (growth === null || growth === undefined)
-                return <span className="text-muted-foreground text-xs">-</span>;
+                return <div className="text-base/7 text-zinc-400 sm:text-sm/6">Not measured</div>;
 
             const isPositive = growth > 0;
             const isNegative = growth < 0;
 
             return (
-                <span
-                    className={`text-xs font-semibold ${isPositive ? "text-green-600" : isNegative ? "text-red-500" : "text-gray-500"}`}
+                <div
+                    className={`text-base/7 font-semibold sm:text-sm/6 ${isPositive ? "text-green-600" : isNegative ? "text-red-500" : "text-gray-500"}`}
                 >
                     {isPositive ? "+" : ""}
                     {growth.toFixed(1)}%
-                </span>
+                </div>
             );
         },
     },
@@ -135,21 +135,21 @@ function AccountActionsCell({ account }: { account: Account }) {
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button plain className="h-8 w-8 p-0">
-                        <span className="sr-only">Open menu</span>
+                        <span className="sr-only">Buka menu</span>
                         <MoreHorizontal className="h-4 w-4" data-slot="icon" />
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                    <DropdownMenuLabel>Aksi</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => setIsEditOpen(true)}>
-                        Edit Details
+                        Ubah detail
                     </DropdownMenuItem>
                     <DropdownMenuItem
                         onClick={handleDelete}
                         className="text-red-600 focus:text-red-600"
                     >
-                        Delete Account
+                        Hapus akun
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
