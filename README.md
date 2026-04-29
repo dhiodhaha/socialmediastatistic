@@ -74,9 +74,18 @@ Required variables:
 
 ### 3. Database
 ```bash
-pnpm db:generate  # Generate Prisma client
-pnpm db:push      # Push schema to database
-pnpm db:seed      # (Optional) Seed with sample data
+pnpm db:generate                    # Generate Prisma client
+pnpm db:push                        # Push schema to database
+pnpm --filter @repo/database db:seed # Optional sample data seed
+```
+
+To create an admin user during seed, provide credentials through environment variables. Do not
+commit real credentials:
+
+```bash
+SEED_ADMIN_EMAIL="admin@example.local" \
+SEED_ADMIN_PASSWORD="change-this-local-password" \
+pnpm --filter @repo/database db:seed
 ```
 
 ### 4. Run
