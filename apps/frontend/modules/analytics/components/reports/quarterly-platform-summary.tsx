@@ -34,19 +34,19 @@ export function QuarterlyPlatformSummary({
     summary,
 }: QuarterlyPlatformSummaryProps) {
     return (
-        <div className="rounded-[1.75rem] border border-slate-300/80 bg-white p-5 shadow-sm ring-1 ring-slate-200/70 dark:border-white/10 dark:bg-slate-950 dark:ring-white/10">
+        <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
             <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                 <div>
-                    <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                    <div className="text-sm font-medium text-zinc-500">
                         Ringkasan platform kuartal
                     </div>
-                    <h3 className="mt-1 text-2xl font-semibold text-slate-900 dark:text-white">
+                    <h3 className="mt-1 text-2xl font-semibold text-zinc-900 dark:text-white">
                         {platformLabel(platform)}
                     </h3>
-                    <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+                    <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
                         Tinjau peringkat, masalah, dan bukti pendukung sebelum ekspor.
                     </p>
-                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                    <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
                         Cakupan: {categoryLabel}
                     </p>
                 </div>
@@ -92,8 +92,8 @@ export function QuarterlyPlatformSummary({
             </div>
 
             {methodologyNote && (
-                <div className="mt-4 rounded-[1.25rem] border border-blue-200 bg-blue-50/90 p-4 text-sm text-blue-800 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-200">
-                    <div className="mb-1 text-[11px] font-semibold uppercase tracking-[0.18em]">
+                <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-200">
+                    <div className="mb-1 text-xs font-semibold uppercase tracking-wide">
                         Metodologi kategori
                     </div>
                     <p>{methodologyNote}</p>
@@ -124,13 +124,13 @@ function SummaryCard({
             : "";
 
     return (
-        <div className="rounded-[1.25rem] border border-slate-200/80 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-white/5">
-            <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+        <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950/40">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
                 <Icon className="h-4 w-4" />
                 {label}
             </div>
             <div
-                className={`mt-2 text-lg font-semibold ${growthColorClass || "text-slate-900 dark:text-white"}`}
+                className={`mt-2 text-lg font-semibold ${growthColorClass || "text-zinc-900 dark:text-white"}`}
             >
                 {value}
             </div>
@@ -150,29 +150,29 @@ function MoverList({
     tone: "emerald" | "rose";
 }) {
     return (
-        <div className="rounded-[1.25rem] border border-slate-200/80 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-white/5">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+        <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950/40">
+            <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
                 {title}
             </div>
             {movers.length === 0 ? (
-                <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">{emptyLabel}</p>
+                <p className="mt-3 text-sm text-zinc-500 dark:text-zinc-400">{emptyLabel}</p>
             ) : (
                 <div className="mt-3 space-y-3">
                     {movers.map((mover) => (
                         <div
                             key={mover.accountId}
-                            className="rounded-[1rem] border border-slate-200/80 bg-white p-3 dark:border-white/10 dark:bg-slate-900"
+                            className="rounded-lg border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900"
                         >
                             <div className="flex items-start justify-between gap-3">
                                 <div className="min-w-0">
-                                    <div className="truncate text-sm font-semibold text-slate-900 dark:text-white">
+                                    <div className="truncate text-sm font-semibold text-zinc-900 dark:text-white">
                                         {mover.accountName}
                                     </div>
-                                    <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                    <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
                                         @{mover.handle} • {mover.category}
                                     </div>
                                     {mover.detailNote && (
-                                        <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                                        <div className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
                                             {mover.detailNote}
                                         </div>
                                     )}

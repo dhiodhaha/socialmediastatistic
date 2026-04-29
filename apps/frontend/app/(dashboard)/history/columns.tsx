@@ -131,11 +131,9 @@ export const columns: ColumnDef<ScrapingJob>[] = [
         header: "Sumber",
         cell: () => {
             return (
-                <div className="flex min-w-[160px] flex-col">
-                    <Strong className="text-slate-900 dark:text-white">Snapshot otomatis</Strong>
-                    <Text className="text-slate-500 dark:text-slate-400">
-                        Dibuat dari proses scraping
-                    </Text>
+                <div className="flex flex-col">
+                    <Strong>Tugas terjadwal</Strong>
+                    <Text>oleh sistem</Text>
                 </div>
             );
         },
@@ -150,14 +148,12 @@ export const columns: ColumnDef<ScrapingJob>[] = [
             const duration = calculateDuration(row.original.startedAt, row.original.completedAt);
 
             return (
-                <div className="flex min-w-[190px] flex-col">
-                    <Strong className="text-slate-900 dark:text-white">
-                        {format(startDate, "dd MMM yyyy, HH:mm")}
-                    </Strong>
-                    <div className="mt-1 flex flex-wrap items-center gap-2 text-slate-500 dark:text-slate-400">
-                        <Text className="text-slate-500 dark:text-slate-400">{relative}</Text>
-                        <Text className="text-slate-400 dark:text-slate-500">•</Text>
-                        <Text className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
+                <div className="flex flex-col">
+                    <Strong>{format(startDate, "dd MMM, HH:mm")}</Strong>
+                    <div className="flex items-center gap-2">
+                        <Text>{relative}</Text>
+                        <Text>•</Text>
+                        <Text className="flex items-center gap-1">
                             <Clock className="w-3 h-3" />
                             {duration}
                         </Text>
@@ -186,17 +182,14 @@ export const columns: ColumnDef<ScrapingJob>[] = [
             const isFailed = status === "FAILED";
 
             return (
-                <div className="flex w-full min-w-[180px] max-w-[220px] flex-col gap-2">
+                <div className="w-full max-w-[140px] flex flex-col gap-1.5">
                     <div className="flex justify-between items-end">
-                        <Text className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                            Cakupan akun
-                        </Text>
-                        <Strong className="tabular-nums text-slate-900 dark:text-white">
-                            {total}
-                        </Strong>
+                        <Text className="text-xs">Total</Text>
+                        <Strong>{total}</Strong>
                     </div>
 
-                    <div className="flex h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+                    {/* Progress Bar Container */}
+                    <div className="h-2 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden flex">
                         {success > 0 && (
                             <div
                                 style={{ width: `${successPct}%` }}
@@ -211,26 +204,15 @@ export const columns: ColumnDef<ScrapingJob>[] = [
                         )}
                     </div>
 
-                    <div className="flex items-center justify-between text-xs font-medium">
-                        {isSuccess && (
-                            <span className="tabular-nums text-emerald-600">
-                                {success} berhasil
-                            </span>
-                        )}
-                        {isFailed && (
-                            <span className="tabular-nums text-red-600">{failed} gagal</span>
-                        )}
+                    <div className="flex justify-between items-center text-xs font-medium">
+                        {isSuccess && <span className="text-emerald-600">{success} OK</span>}
+                        {isFailed && <span className="text-red-600">{failed} Err</span>}
                         {!isSuccess && !isFailed && (
                             <div className="flex gap-2">
-                                <span className="tabular-nums text-emerald-600">
-                                    {success} berhasil
-                                </span>
-                                <span className="tabular-nums text-red-600">{failed} gagal</span>
+                                <span className="text-emerald-600">{success} OK</span>
+                                <span className="text-red-600">{failed} Err</span>
                             </div>
                         )}
-                        <span className="tabular-nums text-slate-500 dark:text-slate-400">
-                            {total > 0 ? Math.round((success / total) * 100) : 0}%
-                        </span>
                     </div>
                 </div>
             );
@@ -249,17 +231,13 @@ export const columns: ColumnDef<ScrapingJob>[] = [
             });
 
             if (row.original.status !== "COMPLETED") {
-                return (
-                    <Text className="text-slate-500 dark:text-slate-400">
-                        Tersedia setelah tugas selesai
-                    </Text>
-                );
+                return <Text className="text-muted-foreground">Tersedia setelah selesai</Text>;
             }
 
             return (
-                <div className="flex min-w-[180px] flex-col">
-                    <Strong className="text-slate-900 dark:text-white">{reporting.label}</Strong>
-                    <Text className="text-slate-500 dark:text-slate-400">
+                <div className="flex flex-col">
+                    <Strong>{reporting.label}</Strong>
+                    <Text>
                         {reporting.source === "manual"
                             ? "Bulan pelaporan manual"
                             : "Otomatis dari bulan selesai"}

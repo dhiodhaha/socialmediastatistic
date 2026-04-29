@@ -7,7 +7,6 @@ import {
     Twitter,
     Video,
 } from "lucide-react";
-import { Surface } from "@/shared/components/ui/workspace";
 import { cn } from "@/shared/lib/utils";
 import type { SelectOption } from "./filter-listbox";
 import type { ReportMode } from "./report-mode";
@@ -104,20 +103,16 @@ export function ReportsControls({
           : "Pilih tahun dan kuartal";
 
     return (
-        <Surface className="overflow-hidden">
-            <div className="grid gap-8 xl:grid-cols-[4.5fr_7.5fr]">
+        <div className="rounded-3xl border border-zinc-950/10 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-zinc-900">
+            <div className="grid gap-6 xl:grid-cols-[5fr_7fr]">
                 <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
-                        Builder
+                    <p className="text-base/7 font-medium text-zinc-500 sm:text-sm/6">
+                        Pembuat laporan
                     </p>
-                    <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950 text-balance dark:text-white">
-                        Ikuti alur yang sama untuk setiap jenis laporan.
+                    <h2 className="mt-2 text-2xl font-semibold tracking-tight text-zinc-950 text-balance dark:text-white">
+                        Ikuti langkah ini untuk menampilkan data laporan.
                     </h2>
-                    <p className="mt-3 max-w-md text-sm leading-6 text-slate-600 dark:text-slate-300">
-                        Pilih mode, tentukan cakupan, lalu tinjau data sebelum membuat PDF. Panel di
-                        kanan selalu mengikuti langkah yang sedang aktif.
-                    </p>
-                    <div className="mt-6 space-y-3">
+                    <div className="mt-5 space-y-3">
                         <BuilderStep
                             number={1}
                             title="Jenis laporan"
@@ -146,14 +141,14 @@ export function ReportsControls({
                 </div>
 
                 <div className="space-y-5">
-                    <section className="space-y-4 rounded-[1.5rem] border border-slate-200/80 bg-slate-50/80 p-5 dark:border-white/10 dark:bg-white/5">
+                    <section className="space-y-3">
                         <StepLabel icon={FileText} title="1. Pilih jenis laporan" />
                         <ReportModeSwitch value={reportMode} onChange={setReportMode} />
                     </section>
 
-                    <section className="space-y-4 rounded-[1.5rem] border border-slate-200/80 bg-slate-50/80 p-5 dark:border-white/10 dark:bg-white/5">
+                    <section className="space-y-3">
                         <StepLabel icon={Layers} title="2. Pilih platform" />
-                        <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex items-center gap-2 overflow-x-auto pb-1">
                             {TABS.map((tab) => (
                                 <button
                                     type="button"
@@ -173,7 +168,7 @@ export function ReportsControls({
                         </div>
                     </section>
 
-                    <section className="space-y-4 rounded-[1.5rem] border border-slate-200/80 bg-slate-50/80 p-5 dark:border-white/10 dark:bg-white/5">
+                    <section className="space-y-3">
                         <StepLabel
                             icon={CalendarDays}
                             title={
@@ -218,14 +213,14 @@ export function ReportsControls({
                     </section>
                 </div>
             </div>
-        </Surface>
+        </div>
     );
 }
 
 function StepLabel({ icon: Icon, title }: { icon: React.ElementType; title: string }) {
     return (
-        <div className="flex items-center gap-2 text-sm font-semibold text-slate-950 dark:text-white">
-            <Icon className="size-4 text-slate-400" />
+        <div className="flex items-center gap-2 text-base/7 font-medium text-zinc-950 sm:text-sm/6 dark:text-white">
+            <Icon className="size-5 text-zinc-400 sm:size-4" />
             {title}
         </div>
     );
@@ -245,10 +240,10 @@ function BuilderStep({
     return (
         <div
             className={cn(
-                "flex gap-3 rounded-[1.25rem] p-3 ring-1",
+                "flex gap-3 rounded-2xl p-3 ring-1",
                 active
                     ? "bg-emerald-50 text-emerald-950 ring-emerald-950/10 dark:bg-emerald-950/20 dark:text-emerald-100 dark:ring-emerald-400/20"
-                    : "bg-slate-50 text-slate-600 ring-slate-200/80 dark:bg-white/5 dark:text-slate-400 dark:ring-white/10",
+                    : "bg-zinc-50 text-zinc-600 ring-zinc-950/5 dark:bg-zinc-950 dark:text-zinc-400 dark:ring-white/10",
             )}
         >
             <div
@@ -256,7 +251,7 @@ function BuilderStep({
                     "flex size-7 shrink-0 items-center justify-center rounded-full text-sm font-semibold tabular-nums",
                     active
                         ? "bg-emerald-600 text-white"
-                        : "bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400",
+                        : "bg-zinc-200 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400",
                 )}
             >
                 {active && number === 4 ? <CheckCircle2 className="size-4" /> : number}

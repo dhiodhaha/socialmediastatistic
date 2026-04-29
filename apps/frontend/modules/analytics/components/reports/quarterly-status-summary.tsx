@@ -16,17 +16,17 @@ export function QuarterlyStatusSummary({ status }: QuarterlyStatusSummaryProps) 
             : "0/0";
 
     return (
-        <div className="rounded-[1.75rem] border border-slate-300/80 bg-white p-5 shadow-sm ring-1 ring-slate-200/70 dark:border-white/10 dark:bg-slate-950 dark:ring-white/10">
+        <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
             <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                 <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                    <div className="flex items-center gap-2 text-sm font-medium text-zinc-500">
                         <ShieldCheck className="h-4 w-4 text-emerald-500" />
                         Status tinjauan kuartal
                     </div>
-                    <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">
+                    <h2 className="text-xl font-semibold text-zinc-900 dark:text-white">
                         Q{status.selectedQuarter} {status.selectedYear}
                     </h2>
-                    <p className="text-sm text-slate-600 dark:text-slate-300">
+                    <p className="text-sm text-zinc-500 dark:text-zinc-400">
                         {status.availability.reason}
                     </p>
                 </div>
@@ -51,8 +51,8 @@ export function QuarterlyStatusSummary({ status }: QuarterlyStatusSummaryProps) 
             </div>
 
             <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-                <div className="rounded-[1.25rem] border border-slate-200/80 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/5">
-                    <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950/40">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
                         Bulan sumber
                     </div>
                     <div className="mt-3 flex flex-wrap gap-2">
@@ -78,14 +78,14 @@ export function QuarterlyStatusSummary({ status }: QuarterlyStatusSummaryProps) 
                     </div>
                 </div>
 
-                <div className="rounded-[1.25rem] border border-slate-200/80 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/5">
-                    <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950/40">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
                         Baseline awal kuartal
                     </div>
-                    <div className="mt-3 text-sm text-slate-700 dark:text-slate-300">
+                    <div className="mt-3 text-sm text-zinc-700 dark:text-zinc-300">
                         {status.baseline.label}
                     </div>
-                    <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                    <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
                         {status.baseline.hasAnchor
                             ? status.baseline.sourceLabel || "Patokan awal kuartal tersedia"
                             : "Laporan kuartal tetap dapat dibuat, namun pertumbuhan tidak dapat diperingkat tanpa data awal kuartal"}
@@ -94,7 +94,7 @@ export function QuarterlyStatusSummary({ status }: QuarterlyStatusSummaryProps) 
             </div>
 
             {status.warnings.length > 0 && (
-                <div className="mt-4 rounded-[1.25rem] border border-amber-200 bg-amber-50/90 p-4 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200">
+                <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200">
                     <div className="mb-2 flex items-center gap-2 font-semibold">
                         <AlertTriangle className="h-4 w-4" />
                         Peringatan
@@ -120,12 +120,12 @@ function StatusCard({
     value: string;
 }) {
     return (
-        <div className="rounded-[1.25rem] border border-slate-200/80 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-white/5">
-            <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+        <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950/40">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
                 <Icon className="h-4 w-4" />
                 {label}
             </div>
-            <div className="mt-2 text-lg font-semibold text-slate-900 dark:text-white">{value}</div>
+            <div className="mt-2 text-lg font-semibold text-zinc-900 dark:text-white">{value}</div>
         </div>
     );
 }

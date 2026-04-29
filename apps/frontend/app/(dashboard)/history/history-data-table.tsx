@@ -30,8 +30,8 @@ export function HistoryDataTable({ data, pageCount, currentPage }: HistoryDataTa
                 pageSize: 10,
             }}
             onPaginationChange={handlePaginationChange}
-            emptyTitle="Belum ada riwayat scraping"
-            emptyDescription="Jalankan scraping, impor data historis, atau ubah filter untuk melihat snapshot yang siap dipakai."
+            emptyTitle="No scraping runs found"
+            emptyDescription="Run scraping, import historical data, or clear filters to see available report snapshots."
         />
     );
 }

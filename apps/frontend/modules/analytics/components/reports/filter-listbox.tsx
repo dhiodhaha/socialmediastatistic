@@ -48,43 +48,32 @@ export function FilterListbox({
                     <>
                         <ListboxButton
                             className={cn(
-                                "flex min-h-11 min-w-[13rem] items-center gap-3 rounded-[1rem] border px-3.5 py-2.5 text-left text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20",
+                                "flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 active:scale-95",
                                 open
-                                    ? "border-blue-200 bg-blue-50 text-blue-700 ring-2 ring-blue-100 dark:border-blue-700 dark:bg-blue-900/30 dark:text-blue-300 dark:ring-blue-900/20"
-                                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700",
+                                    ? "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700 ring-2 ring-blue-100 dark:ring-blue-900/20"
+                                    : "text-zinc-700 dark:text-zinc-300 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 border-zinc-200 dark:border-zinc-700",
                                 (disabled || loading) &&
-                                    "cursor-not-allowed bg-slate-50 opacity-50 dark:bg-zinc-900",
+                                    "opacity-50 cursor-not-allowed active:scale-100 bg-zinc-50 dark:bg-zinc-900",
                             )}
                         >
                             {loading ? (
-                                <Loader2 size={16} className="animate-spin text-slate-400" />
+                                <Loader2 size={14} className="animate-spin text-zinc-400" />
                             ) : (
                                 TriggerIcon && (
                                     <TriggerIcon
-                                        size={16}
-                                        className={open ? "text-blue-500" : "text-slate-400"}
+                                        size={14}
+                                        className={open ? "text-blue-500" : "text-zinc-400"}
                                     />
                                 )
                             )}
-                            <span className="min-w-0 flex-1">
-                                {title ? (
-                                    <span className="mb-0.5 block text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
-                                        {title}
-                                    </span>
-                                ) : null}
-                                <span className="block truncate">
-                                    {prefix && (
-                                        <span className="mr-1 text-slate-400 dark:text-slate-500">
-                                            {prefix}
-                                        </span>
-                                    )}
-                                    {value.label || "Pilih"}
-                                </span>
+                            <span className="truncate max-w-[140px] text-left">
+                                {prefix && <span className="text-zinc-400 mr-1">{prefix}</span>}
+                                {value.label || "Pilih"}
                             </span>
                             <ChevronDown
-                                size={16}
+                                size={14}
                                 className={cn(
-                                    "ml-auto text-slate-400 transition-transform",
+                                    "text-zinc-400 transition-transform ml-auto",
                                     open && "rotate-180",
                                 )}
                             />
@@ -96,7 +85,7 @@ export function FilterListbox({
                             leaveFrom="opacity-100"
                             leaveTo="opacity-0"
                         >
-                            <ListboxOptions className="absolute left-0 top-[calc(100%+0.5rem)] z-50 w-80 overflow-hidden rounded-[1.25rem] bg-white shadow-xl ring-1 ring-black/5 focus:outline-none dark:bg-zinc-900 dark:ring-white/10">
+                            <ListboxOptions className="absolute top-12 left-0 z-50 w-72 overflow-hidden rounded-2xl bg-white dark:bg-zinc-900 shadow-xl ring-1 ring-black/5 dark:ring-white/10 focus:outline-none">
                                 {title && (
                                     <div className="px-4 py-3 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/50">
                                         <Text className="text-[10px] font-bold tracking-wider text-zinc-500 uppercase">

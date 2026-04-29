@@ -31,16 +31,13 @@ export function DashboardSidebar() {
     return (
         <Sidebar>
             <SidebarHeader>
-                <div className="flex items-center gap-3 rounded-[1.5rem] border border-slate-300/80 bg-white/85 p-3 shadow-sm ring-1 ring-white/80 dark:border-white/10 dark:bg-white/5 dark:ring-white/10">
-                    <Avatar
-                        className="size-10 bg-slate-950 text-white ring-4 ring-sky-100 dark:bg-white dark:text-slate-950 dark:ring-sky-400/20"
-                        initials="SM"
-                    />
+                <div className="flex items-center gap-3">
+                    <Avatar className="size-10 bg-zinc-900 text-white" initials="SM" />
                     <div>
-                        <div className="text-sm font-semibold tracking-[-0.02em] text-slate-950 dark:text-white">
+                        <div className="text-sm font-medium text-zinc-950 dark:text-white">
                             Statistik Sosial
                         </div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400">
+                        <div className="text-xs text-zinc-500 dark:text-zinc-400">
                             Persiapan laporan
                         </div>
                     </div>
