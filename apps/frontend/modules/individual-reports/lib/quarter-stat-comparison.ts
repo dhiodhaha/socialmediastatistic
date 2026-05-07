@@ -1,4 +1,4 @@
-import type { Platform } from "@repo/database";
+import type { PortfolioPlatform as Platform } from "@repo/types";
 
 export interface QuarterSelection {
     year: number;

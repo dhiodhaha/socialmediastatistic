@@ -1,4 +1,4 @@
-import type { Platform } from "@repo/database";
+import type { PortfolioPlatform as Platform } from "@repo/types";
 
 export function platformHandle(
     account: { instagram: string | null; tiktok: string | null; twitter: string | null },

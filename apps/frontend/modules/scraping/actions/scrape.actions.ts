@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { auth } from "@/shared/lib/auth";
+import { getAuthorizationErrorMessage, requireEditorOrAdmin } from "@/shared/lib/authorization";
 import { DEMO_WORKER_DISABLED_MESSAGE, isDemoMode } from "@/shared/lib/demo-mode";
 import { logger } from "@/shared/lib/logger";
 
@@ -29,10 +29,7 @@ async function fetchWithRetry(
 
 export async function triggerScrape(categoryId?: string) {
     try {
-        const session = await auth();
-        if (!session) {
-            return { success: false, error: "Unauthorized" };
-        }
+        await requireEditorOrAdmin();
 
         if (isDemoMode) {
             return { success: false, error: DEMO_WORKER_DISABLED_MESSAGE };
@@ -66,16 +63,16 @@ export async function triggerScrape(categoryId?: string) {
         return { success: true, jobId };
     } catch (error) {
         logger.error({ error }, "Trigger scrape failed");
-        return { success: false, error: "Failed to trigger scrape" };
+        return {
+            success: false,
+            error: getAuthorizationErrorMessage(error, "Failed to trigger scrape"),
+        };
     }
 }
 
 export async function stopScrape(jobId: string) {
     try {
-        const session = await auth();
-        if (!session) {
-            return { success: false, error: "Unauthorized" };
-        }
+        await requireEditorOrAdmin();
 
         if (isDemoMode) {
             return { success: false, error: DEMO_WORKER_DISABLED_MESSAGE };
@@ -104,16 +101,16 @@ export async function stopScrape(jobId: string) {
         return { success: true };
     } catch (error) {
         logger.error({ error, jobId }, "Stop scrape failed");
-        return { success: false, error: "Failed to stop scrape" };
+        return {
+            success: false,
+            error: getAuthorizationErrorMessage(error, "Failed to stop scrape"),
+        };
     }
 }
 
 export async function retryFailedAccounts() {
     try {
-        const session = await auth();
-        if (!session) {
-            return { success: false, error: "Unauthorized" };
-        }
+        await requireEditorOrAdmin();
 
         if (isDemoMode) {
             return { success: false, error: DEMO_WORKER_DISABLED_MESSAGE };
@@ -156,6 +153,9 @@ export async function retryFailedAccounts() {
     } catch (error) {
         const errMsg = error instanceof Error ? error.message : String(error);
         logger.error({ error: errMsg }, "Retry failed accounts request failed");
-        return { success: false, error: `Connection failed: ${errMsg}` };
+        return {
+            success: false,
+            error: getAuthorizationErrorMessage(error, `Connection failed: ${errMsg}`),
+        };
     }
 }

@@ -8,12 +8,14 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String // hashed with bcrypt
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                   String                @id @default(cuid())
+  email                String                @unique
+  password             String // hashed with bcrypt
+  name                 String?
+  role                 UserRole              @default(EDITOR)
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  influencerScrapeRuns InfluencerScrapeRun[]
 }
 
 model Account {
@@ -140,6 +142,8 @@ enum Platform {
   INSTAGRAM
   TIKTOK
   TWITTER
+  THREADS
+  YOUTUBE
 }
 
 enum JobStatus {
@@ -166,8 +170,219 @@ enum SnapshotSource {
   MANUAL
 }
 
+enum UserRole {
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
+enum InfluencerSize {
+  NANO
+  MICRO
+  MACRO
+  MEGA
+}
+
+enum InfluencerSentiment {
+  POSITIVE
+  NEUTRAL
+  NEGATIVE
+  MIXED
+  UNKNOWN
+}
+
+enum InfluencerPostCategory {
+  GOVERNANCE
+  PUBLIC_SERVICE
+  POLITICS
+  ECONOMY
+  SOCIAL_ISSUE
+  EDUCATION
+  ENVIRONMENT
+  ENTERTAINMENT
+  OTHER
+}
+
+enum InfluencerScrapeRunStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  PARTIAL
+  FAILED
+}
+
+enum InfluencerScrapeTargetStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  SKIPPED
+}
+
+enum InfluencerAnalysisStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  UNAVAILABLE
+}
+
 model Settings {
   id           String   @id @default("app") // Singleton
   cronSchedule String   @default("0 0 * * *") // Daily at midnight UTC
   updatedAt    DateTime @updatedAt
+}
+
+model Influencer {
+  id                    String                      @id @default(cuid())
+  name                  String
+  displayAlias          String?
+  note                  String?
+  size                  InfluencerSize?
+  professionInstitution String?
+  profileSentiment      InfluencerSentiment?
+  profileTopicSummary   String?
+  profileSummary        String?
+  canonicalUrl          String?                     @unique
+  instagramHandle       String?                     @unique
+  tiktokHandle          String?                     @unique
+  twitterHandle         String?                     @unique
+  threadsHandle         String?                     @unique
+  youtubeHandle         String?                     @unique
+  activePlatforms       Platform[]                  @default([])
+  isActive              Boolean                     @default(true)
+  lastScrapedAt         DateTime?
+  lastAnalyzedAt        DateTime?
+  scrapeTargets         InfluencerScrapeTarget[]
+  posts                 InfluencerPost[]
+  topicAssignments      InfluencerTopicAssignment[]
+  createdAt             DateTime                    @default(now())
+  updatedAt             DateTime                    @updatedAt
+
+  @@index([name])
+  @@index([isActive])
+}
+
+model InfluencerTopic {
+  id           String                      @id @default(cuid())
+  name         String                      @unique
+  isControlled Boolean                     @default(true)
+  assignments  InfluencerTopicAssignment[]
+  createdAt    DateTime                    @default(now())
+  updatedAt    DateTime                    @updatedAt
+}
+
+model InfluencerTopicAssignment {
+  influencerId String
+  topicId      String
+  influencer   Influencer      @relation(fields: [influencerId], references: [id], onDelete: Cascade)
+  topic        InfluencerTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@id([influencerId, topicId])
+  @@index([topicId])
+}
+
+model InfluencerScrapeRun {
+  id                 String                    @id @default(cuid())
+  requestedById      String?
+  requestedBy        User?                     @relation(fields: [requestedById], references: [id], onDelete: SetNull)
+  status             InfluencerScrapeRunStatus @default(PENDING)
+  requestedPlatforms Platform[]                @default([])
+  creditsUsed        Int                       @default(0)
+  errorSummary       String?
+  startedAt          DateTime?
+  completedAt        DateTime?
+  createdAt          DateTime                  @default(now())
+  updatedAt          DateTime                  @updatedAt
+  targets            InfluencerScrapeTarget[]
+  posts              InfluencerPost[]
+
+  @@index([requestedById])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model InfluencerScrapeTarget {
+  id                 String                       @id @default(cuid())
+  scrapeRunId        String
+  influencerId       String
+  scrapeRun          InfluencerScrapeRun          @relation(fields: [scrapeRunId], references: [id], onDelete: Cascade)
+  influencer         Influencer                   @relation(fields: [influencerId], references: [id], onDelete: Cascade)
+  platform           Platform
+  handle             String
+  status             InfluencerScrapeTargetStatus @default(PENDING)
+  creditsUsed        Int                          @default(0)
+  profileUrl         String?
+  profileDisplayName String?
+  profileBio         String?
+  profileFollowers   Int?
+  profileFollowing   Int?
+  profilePosts       Int?
+  profileVerified    Boolean?
+  profilePayload     Json?
+  rawPayload         Json?
+  error              String?
+  scrapedAt          DateTime?
+  createdAt          DateTime                     @default(now())
+  updatedAt          DateTime                     @updatedAt
+  posts              InfluencerPost[]
+
+  @@unique([scrapeRunId, influencerId, platform])
+  @@index([influencerId, platform])
+  @@index([status])
+}
+
+model InfluencerPost {
+  id                 String                   @id @default(cuid())
+  influencerId       String
+  scrapeRunId        String?
+  scrapeTargetId     String?
+  influencer         Influencer               @relation(fields: [influencerId], references: [id], onDelete: Cascade)
+  scrapeRun          InfluencerScrapeRun?     @relation(fields: [scrapeRunId], references: [id], onDelete: SetNull)
+  scrapeTarget       InfluencerScrapeTarget?  @relation(fields: [scrapeTargetId], references: [id], onDelete: SetNull)
+  platform           Platform
+  platformPostId     String
+  threadId           String?
+  url                String?
+  caption            String?
+  content            String?
+  mediaType          String?
+  thumbnailUrl       String?
+  publishedAt        DateTime?
+  rawPayload         Json?
+  contentFingerprint String
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+  analyses           InfluencerPostAnalysis[]
+
+  @@unique([platform, platformPostId])
+  @@index([influencerId, platform, publishedAt])
+  @@index([scrapeRunId])
+  @@index([scrapeTargetId])
+}
+
+model InfluencerPostAnalysis {
+  id                  String                   @id @default(cuid())
+  postId              String
+  post                InfluencerPost           @relation(fields: [postId], references: [id], onDelete: Cascade)
+  contentFingerprint  String
+  status              InfluencerAnalysisStatus @default(PENDING)
+  category            InfluencerPostCategory?
+  sentiment           InfluencerSentiment?
+  controlledTopics    String[]                 @default([])
+  freeTags            String[]                 @default([])
+  transcript          String?
+  transcriptStatus    InfluencerAnalysisStatus @default(PENDING)
+  captionSummary      String?
+  threadSummary       String?
+  threadSummaryStatus InfluencerAnalysisStatus @default(PENDING)
+  postSummary         String?
+  confidence          Float?
+  error               String?
+  analyzedAt          DateTime?
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
+
+  @@unique([postId, contentFingerprint])
+  @@index([status])
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import type { Platform } from "@repo/database";
+import type { PortfolioPlatform } from "@repo/types";
 import {
     Combobox,
     ComboboxContent,
@@ -13,7 +13,7 @@ import {
 type AccountOption = {
     id: string;
     username: string;
-    handles: Record<Platform, string | null>;
+    handles: Record<PortfolioPlatform, string | null>;
 };
 
 type IndividualAccountComboboxProps = {
@@ -22,7 +22,7 @@ type IndividualAccountComboboxProps = {
     onChange: (account: AccountOption | null) => void;
 };
 
-const PLATFORM_LABELS: Record<Platform, string> = {
+const PLATFORM_LABELS: Record<PortfolioPlatform, string> = {
     INSTAGRAM: "IG",
     TIKTOK: "TT",
     TWITTER: "X",
@@ -95,7 +95,7 @@ function filterAccount(account: AccountOption, query: string) {
 }
 
 function formatHandles(account: AccountOption) {
-    const handles = (Object.keys(PLATFORM_LABELS) as Platform[])
+    const handles = (Object.keys(PLATFORM_LABELS) as PortfolioPlatform[])
         .map((platform) => {
             const handle = account.handles[platform];
             return handle ? `${PLATFORM_LABELS[platform]} @${handle}` : null;

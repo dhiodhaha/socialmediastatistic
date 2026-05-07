@@ -3,16 +3,13 @@
 import { prisma } from "@repo/database";
 import { revalidatePath } from "next/cache";
 import { ZodError } from "zod";
-import { auth } from "@/shared/lib/auth";
+import { getAuthorizationErrorMessage, requireEditorOrAdmin } from "@/shared/lib/authorization";
 import { logger } from "@/shared/lib/logger";
 import { type AccountInput, accountSchema } from "@/shared/lib/schemas";
 
 export async function getAccounts(page = 1, limit = 10, search = "", categoryId?: string) {
     try {
-        const session = await auth();
-        if (!session) {
-            return { success: false, error: "Unauthorized" };
-        }
+        await requireEditorOrAdmin();
 
         const skip = (page - 1) * limit;
 
@@ -80,6 +77,11 @@ export async function getAccounts(page = 1, limit = 10, search = "", categoryId?
             },
         };
     } catch (error) {
+        const authorizationMessage = getAuthorizationErrorMessage(error, "");
+        if (authorizationMessage) {
+            return { success: false, error: authorizationMessage };
+        }
+
         logger.error({ error }, "Failed to fetch accounts");
         // If it's a connection error (common during build), return empty compatible response
         const err = error as { code?: string; message?: string };
@@ -102,10 +104,7 @@ export async function getAccounts(page = 1, limit = 10, search = "", categoryId?
 
 export async function createAccount(data: AccountInput) {
     try {
-        const session = await auth();
-        if (!session) {
-            return { success: false, error: "Unauthorized" };
-        }
+        await requireEditorOrAdmin();
 
         const validated = accountSchema.parse(data);
 
@@ -151,16 +150,16 @@ export async function createAccount(data: AccountInput) {
         if (error instanceof ZodError) {
             return { success: false, error: error.issues[0].message };
         }
-        return { success: false, error: "Failed to create account" };
+        return {
+            success: false,
+            error: getAuthorizationErrorMessage(error, "Failed to create account"),
+        };
     }
 }
 
 export async function updateAccount(id: string, data: Partial<AccountInput>) {
     try {
-        const session = await auth();
-        if (!session) {
-            return { success: false, error: "Unauthorized" };
-        }
+        await requireEditorOrAdmin();
 
         // Update account with categories via transaction
         const account = await prisma.$transaction(async (tx) => {
@@ -196,32 +195,32 @@ export async function updateAccount(id: string, data: Partial<AccountInput>) {
         return { success: true, data: account };
     } catch (error) {
         logger.error({ error, id }, "Failed to update account");
-        return { success: false, error: "Failed to update account" };
+        return {
+            success: false,
+            error: getAuthorizationErrorMessage(error, "Failed to update account"),
+        };
     }
 }
 
 export async function deleteAccount(id: string) {
     try {
-        const session = await auth();
-        if (!session) {
-            return { success: false, error: "Unauthorized" };
-        }
+        await requireEditorOrAdmin();
 
         await prisma.account.delete({ where: { id } });
         revalidatePath("/accounts");
         return { success: true };
     } catch (error) {
         logger.error({ error, id }, "Failed to delete account");
-        return { success: false, error: "Failed to delete account" };
+        return {
+            success: false,
+            error: getAuthorizationErrorMessage(error, "Failed to delete account"),
+        };
     }
 }
 
 export async function bulkCreateAccounts(accounts: AccountInput[]) {
     try {
-        const session = await auth();
-        if (!session) {
-            return { success: false, error: "Unauthorized" };
-        }
+        await requireEditorOrAdmin();
 
         let successCount = 0;
         const errors: string[] = [];
@@ -297,7 +296,10 @@ export async function bulkCreateAccounts(accounts: AccountInput[]) {
         };
     } catch (error) {
         logger.error({ error }, "Bulk create failed");
-        return { success: false, error: "Bulk create failed" };
+        return {
+            success: false,
+            error: getAuthorizationErrorMessage(error, "Bulk create failed"),
+        };
     }
 }
 
@@ -306,10 +308,7 @@ export async function bulkCreateAccounts(accounts: AccountInput[]) {
  */
 export async function getAccountsWithErrors() {
     try {
-        const session = await auth();
-        if (!session) {
-            return { success: false, error: "Unauthorized", data: [] };
-        }
+        await requireEditorOrAdmin();
 
         // Get the latest completed job with errors
         const latestJob = await prisma.scrapingJob.findFirst({
@@ -373,6 +372,10 @@ export async function getAccountsWithErrors() {
         };
     } catch (error) {
         logger.error({ error }, "Failed to get accounts with errors");
-        return { success: false, error: "Failed to get accounts with errors", data: [] };
+        return {
+            success: false,
+            error: getAuthorizationErrorMessage(error, "Failed to get accounts with errors"),
+            data: [],
+        };
     }
 }

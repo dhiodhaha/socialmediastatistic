@@ -1,4 +1,4 @@
-import type { Platform } from "@repo/database";
+import type { PortfolioPlatform as Platform } from "@repo/types";
 import { calculateGrowth } from "@/modules/analytics/lib/report-metrics";
 
 export const INDIVIDUAL_REPORT_PLATFORMS = ["INSTAGRAM", "TIKTOK", "TWITTER"] as const;
@@ -41,7 +41,11 @@ export function validateIndividualReportRequest(input: IndividualReportRequest) 
         return { valid: false as const, error: "Account is required." };
     }
 
-    if (!INDIVIDUAL_REPORT_PLATFORMS.includes(input.platform)) {
+    if (
+        !INDIVIDUAL_REPORT_PLATFORMS.includes(
+            input.platform as (typeof INDIVIDUAL_REPORT_PLATFORMS)[number],
+        )
+    ) {
         return { valid: false as const, error: "Unsupported platform." };
     }
 

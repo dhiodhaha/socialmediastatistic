@@ -11,7 +11,7 @@ vi.mock("next/cache", () => ({
 }));
 
 vi.mock("@/shared/lib/auth", () => ({
-    auth: vi.fn(async () => ({ user: { id: "user-1" } })),
+    auth: vi.fn(async () => ({ user: { id: "user-1", role: "EDITOR" } })),
 }));
 
 describe("history actions", () => {

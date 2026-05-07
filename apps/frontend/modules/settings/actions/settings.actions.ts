@@ -3,15 +3,12 @@
 import { prisma } from "@repo/database";
 import { compare, hash } from "bcryptjs";
 import { revalidatePath } from "next/cache";
-import { auth } from "@/shared/lib/auth";
+import { getAuthorizationErrorMessage, requireAdmin } from "@/shared/lib/authorization";
 
 // Get app settings (creates default if not exists)
 export async function getSettings() {
     try {
-        const session = await auth();
-        if (!session) {
-            return { success: false, error: "Unauthorized" };
-        }
+        await requireAdmin();
 
         // Settings model exists after migration
         let settings = await prisma.settings.findUnique({
@@ -27,17 +24,17 @@ export async function getSettings() {
         return { success: true, data: settings };
     } catch (e) {
         console.error("getSettings error:", e);
-        return { success: false, error: "Failed to fetch settings" };
+        return {
+            success: false,
+            error: getAuthorizationErrorMessage(e, "Failed to fetch settings"),
+        };
     }
 }
 
 // Update cron schedule
 export async function updateCronSchedule(cronSchedule: string) {
     try {
-        const session = await auth();
-        if (!session) {
-            return { success: false, error: "Unauthorized" };
-        }
+        await requireAdmin();
 
         // Basic cron validation (5 parts separated by spaces)
         const parts = cronSchedule.trim().split(/\s+/);
@@ -59,17 +56,17 @@ export async function updateCronSchedule(cronSchedule: string) {
         return { success: true, data: settings };
     } catch (e) {
         console.error("updateCronSchedule error:", e);
-        return { success: false, error: "Failed to update cron schedule" };
+        return {
+            success: false,
+            error: getAuthorizationErrorMessage(e, "Failed to update cron schedule"),
+        };
     }
 }
 
 // Get current user (for profile section)
 export async function getCurrentUser(userId: string) {
     try {
-        const session = await auth();
-        if (!session) {
-            return { success: false, error: "Unauthorized" };
-        }
+        await requireAdmin();
 
         const user = await prisma.user.findUnique({
             where: { id: userId },
@@ -83,17 +80,17 @@ export async function getCurrentUser(userId: string) {
         return { success: true, data: user };
     } catch (e) {
         console.error("getCurrentUser error:", e);
-        return { success: false, error: "Failed to fetch user" };
+        return {
+            success: false,
+            error: getAuthorizationErrorMessage(e, "Failed to fetch user"),
+        };
     }
 }
 
 // Update user profile
 export async function updateProfile(userId: string, data: { name?: string }) {
     try {
-        const session = await auth();
-        if (!session) {
-            return { success: false, error: "Unauthorized" };
-        }
+        await requireAdmin();
 
         const user = await prisma.user.update({
             where: { id: userId },
@@ -104,17 +101,17 @@ export async function updateProfile(userId: string, data: { name?: string }) {
         return { success: true, data: { id: user.id, name: user.name, email: user.email } };
     } catch (e) {
         console.error("updateProfile error:", e);
-        return { success: false, error: "Failed to update profile" };
+        return {
+            success: false,
+            error: getAuthorizationErrorMessage(e, "Failed to update profile"),
+        };
     }
 }
 
 // Change password
 export async function changePassword(userId: string, currentPassword: string, newPassword: string) {
     try {
-        const session = await auth();
-        if (!session) {
-            return { success: false, error: "Unauthorized" };
-        }
+        await requireAdmin();
 
         const user = await prisma.user.findUnique({
             where: { id: userId },
@@ -142,6 +139,9 @@ export async function changePassword(userId: string, currentPassword: string, ne
         return { success: true };
     } catch (e) {
         console.error("changePassword error:", e);
-        return { success: false, error: "Failed to change password" };
+        return {
+            success: false,
+            error: getAuthorizationErrorMessage(e, "Failed to change password"),
+        };
     }
 }

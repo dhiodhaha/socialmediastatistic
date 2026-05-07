@@ -1,4 +1,4 @@
-import type { Platform } from "@repo/database";
+import type { PortfolioPlatform as Platform } from "@repo/types";
 import type { ManualQuarterSnapshotRequest } from "@/modules/individual-reports/lib/individual-report-types";
 import {
     type QuarterSelection,

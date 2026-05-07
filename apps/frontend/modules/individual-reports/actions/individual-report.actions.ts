@@ -1,6 +1,7 @@
 "use server";
 
-import { type Platform, prisma } from "@repo/database";
+import { prisma } from "@repo/database";
+import type { PortfolioPlatform as Platform } from "@repo/types";
 import { buildContentLevelPlan } from "@/modules/individual-reports/lib/content-reconstruction";
 import {
     baselineMonthKey,
@@ -556,7 +557,7 @@ export async function exportComposedIndividualPdf(input: {
         return { success: false as const, error: "Account not found." };
     }
 
-    const platforms = results.map((r) => r.platform as Platform);
+    const platforms = results.map((r) => r.platform);
     const estimatedCredits = estimateIndividualReportCredits({
         includeProfileRequest: false,
         listingPageLimit: 0,
@@ -597,9 +598,9 @@ export async function exportComposedIndividualPdf(input: {
     exportPayload.interactionGrowth = results.map((r) => {
         const prev = prevResults.find((p) => p.platform === r.platform);
         return computeInteractionGrowth(
-            requireInteractionResultJson(r.resultJson, r.platform as Platform),
+            requireInteractionResultJson(r.resultJson, r.platform),
             asInteractionResultJson(prev?.resultJson ?? null),
-            r.platform as Platform,
+            r.platform,
         );
     });
 
@@ -702,9 +703,9 @@ export async function exportIndividualQuarterlyReportPdf(runId: string) {
     exportPayload.interactionGrowth = successfulResults.map((r) => {
         const prev = prevResults.find((p) => p.platform === r.platform);
         return computeInteractionGrowth(
-            requireInteractionResultJson(r.resultJson, r.platform as Platform),
+            requireInteractionResultJson(r.resultJson, r.platform),
             asInteractionResultJson(prev?.resultJson ?? null),
-            r.platform as Platform,
+            r.platform,
         );
     });
 

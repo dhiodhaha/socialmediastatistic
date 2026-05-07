@@ -4,6 +4,7 @@ import express from "express";
 import exportRouter from "./modules/export/routes/export.routes";
 import healthRouter from "./modules/health/routes/health.routes";
 import individualReportRouter from "./modules/individual-reports/routes/individual-report.routes";
+import influencerRouter from "./modules/influencers/routes/influencer.routes";
 import scrapeRouter from "./modules/scraping/routes/scrape.routes";
 import { initCronJobs } from "./shared/lib/cron";
 import { logger } from "./shared/lib/logger";
@@ -23,6 +24,7 @@ app.use("/health", healthRouter);
 app.use("/scrape", authMiddleware, scrapeRouter);
 app.use("/export", authMiddleware, exportRouter);
 app.use("/individual-reports", authMiddleware, individualReportRouter);
+app.use("/influencers", authMiddleware, influencerRouter);
 
 // Error handling middleware
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

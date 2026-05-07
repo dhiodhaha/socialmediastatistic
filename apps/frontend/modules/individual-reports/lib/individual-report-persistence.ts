@@ -1,4 +1,5 @@
-import { type Platform, type Prisma, prisma } from "@repo/database";
+import { type Prisma, prisma } from "@repo/database";
+import type { PortfolioPlatform as Platform } from "@repo/types";
 import type { PlatformResultJson } from "@/modules/individual-reports/lib/individual-report-types";
 import {
     type QuarterSelection,
@@ -422,7 +423,7 @@ export async function loadPlatformResultsByIds(ids: string[]) {
 export async function loadRunWithPlatformResults(runId: string) {
     const delegate = runDelegate();
     if (delegate) {
-        return delegate.findUnique({
+        const run = await delegate.findUnique({
             where: { id: runId },
             select: {
                 accountId: true,
@@ -439,6 +440,23 @@ export async function loadRunWithPlatformResults(runId: string) {
                 },
             },
         });
+
+        if (!run) {
+            return null;
+        }
+
+        return {
+            accountId: run.accountId,
+            year: run.year,
+            quarter: run.quarter,
+            actualCreditsUsed: run.actualCreditsUsed,
+            platformResults: run.platformResults.map((result) => ({
+                platform: result.platform as Platform,
+                status: result.status as string,
+                creditsUsed: result.creditsUsed,
+                resultJson: result.resultJson,
+            })),
+        };
     }
 
     const rows = await prisma.$queryRawUnsafe<

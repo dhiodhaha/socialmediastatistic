@@ -11,9 +11,14 @@ vi.mock("next/cache", () => ({
     revalidatePath: vi.fn(),
 }));
 
+vi.mock("@/shared/lib/auth", () => ({
+    auth: vi.fn(async () => ({ user: { id: "user-1", role: "EDITOR" } })),
+}));
+
 describe("Server Actions", () => {
     beforeEach(() => {
         resetMocks();
+        prismaMock.$transaction.mockImplementation(async (callback) => callback(prismaMock));
     });
 
     describe("bulkCreateAccounts", () => {

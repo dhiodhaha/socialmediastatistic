@@ -1,3 +1,4 @@
+import type { PortfolioPlatform } from "@repo/types";
 import { format } from "date-fns";
 import { resolveMonthlyReportingAnchors } from "@/modules/analytics/lib/monthly-reporting";
 
@@ -69,7 +70,7 @@ export interface QuarterlyCoverageAccount {
     tiktok: string | null;
     twitter: string | null;
     snapshots: Array<{
-        platform: "INSTAGRAM" | "TIKTOK" | "TWITTER";
+        platform: PortfolioPlatform;
         scrapedAt: Date;
         jobId?: string | null;
     }>;

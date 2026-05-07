@@ -1,6 +1,6 @@
 "use client";
 
-import type { Platform } from "@repo/database";
+import type { PortfolioPlatform as Platform } from "@repo/types";
 import {
     CheckCircle2,
     Download,

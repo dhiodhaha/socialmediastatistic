@@ -26,11 +26,13 @@ async function main() {
             update: {
                 password: hashedPassword,
                 name: "Admin User",
+                role: "ADMIN",
             },
             create: {
                 email: seedAdminEmail,
                 password: hashedPassword,
                 name: "Admin User",
+                role: "ADMIN",
             },
         });
 

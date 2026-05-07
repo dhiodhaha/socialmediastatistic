@@ -10,6 +10,7 @@ export default defineConfig({
         alias: {
             "@": resolve(__dirname, "./"),
             "@repo/database": resolve(__dirname, "./test/mocks/repo-database.ts"),
+            "server-only": resolve(__dirname, "./test/mocks/server-only.ts"),
         },
     },
 });

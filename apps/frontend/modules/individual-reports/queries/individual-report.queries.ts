@@ -1,6 +1,7 @@
 import "server-only";
 
 import { prisma } from "@repo/database";
+import type { PortfolioPlatform } from "@repo/types";
 
 export async function getIndividualReportAccountOptionsQuery() {
     const accounts = await prisma.account.findMany({
@@ -22,6 +23,6 @@ export async function getIndividualReportAccountOptionsQuery() {
             INSTAGRAM: account.instagram,
             TIKTOK: account.tiktok,
             TWITTER: account.twitter,
-        },
+        } satisfies Record<PortfolioPlatform, string | null>,
     }));
 }

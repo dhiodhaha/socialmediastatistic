@@ -1,6 +1,6 @@
 "use client";
 
-import type { Platform } from "@repo/database";
+import type { PortfolioPlatform as Platform } from "@repo/types";
 import { Download, Loader2 } from "lucide-react";
 import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";

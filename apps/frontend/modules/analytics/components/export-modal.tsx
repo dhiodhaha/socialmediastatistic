@@ -1,6 +1,7 @@
 "use client";
 
-import type { Platform } from "@repo/database";
+import type { PortfolioPlatform } from "@repo/types";
+import { isPortfolioPlatform } from "@repo/types";
 import { ArrowRight, Download, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -47,7 +48,7 @@ export function ExportModal({ trigger, defaultCategoryId }: ExportModalProps) {
     const [mode, setMode] = useState<"single" | "comparison">("comparison");
 
     // Platform selection
-    const [platforms, setPlatforms] = useState<Record<Platform, boolean>>({
+    const [platforms, setPlatforms] = useState<Record<PortfolioPlatform, boolean>>({
         INSTAGRAM: true,
         TIKTOK: true,
         TWITTER: true,
@@ -85,7 +86,7 @@ export function ExportModal({ trigger, defaultCategoryId }: ExportModalProps) {
         }
     }, [open]);
 
-    const handlePlatformToggle = (platform: Platform) => {
+    const handlePlatformToggle = (platform: PortfolioPlatform) => {
         setPlatforms((prev) => ({
             ...prev,
             [platform]: !prev[platform],
@@ -127,9 +128,12 @@ export function ExportModal({ trigger, defaultCategoryId }: ExportModalProps) {
             // Filter by selected platforms
             const selectedPlatforms = Object.entries(platforms)
                 .filter(([_, selected]) => selected)
-                .map(([p]) => p as Platform);
+                .map(([p]) => p as PortfolioPlatform);
 
-            const filteredRows = rows.filter((row) => selectedPlatforms.includes(row.platform));
+            const filteredRows = rows.filter(
+                (row) =>
+                    isPortfolioPlatform(row.platform) && selectedPlatforms.includes(row.platform),
+            );
 
             if (filteredRows.length === 0) {
                 toast.error("Tidak ada data untuk di-export");

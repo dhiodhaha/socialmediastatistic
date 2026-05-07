@@ -3,6 +3,7 @@ import { FailedAccountsAlert } from "@/modules/accounts/components/failed-accoun
 import { getScrapingHistory } from "@/modules/analytics/actions/history.actions";
 import { HistoryToolbar } from "@/modules/analytics/components/history-toolbar";
 import { DataImportUpload } from "@/modules/scraping/components/data-import-upload";
+import { requireEditorOrAdminPage } from "@/shared/lib/authorization";
 import { FixOrphanButton } from "./fix-orphan-button";
 import { HistoryDataTable } from "./history-data-table";
 
@@ -11,6 +12,8 @@ export default async function HistoryPage({
 }: {
     searchParams: Promise<{ page?: string; status?: string; platform?: string }>;
 }) {
+    await requireEditorOrAdminPage();
+
     // Await searchParams as required in Next.js 15+ (and likely 16)
     const params = await searchParams;
     const page = Number(params?.page) || 1;

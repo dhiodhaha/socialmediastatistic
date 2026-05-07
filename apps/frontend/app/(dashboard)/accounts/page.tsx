@@ -1,5 +1,6 @@
 import { getAccountsQuery } from "@/modules/accounts/queries/account.queries";
 import { getCategoriesQuery } from "@/modules/categories/queries/category.queries";
+import { requireEditorOrAdminPage } from "@/shared/lib/authorization";
 import { AccountsClient } from "./accounts-client";
 import type { Account } from "./columns";
 
@@ -10,6 +11,8 @@ export default async function AccountsPage({
 }: {
     searchParams: Promise<{ page?: string; search?: string; categoryId?: string }>;
 }) {
+    await requireEditorOrAdminPage();
+
     const params = await searchParams;
     const page = Number(params.page) || 1;
     const search = params.search || "";

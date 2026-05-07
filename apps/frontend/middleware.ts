@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { canAccessDashboardRoute, normalizeUserRole } from "@/shared/lib/access-control";
 import { auth } from "@/shared/lib/auth";
 
 export default auth((req) => {
@@ -31,6 +32,12 @@ export default auth((req) => {
     // Protect all other routes
     if (!isLoggedIn) {
         return NextResponse.redirect(new URL("/login", req.nextUrl));
+    }
+
+    const role = normalizeUserRole(req.auth?.user?.role);
+
+    if (!canAccessDashboardRoute(pathname, role)) {
+        return NextResponse.redirect(new URL("/dashboard", req.nextUrl));
     }
 
     return NextResponse.next();

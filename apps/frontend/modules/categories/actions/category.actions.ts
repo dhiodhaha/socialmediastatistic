@@ -2,14 +2,11 @@
 
 import { prisma } from "@repo/database";
 import { revalidatePath } from "next/cache";
-import { auth } from "@/shared/lib/auth";
+import { getAuthorizationErrorMessage, requireEditorOrAdmin } from "@/shared/lib/authorization";
 
 export async function getCategories() {
     try {
-        const session = await auth();
-        if (!session) {
-            return { success: false, error: "Unauthorized" };
-        }
+        await requireEditorOrAdmin();
         const categories = await prisma.category.findMany({
             orderBy: { name: "asc" },
             include: {
@@ -21,16 +18,16 @@ export async function getCategories() {
         return { success: true, data: categories };
     } catch (e) {
         console.error("getCategories error:", e);
-        return { success: false, error: "Failed to fetch categories" };
+        return {
+            success: false,
+            error: getAuthorizationErrorMessage(e, "Failed to fetch categories"),
+        };
     }
 }
 
 export async function createCategory(name: string) {
     try {
-        const session = await auth();
-        if (!session) {
-            return { success: false, error: "Unauthorized" };
-        }
+        await requireEditorOrAdmin();
 
         const existing = await prisma.category.findUnique({
             where: { name },
@@ -48,16 +45,16 @@ export async function createCategory(name: string) {
         return { success: true, data: category };
     } catch (e) {
         console.error("createCategory error:", e);
-        return { success: false, error: "Failed to create category" };
+        return {
+            success: false,
+            error: getAuthorizationErrorMessage(e, "Failed to create category"),
+        };
     }
 }
 
 export async function updateCategory(id: string, name: string) {
     try {
-        const session = await auth();
-        if (!session) {
-            return { success: false, error: "Unauthorized" };
-        }
+        await requireEditorOrAdmin();
 
         const category = await prisma.category.update({
             where: { id },
@@ -68,16 +65,16 @@ export async function updateCategory(id: string, name: string) {
         return { success: true, data: category };
     } catch (e) {
         console.error("updateCategory error:", e);
-        return { success: false, error: "Failed to update category" };
+        return {
+            success: false,
+            error: getAuthorizationErrorMessage(e, "Failed to update category"),
+        };
     }
 }
 
 export async function deleteCategory(id: string) {
     try {
-        const session = await auth();
-        if (!session) {
-            return { success: false, error: "Unauthorized" };
-        }
+        await requireEditorOrAdmin();
 
         await prisma.category.delete({
             where: { id },
@@ -87,6 +84,9 @@ export async function deleteCategory(id: string) {
         return { success: true };
     } catch (e) {
         console.error("deleteCategory error:", e);
-        return { success: false, error: "Failed to delete category" };
+        return {
+            success: false,
+            error: getAuthorizationErrorMessage(e, "Failed to delete category"),
+        };
     }
 }

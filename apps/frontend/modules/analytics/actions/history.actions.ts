@@ -3,7 +3,7 @@
 import { type JobStatus, type Platform, type Prisma, prisma } from "@repo/database";
 import { revalidatePath } from "next/cache";
 import { validateReportingMonthAssignment } from "@/modules/analytics/lib/reporting-month-assignment";
-import { auth } from "@/shared/lib/auth";
+import { getAuthorizationErrorMessage, requireEditorOrAdmin } from "@/shared/lib/authorization";
 import { DEMO_WORKER_DISABLED_MESSAGE, isDemoMode } from "@/shared/lib/demo-mode";
 import { logger } from "@/shared/lib/logger";
 
@@ -28,10 +28,7 @@ export interface AssignReportingMonthInput {
 
 export async function getScrapingHistory(page = 1, limit = 10, filters?: HistoryFilters) {
     try {
-        const session = await auth();
-        if (!session) {
-            return { success: false, error: "Unauthorized" };
-        }
+        await requireEditorOrAdmin();
 
         const skip = (page - 1) * limit;
 
@@ -67,16 +64,16 @@ export async function getScrapingHistory(page = 1, limit = 10, filters?: History
         };
     } catch (error) {
         logger.error({ error }, "Failed to fetch scraping history");
-        return { success: false, error: "Failed to fetch scraping history" };
+        return {
+            success: false,
+            error: getAuthorizationErrorMessage(error, "Failed to fetch scraping history"),
+        };
     }
 }
 
 export async function getAllScrapingHistory(filters?: HistoryFilters) {
     try {
-        const session = await auth();
-        if (!session) {
-            return { success: false, error: "Unauthorized" };
-        }
+        await requireEditorOrAdmin();
 
         const where: Prisma.ScrapingJobWhereInput = {};
         if (filters?.status && filters.status !== "ALL") {
@@ -96,16 +93,16 @@ export async function getAllScrapingHistory(filters?: HistoryFilters) {
         return { success: true, data: jobs };
     } catch (error) {
         logger.error({ error }, "Failed to fetch all scraping history");
-        return { success: false, error: "Failed to fetch all scraping history" };
+        return {
+            success: false,
+            error: getAuthorizationErrorMessage(error, "Failed to fetch all scraping history"),
+        };
     }
 }
 
 export async function exportHistoryPdf(filters: HistoryFilters) {
     try {
-        const session = await auth();
-        if (!session) {
-            return { success: false, error: "Unauthorized" };
-        }
+        await requireEditorOrAdmin();
 
         if (isDemoMode) {
             return { success: false, error: DEMO_WORKER_DISABLED_MESSAGE };
@@ -144,16 +141,16 @@ export async function exportHistoryPdf(filters: HistoryFilters) {
         return { success: true, data: base64 };
     } catch (error) {
         logger.error({ error }, "Export PDF failed");
-        return { success: false, error: "Failed to export PDF" };
+        return {
+            success: false,
+            error: getAuthorizationErrorMessage(error, "Failed to export PDF"),
+        };
     }
 }
 
 export async function exportHistoryCsv(filters: HistoryFilters) {
     try {
-        const session = await auth();
-        if (!session) {
-            return { success: false, error: "Unauthorized" };
-        }
+        await requireEditorOrAdmin();
 
         const where: Prisma.ScrapingJobWhereInput = {};
         if (filters?.status && filters.status !== "ALL") {
@@ -194,7 +191,10 @@ export async function exportHistoryCsv(filters: HistoryFilters) {
         return { success: true, data: base64 };
     } catch (error) {
         logger.error({ error }, "Export CSV failed");
-        return { success: false, error: "Failed to export CSV" };
+        return {
+            success: false,
+            error: getAuthorizationErrorMessage(error, "Failed to export CSV"),
+        };
     }
 }
 
@@ -203,10 +203,7 @@ export async function exportHistoryCsv(filters: HistoryFilters) {
  */
 export async function deleteScrapingJob(jobId: string) {
     try {
-        const session = await auth();
-        if (!session) {
-            return { success: false, error: "Unauthorized" };
-        }
+        await requireEditorOrAdmin();
 
         // Delete associated snapshots first
         await prisma.snapshot.deleteMany({
@@ -221,16 +218,16 @@ export async function deleteScrapingJob(jobId: string) {
         return { success: true };
     } catch (error) {
         logger.error({ error }, "Failed to delete scraping job");
-        return { success: false, error: "Failed to delete scraping job" };
+        return {
+            success: false,
+            error: getAuthorizationErrorMessage(error, "Failed to delete scraping job"),
+        };
     }
 }
 
 export async function assignReportingMonth(input: AssignReportingMonthInput) {
     try {
-        const session = await auth();
-        if (!session) {
-            return { success: false, error: "Unauthorized" };
-        }
+        await requireEditorOrAdmin();
 
         const job = await prisma.scrapingJob.findUnique({
             where: { id: input.jobId },
@@ -291,7 +288,10 @@ export async function assignReportingMonth(input: AssignReportingMonthInput) {
         return { success: true };
     } catch (error) {
         logger.error({ error, input }, "Failed to assign reporting month");
-        return { success: false, error: "Failed to assign reporting month" };
+        return {
+            success: false,
+            error: getAuthorizationErrorMessage(error, "Failed to assign reporting month"),
+        };
     }
 }
 
@@ -301,10 +301,7 @@ export async function assignReportingMonth(input: AssignReportingMonthInput) {
  */
 export async function fixOrphanSnapshots() {
     try {
-        const session = await auth();
-        if (!session) {
-            return { success: false, error: "Unauthorized" };
-        }
+        await requireEditorOrAdmin();
 
         // Find all snapshots without a jobId
         const orphanSnapshots = await prisma.snapshot.findMany({
@@ -361,6 +358,9 @@ export async function fixOrphanSnapshots() {
         };
     } catch (error) {
         logger.error({ error }, "Failed to fix orphan snapshots");
-        return { success: false, error: "Failed to fix orphan snapshots" };
+        return {
+            success: false,
+            error: getAuthorizationErrorMessage(error, "Failed to fix orphan snapshots"),
+        };
     }
 }

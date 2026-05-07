@@ -1,4 +1,5 @@
 import { prisma } from "@repo/database";
+import type { UserRole } from "@repo/types";
 import { compare } from "bcryptjs";
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
@@ -40,6 +41,7 @@ const handler = NextAuth({
                     id: user.id,
                     email: user.email,
                     name: user.name,
+                    role: user.role,
                 };
             },
         }),
@@ -54,12 +56,14 @@ const handler = NextAuth({
         async jwt({ token, user }) {
             if (user) {
                 token.id = user.id;
+                token.role = (user.role as UserRole | undefined) ?? "VIEWER";
             }
             return token;
         },
         async session({ session, token }) {
             if (token && session.user) {
                 session.user.id = token.id as string;
+                session.user.role = (token.role as UserRole | undefined) ?? "VIEWER";
             }
             return session;
         },

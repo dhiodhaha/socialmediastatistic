@@ -6,9 +6,12 @@ import { Plus } from "lucide-react";
 import { CategoryDialog } from "@/modules/categories/components/category-dialog";
 import { Button } from "@/shared/components/catalyst/button";
 import { DataTable } from "@/shared/components/ui/data-table";
+import { requireEditorOrAdminPage } from "@/shared/lib/authorization";
 import { type Category, columns } from "./columns";
 
 export default async function CategoriesPage() {
+    await requireEditorOrAdminPage();
+
     let data: Category[] = [];
 
     try {

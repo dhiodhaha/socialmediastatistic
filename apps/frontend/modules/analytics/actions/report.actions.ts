@@ -1,17 +1,21 @@
 "use server";
 
 import { type Platform, prisma } from "@repo/database";
+import type { PortfolioPlatform } from "@repo/types";
+import { isPortfolioPlatform } from "@repo/types";
 import { endOfDay, endOfMonth, startOfDay, startOfMonth } from "date-fns";
 import { resolveMonthlyReportingAnchors } from "@/modules/analytics/lib/monthly-reporting";
 import type { QuarterlyExportData } from "@/modules/analytics/lib/quarterly-export";
 import {
     buildQuarterlyPlatformPreview,
     type QuarterlyPlatformPreview,
+    type QuarterlyPreviewSnapshot,
 } from "@/modules/analytics/lib/quarterly-platform-preview";
 import {
     buildQuarterlyStatus,
     deriveQuarterlyOptions,
     getQuarterlyAnchorJobIds,
+    type QuarterlyCoverageAccount,
     type QuarterlyOption,
     type QuarterlyStatus,
 } from "@/modules/analytics/lib/quarterly-reporting";
@@ -325,7 +329,12 @@ export async function getQuarterlyStatus(
         year,
         quarter,
         jobs,
-        accounts,
+        accounts: accounts.map((account) => ({
+            instagram: account.instagram,
+            tiktok: account.tiktok,
+            twitter: account.twitter,
+            snapshots: toQuarterlyCoverageSnapshots(account.snapshots),
+        })),
     });
 }
 
@@ -432,11 +441,7 @@ export async function getQuarterlyPreviewData(
             instagram: account.instagram,
             tiktok: account.tiktok,
             twitter: account.twitter,
-            snapshots: account.snapshots.map((snapshot) => ({
-                platform: snapshot.platform,
-                scrapedAt: snapshot.scrapedAt,
-                jobId: snapshot.jobId,
-            })),
+            snapshots: toQuarterlyCoverageSnapshots(account.snapshots),
         })),
     });
 
@@ -450,9 +455,59 @@ export async function getQuarterlyPreviewData(
             tiktok: account.tiktok,
             twitter: account.twitter,
             categoryNames: account.categories.map((entry) => entry.category.name),
-            snapshots: account.snapshots,
+            snapshots: toQuarterlyPreviewSnapshots(account.snapshots),
         })),
     });
+}
+
+function toQuarterlyCoverageSnapshots(
+    snapshots: Array<{ platform: Platform; scrapedAt: Date; jobId: string | null }>,
+): QuarterlyCoverageAccount["snapshots"] {
+    return snapshots
+        .filter(
+            (
+                snapshot,
+            ): snapshot is { platform: PortfolioPlatform; scrapedAt: Date; jobId: string | null } =>
+                isPortfolioPlatform(snapshot.platform),
+        )
+        .map((snapshot) => ({
+            platform: snapshot.platform,
+            scrapedAt: snapshot.scrapedAt,
+            jobId: snapshot.jobId,
+        }));
+}
+
+function toQuarterlyPreviewSnapshots(
+    snapshots: Array<{
+        platform: Platform;
+        followers: number;
+        posts: number | null;
+        likes: number | null;
+        scrapedAt: Date;
+        jobId: string | null;
+    }>,
+): QuarterlyPreviewSnapshot[] {
+    return snapshots
+        .filter(
+            (
+                snapshot,
+            ): snapshot is {
+                platform: PortfolioPlatform;
+                followers: number;
+                posts: number | null;
+                likes: number | null;
+                scrapedAt: Date;
+                jobId: string | null;
+            } => isPortfolioPlatform(snapshot.platform),
+        )
+        .map((snapshot) => ({
+            platform: snapshot.platform,
+            followers: snapshot.followers,
+            posts: snapshot.posts,
+            likes: snapshot.likes,
+            scrapedAt: snapshot.scrapedAt,
+            jobId: snapshot.jobId,
+        }));
 }
 
 /**

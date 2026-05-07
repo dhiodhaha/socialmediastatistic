@@ -1,5 +1,5 @@
 import { type Platform, prisma } from "@repo/database";
-import type { ScrapeResult } from "@repo/types";
+import type { PortfolioPlatform, ScrapeResult } from "@repo/types";
 import { sendDiscordNotification } from "../../../shared/lib/discord";
 import { logger } from "../../../shared/lib/logger";
 
@@ -61,7 +61,7 @@ import { parsePlatformData } from "./parsers";
 
 interface ScrapeTask {
     accountId: string;
-    platform: Platform;
+    platform: PortfolioPlatform;
     handle: string;
 }
 
@@ -138,7 +138,7 @@ export async function runScrapingJob(categoryId?: string): Promise<string> {
     // 4. Generate Tasks with Smart Filtering
     const jobTasks: ScrapeTask[] = [];
     for (const account of accounts) {
-        const platforms: Array<{ name: Platform; handle: string | null }> = [
+        const platforms: Array<{ name: PortfolioPlatform; handle: string | null }> = [
             { name: "INSTAGRAM", handle: account.instagram },
             { name: "TIKTOK", handle: account.tiktok },
             { name: "TWITTER", handle: account.twitter },
@@ -474,7 +474,7 @@ async function processBatchWithConcurrency(
  * Scrape a single account with exponential backoff retry.
  */
 async function scrapeWithRetry(
-    platform: Platform,
+    platform: PortfolioPlatform,
     handle: string,
     accountId?: string,
 ): Promise<ScrapeResult> {
@@ -508,7 +508,7 @@ async function scrapeWithRetry(
     };
 }
 
-async function scrapeAccount(platform: Platform, handle: string): Promise<ScrapeResult> {
+async function scrapeAccount(platform: PortfolioPlatform, handle: string): Promise<ScrapeResult> {
     const apiKey = process.env.SCRAPECREATORS_API_KEY;
 
     if (!apiKey) {
@@ -520,7 +520,7 @@ async function scrapeAccount(platform: Platform, handle: string): Promise<Scrape
     const encodedHandle = encodeURIComponent(cleanHandle);
 
     // ScrapeCreatorsAPI endpoints by platform
-    const endpoints: Record<Platform, string> = {
+    const endpoints: Record<PortfolioPlatform, string> = {
         INSTAGRAM: `https://api.scrapecreators.com/v1/instagram/profile?handle=${encodedHandle}`,
         TIKTOK: `https://api.scrapecreators.com/v1/tiktok/profile?handle=${encodedHandle}`,
         TWITTER: `https://api.scrapecreators.com/v1/twitter/profile?handle=${encodedHandle}`,
@@ -652,21 +652,21 @@ export async function retryFailedAccounts(): Promise<{
         if (failedPlatforms.has("INSTAGRAM") && account.instagram) {
             tasks.push({
                 accountId: account.id,
-                platform: "INSTAGRAM" as Platform,
+                platform: "INSTAGRAM",
                 handle: account.instagram,
             });
         }
         if (failedPlatforms.has("TIKTOK") && account.tiktok) {
             tasks.push({
                 accountId: account.id,
-                platform: "TIKTOK" as Platform,
+                platform: "TIKTOK",
                 handle: account.tiktok,
             });
         }
         if (failedPlatforms.has("TWITTER") && account.twitter) {
             tasks.push({
                 accountId: account.id,
-                platform: "TWITTER" as Platform,
+                platform: "TWITTER",
                 handle: account.twitter,
             });
         }
