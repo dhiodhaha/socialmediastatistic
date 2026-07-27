@@ -68,6 +68,22 @@ export const INFLUENCER_ANALYSIS_STATUSES = [
 ] as const;
 export type InfluencerAnalysisStatus = (typeof INFLUENCER_ANALYSIS_STATUSES)[number];
 
+export const CONTENT_ANALYSIS_RUN_STATUSES = ["PENDING", "RUNNING", "COMPLETED", "FAILED"] as const;
+export type ContentAnalysisRunStatus = (typeof CONTENT_ANALYSIS_RUN_STATUSES)[number];
+
+export const CONTENT_ANALYSIS_SOURCE_KINDS = ["POST", "THREAD", "VIDEO"] as const;
+export type ContentAnalysisSourceKind = (typeof CONTENT_ANALYSIS_SOURCE_KINDS)[number];
+
+export const CONTENT_ANALYSIS_STANCES = [
+    "SUPPORTIVE",
+    "NEUTRAL",
+    "CRITICAL",
+    "MISINFORMED",
+    "MIXED",
+    "IRRELEVANT",
+] as const;
+export type ContentAnalysisStance = (typeof CONTENT_ANALYSIS_STANCES)[number];
+
 // API response types for ScrapeCreators API
 export interface ScrapeResult {
     success: boolean;
@@ -296,4 +312,96 @@ export interface RetryInfluencerAnalysisInput {
 
 export interface InfluencerAnalysisRetryResponse {
     queued: number;
+}
+
+export interface ContentPreviewTranscriptSegment {
+    startMs: number | null;
+    endMs: number | null;
+    startLabel: string | null;
+    text: string;
+}
+
+export interface ContentPreviewThreadItem {
+    id: string;
+    url: string | null;
+    text: string | null;
+    publishedAt: string | null;
+    metrics: {
+        likes?: number | null;
+        replies?: number | null;
+        reposts?: number | null;
+        views?: number | null;
+    };
+}
+
+export interface ContentPreviewData {
+    canonicalUrl: string;
+    authorHandle: string | null;
+    authorDisplayName: string | null;
+    title: string | null;
+    caption: string | null;
+    summaryText: string | null;
+    publishedAt: string | null;
+    thumbnailUrl: string | null;
+    isThread: boolean;
+    containsVideo: boolean;
+    threadItems: ContentPreviewThreadItem[];
+    transcriptSegments: ContentPreviewTranscriptSegment[];
+    transcriptOnlyText: string | null;
+    rawTextForAnalysis: string;
+    platformNotes: string[];
+}
+
+export interface ContentAnalysisResult {
+    stance: ContentAnalysisStance;
+    confidence: number;
+    summary: string;
+    keyIssues: string[];
+    clarificationPoints: string[];
+    supportActions: string[];
+    counterActions: string[];
+    factCheckNotes: string[];
+    evidence: Array<{
+        label: string;
+        quote: string;
+        source: "caption" | "thread" | "transcript" | "metadata";
+    }>;
+}
+
+export interface ContentAnalysisHistoryItem {
+    id: string;
+    accountId: string;
+    accountName: string;
+    platform: Platform;
+    status: ContentAnalysisRunStatus;
+    sourceKind: ContentAnalysisSourceKind;
+    sourceUrl: string;
+    targetLabel: string;
+    authorHandle: string | null;
+    authorDisplayName: string | null;
+    sourceTitle: string | null;
+    publishedAt: Date | null;
+    isThread: boolean;
+    containsVideo: boolean;
+    stance: ContentAnalysisStance | null;
+    confidence: number | null;
+    summary: string | null;
+    error: string | null;
+    creditsUsed: number;
+    scrapedAt: Date | null;
+    analyzedAt: Date | null;
+    createdAt: Date;
+    preview: ContentPreviewData | null;
+    analysis: ContentAnalysisResult | null;
+}
+
+export interface RunContentAnalysisInput {
+    accountId: string;
+    sourceUrl: string;
+    targetLabel?: string | null;
+    requestedById?: string;
+}
+
+export interface RunContentAnalysisResponse {
+    analysisRunId: string;
 }

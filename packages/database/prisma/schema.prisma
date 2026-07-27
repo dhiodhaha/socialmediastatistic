@@ -15,6 +15,7 @@ model User {
   role                 UserRole              @default(EDITOR)
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
+  contentAnalysisRuns  ContentAnalysisRun[]
   influencerScrapeRuns InfluencerScrapeRun[]
 }
 
@@ -27,6 +28,7 @@ model Account {
   isActive             Boolean               @default(true)
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
+  contentAnalysisRuns  ContentAnalysisRun[]
   snapshots            Snapshot[]
   categories           AccountCategory[]
   individualReportRuns IndividualReportRun[]
@@ -227,10 +229,72 @@ enum InfluencerAnalysisStatus {
   UNAVAILABLE
 }
 
+enum ContentAnalysisRunStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+enum ContentAnalysisSourceKind {
+  POST
+  THREAD
+  VIDEO
+}
+
+enum ContentAnalysisStance {
+  SUPPORTIVE
+  NEUTRAL
+  CRITICAL
+  MISINFORMED
+  MIXED
+  IRRELEVANT
+}
+
 model Settings {
   id           String   @id @default("app") // Singleton
   cronSchedule String   @default("0 0 * * *") // Daily at midnight UTC
   updatedAt    DateTime @updatedAt
+}
+
+model ContentAnalysisRun {
+  id                  String                   @id @default(cuid())
+  accountId           String
+  requestedById       String?
+  account             Account                  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  requestedBy         User?                    @relation(fields: [requestedById], references: [id], onDelete: SetNull)
+  status              ContentAnalysisRunStatus @default(PENDING)
+  platform            Platform
+  sourceKind          ContentAnalysisSourceKind
+  sourceUrl           String
+  targetLabel         String                   @default("Kemendikdasmen")
+  authorHandle        String?
+  authorDisplayName   String?
+  sourceTitle         String?
+  publishedAt         DateTime?
+  isThread            Boolean                  @default(false)
+  containsVideo       Boolean                  @default(false)
+  stance              ContentAnalysisStance?
+  confidence          Float?
+  summary             String?
+  keyIssues           String[]                 @default([])
+  clarificationPoints String[]                 @default([])
+  supportActions      String[]                 @default([])
+  counterActions      String[]                 @default([])
+  factCheckNotes      String[]                 @default([])
+  creditsUsed         Int                      @default(0)
+  previewJson         Json?
+  analysisJson        Json?
+  error               String?
+  scrapedAt           DateTime?
+  analyzedAt          DateTime?
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
+
+  @@index([accountId, createdAt])
+  @@index([requestedById])
+  @@index([status])
+  @@index([platform, createdAt])
 }
 
 model Influencer {

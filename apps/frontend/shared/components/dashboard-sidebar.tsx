@@ -6,6 +6,7 @@ import {
     ChartBarIcon,
     ClockIcon,
     Cog6ToothIcon,
+    DocumentMagnifyingGlassIcon,
     FolderIcon,
     HomeIcon,
     PresentationChartLineIcon,
@@ -81,6 +82,13 @@ export function DashboardSidebar({
                 <SidebarItem href="/influencers" current={pathname.startsWith("/influencers")}>
                     <Sparkles />
                     <SidebarLabel>Analisis influencer</SidebarLabel>
+                </SidebarItem>
+                <SidebarItem
+                    href="/content-analysis"
+                    current={pathname.startsWith("/content-analysis")}
+                >
+                    <DocumentMagnifyingGlassIcon />
+                    <SidebarLabel>Analisis konten</SidebarLabel>
                 </SidebarItem>
                 {canManageData && (
                     <>
