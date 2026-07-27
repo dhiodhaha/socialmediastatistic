@@ -5,10 +5,15 @@ import type {
     Platform,
 } from "@repo/database";
 import { INFLUENCER_POST_CATEGORIES, INFLUENCER_SENTIMENTS } from "@repo/types";
+import {
+    getAIKey,
+    getMaxOutputTokens,
+    getPostAnalysisModel,
+    getProfileAnalysisModel,
+} from "../../../shared/lib/ai-config";
 import { logger } from "../../../shared/lib/logger";
 
 const OPENAI_BASE_URL = "https://api.openai.com/v1";
-const DEFAULT_MODEL = "gpt-4.1-mini";
 const CONTROLLED_TOPICS = [
     "Anggaran",
     "Pajak",
@@ -50,7 +55,7 @@ export async function analyzeInfluencerPostWithOpenAI(input: {
     transcript: string | null;
     threadText: string | null;
 }) {
-    if (!process.env.OPENAI_API_KEY) {
+    if (!getAIKey()) {
         return null;
     }
 
@@ -70,10 +75,7 @@ export async function analyzeInfluencerPostWithOpenAI(input: {
 
     try {
         const result = await requestStructuredJson<PostAnalysisSchema>({
-            model:
-                process.env.OPENAI_POST_ANALYSIS_MODEL ||
-                process.env.OPENAI_ANALYSIS_MODEL ||
-                DEFAULT_MODEL,
+            model: getPostAnalysisModel(),
             schemaName: "influencer_post_analysis",
             schema: postAnalysisSchema,
             systemPrompt: [
@@ -142,7 +144,7 @@ export async function analyzeInfluencerProfileWithOpenAI(input: {
     }>;
     postEvidence: string[];
 }) {
-    if (!process.env.OPENAI_API_KEY) {
+    if (!getAIKey()) {
         return null;
     }
 
@@ -188,10 +190,7 @@ export async function analyzeInfluencerProfileWithOpenAI(input: {
 
     try {
         const result = await requestStructuredJson<ProfileAnalysisSchema>({
-            model:
-                process.env.OPENAI_PROFILE_ANALYSIS_MODEL ||
-                process.env.OPENAI_ANALYSIS_MODEL ||
-                DEFAULT_MODEL,
+            model: getProfileAnalysisModel(),
             schemaName: "influencer_profile_analysis",
             schema: profileAnalysisSchema,
             systemPrompt: [
@@ -281,10 +280,10 @@ type StructuredRequest = {
 };
 
 async function requestStructuredJson<T>(input: StructuredRequest): Promise<T> {
-    const apiKey = process.env.OPENAI_API_KEY;
+    const apiKey = getAIKey();
 
     if (!apiKey) {
-        throw new Error("OPENAI_API_KEY is not configured.");
+        throw new Error("AI_API_KEY is not configured.");
     }
 
     const response = await fetch(`${OPENAI_BASE_URL}/chat/completions`, {
@@ -300,7 +299,7 @@ async function requestStructuredJson<T>(input: StructuredRequest): Promise<T> {
                 { role: "user", content: input.userPrompt },
             ],
             temperature: 0.2,
-            max_completion_tokens: readMaxOutputTokens(),
+            max_completion_tokens: getMaxOutputTokens(),
             response_format: {
                 type: "json_schema",
                 json_schema: {
@@ -333,11 +332,6 @@ async function requestStructuredJson<T>(input: StructuredRequest): Promise<T> {
     }
 
     return JSON.parse(content) as T;
-}
-
-function readMaxOutputTokens() {
-    const parsed = Number(process.env.OPENAI_MAX_OUTPUT_TOKENS ?? "700");
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : 700;
 }
 
 function readMessageContent(value: unknown) {
